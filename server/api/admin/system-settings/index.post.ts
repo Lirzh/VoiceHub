@@ -115,6 +115,43 @@ export default defineEventHandler(async (event) => {
       updateData.showBlacklistKeywords = body.showBlacklistKeywords
     }
     
+    // SMTP配置字段
+    if (body.smtpHost !== undefined) {
+      updateData.smtpHost = body.smtpHost
+    }
+    
+    if (body.smtpPort !== undefined) {
+      if (typeof body.smtpPort !== 'number' || body.smtpPort < 1 || body.smtpPort > 65535) {
+        throw createError({
+          statusCode: 400,
+          message: 'smtpPort 必须是1-65535之间的数字'
+        })
+      }
+      updateData.smtpPort = body.smtpPort
+    }
+    
+    if (body.smtpSecure !== undefined) {
+      if (typeof body.smtpSecure !== 'boolean') {
+        throw createError({
+          statusCode: 400,
+          message: 'smtpSecure 必须是布尔值'
+        })
+      }
+      updateData.smtpSecure = body.smtpSecure
+    }
+    
+    if (body.smtpUser !== undefined) {
+      updateData.smtpUser = body.smtpUser
+    }
+    
+    if (body.smtpPass !== undefined) {
+      updateData.smtpPass = body.smtpPass
+    }
+    
+    if (body.smtpFrom !== undefined) {
+      updateData.smtpFrom = body.smtpFrom
+    }
+    
     // 验证每日和每周限额二选一逻辑
     if (body.enableSubmissionLimit && 
         body.dailySubmissionLimit !== undefined && 
@@ -153,7 +190,14 @@ export default defineEventHandler(async (event) => {
         enableSubmissionLimit: updateData.enableSubmissionLimit ?? false,
         dailySubmissionLimit: updateData.dailySubmissionLimit ?? null,
         weeklySubmissionLimit: updateData.weeklySubmissionLimit ?? null,
-        showBlacklistKeywords: updateData.showBlacklistKeywords ?? false
+        showBlacklistKeywords: updateData.showBlacklistKeywords ?? false,
+        // SMTP配置
+        smtpHost: updateData.smtpHost ?? '',
+        smtpPort: updateData.smtpPort ?? 587,
+        smtpSecure: updateData.smtpSecure ?? false,
+        smtpUser: updateData.smtpUser ?? '',
+        smtpPass: updateData.smtpPass ?? '',
+        smtpFrom: updateData.smtpFrom ?? ''
       }).returning()
       settings = newSettingsResult[0]
     } else {

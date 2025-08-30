@@ -193,9 +193,86 @@
               type="checkbox"
               v-model="formData.hideStudentInfo"
             />
-            <span class="checkbox-text">隐藏学生信息</span>
+          <span class="checkbox-text">隐藏学生信息</span>
           </label>
           <small class="help-text">开启后，未登录用户将无法查看完整的学生姓名</small>
+        </div>
+      </div>
+
+      <!-- SMTP邮件设置 -->
+      <div class="form-section">
+        <h4 class="section-title">SMTP邮件设置</h4>
+        
+        <div class="form-group">
+          <label for="smtpHost">SMTP服务器地址</label>
+          <input
+            id="smtpHost"
+            v-model="formData.smtpHost"
+            type="text"
+            placeholder="请输入SMTP服务器地址"
+            maxlength="100"
+          />
+          <small class="help-text">例如：smtp.gmail.com 或 smtp.qq.com</small>
+        </div>
+
+        <div class="form-group">
+          <label for="smtpPort">SMTP端口</label>
+          <input
+            id="smtpPort"
+            v-model.number="formData.smtpPort"
+            type="number"
+            min="1"
+            max="65535"
+            placeholder="请输入SMTP端口号"
+          />
+          <small class="help-text">常见端口：587（TLS）或 465（SSL）</small>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              v-model="formData.smtpSecure"
+            />
+            <span class="checkbox-text">启用SSL加密</span>
+          </label>
+          <small class="help-text">启用后使用SSL加密连接（通常端口为465）</small>
+        </div>
+
+        <div class="form-group">
+          <label for="smtpUser">SMTP用户名</label>
+          <input
+            id="smtpUser"
+            v-model="formData.smtpUser"
+            type="text"
+            placeholder="请输入SMTP用户名"
+            maxlength="100"
+          />
+          <small class="help-text">通常是您的邮箱地址</small>
+        </div>
+
+        <div class="form-group">
+          <label for="smtpPass">SMTP密码</label>
+          <input
+            id="smtpPass"
+            v-model="formData.smtpPass"
+            type="password"
+            placeholder="请输入SMTP密码或授权码"
+            maxlength="100"
+          />
+          <small class="help-text">对于Gmail等服务商，请使用应用专用密码</small>
+        </div>
+
+        <div class="form-group">
+          <label for="smtpFrom">发件人邮箱</label>
+          <input
+            id="smtpFrom"
+            v-model="formData.smtpFrom"
+            type="email"
+            placeholder="请输入发件人邮箱地址"
+            maxlength="100"
+          />
+          <small class="help-text">邮件将从此邮箱地址发送</small>
         </div>
       </div>
 
@@ -272,7 +349,15 @@ const formData = ref({
   dailySubmissionLimit: 0,
   weeklySubmissionLimit: 0,
   showBlacklistKeywords: false,
-  hideStudentInfo: true
+  hideStudentInfo: true,
+  
+  // SMTP配置
+  smtpHost: '',
+  smtpPort: 587,
+  smtpSecure: false,
+  smtpUser: '',
+  smtpPass: '',
+  smtpFrom: ''
 })
 
 const originalData = ref({})

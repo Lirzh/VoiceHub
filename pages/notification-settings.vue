@@ -117,6 +117,23 @@
               </div>
             </div>
 
+            <!-- 邮件通知 -->
+            <div class="setting-card">
+              <div class="setting-info">
+                <h3>邮件通知</h3>
+                <p>开启后重要通知将通过邮件发送</p>
+              </div>
+              <div class="setting-control">
+                <label class="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    v-model="localSettings.emailNotify"
+                  >
+                  <span class="switch"></span>
+                </label>
+              </div>
+            </div>
+
             <!-- 通知刷新间隔 -->
             <div class="setting-card">
               <div class="setting-info">
@@ -264,6 +281,7 @@ const localSettings = ref({
   songVotedNotify: true,
   songVotedThreshold: 5,
   systemNotify: true,
+  emailNotify: false, // 邮件通知开关
   refreshInterval: 60,
   meowUserId: ''
 })

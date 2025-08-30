@@ -46,7 +46,14 @@ export default defineEventHandler(async (event) => {
         enableSubmissionLimit: false,
         dailySubmissionLimit: null,
         weeklySubmissionLimit: null,
-        showBlacklistKeywords: false
+        showBlacklistKeywords: false,
+        // SMTP配置
+        smtpHost: '',
+        smtpPort: 587,
+        smtpSecure: false,
+        smtpUser: '',
+        smtpPass: '',
+        smtpFrom: ''
       }).returning()
       settings = newSettingsResult[0]
     }

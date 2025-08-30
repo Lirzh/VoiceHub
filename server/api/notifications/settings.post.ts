@@ -38,7 +38,9 @@ export default defineEventHandler(async (event) => {
           songPlayedEnabled: body.songPlayedNotify !== undefined ? body.songPlayedNotify : dbSettings.songPlayedEnabled,
           songVotedEnabled: body.songVotedNotify !== undefined ? body.songVotedNotify : dbSettings.songVotedEnabled,
           songVotedThreshold: body.songVotedThreshold !== undefined ? Math.max(1, Math.min(10, body.songVotedThreshold)) : dbSettings.songVotedThreshold,
-          refreshInterval: body.refreshInterval !== undefined ? Math.max(10, Math.min(300, body.refreshInterval)) : dbSettings.refreshInterval
+          refreshInterval: body.refreshInterval !== undefined ? Math.max(10, Math.min(300, body.refreshInterval)) : dbSettings.refreshInterval,
+          // 邮件通知设置
+          emailNotify: body.emailNotify !== undefined ? body.emailNotify : dbSettings.emailNotify
         })
         .where(eq(notificationSettings.userId, user.id))
         .returning()
@@ -52,7 +54,9 @@ export default defineEventHandler(async (event) => {
         songPlayedEnabled: body.songPlayedNotify !== undefined ? body.songPlayedNotify : true,
         songVotedEnabled: body.songVotedNotify !== undefined ? body.songVotedNotify : true,
         songVotedThreshold: body.songVotedThreshold !== undefined ? Math.max(1, Math.min(10, body.songVotedThreshold)) : 1,
-        refreshInterval: body.refreshInterval !== undefined ? Math.max(10, Math.min(300, body.refreshInterval)) : 60
+        refreshInterval: body.refreshInterval !== undefined ? Math.max(10, Math.min(300, body.refreshInterval)) : 60,
+        // 邮件通知设置
+        emailNotify: body.emailNotify !== undefined ? body.emailNotify : false
       }).returning()
       dbSettings = newSettingsResult[0]
     }
@@ -65,6 +69,7 @@ export default defineEventHandler(async (event) => {
       songPlayedNotify: dbSettings.songPlayedEnabled,
       songVotedNotify: dbSettings.songVotedEnabled,
       systemNotify: dbSettings.enabled,
+      emailNotify: dbSettings.emailNotify, // 邮件通知设置
       refreshInterval: dbSettings.refreshInterval,
       songVotedThreshold: dbSettings.songVotedThreshold
     }

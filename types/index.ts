@@ -69,6 +69,7 @@ export interface NotificationSettings {
   songPlayedNotify: boolean
   songVotedNotify: boolean
   systemNotify: boolean
+  emailNotify: boolean // 邮件通知设置
   refreshInterval: number
   songVotedThreshold: number
   meowUserId?: string
@@ -82,6 +83,7 @@ export interface DBNotificationSettings {
   songRequestEnabled: boolean
   songVotedEnabled: boolean
   songPlayedEnabled: boolean
+  emailNotify: boolean // 邮件通知设置
   refreshInterval: number
   songVotedThreshold: number
 }

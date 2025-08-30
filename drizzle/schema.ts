@@ -96,6 +96,8 @@ export const notificationSettings = pgTable('NotificationSettings', {
   songRequestEnabled: boolean('songRequestEnabled').default(true).notNull(),
   songVotedEnabled: boolean('songVotedEnabled').default(true).notNull(),
   songPlayedEnabled: boolean('songPlayedEnabled').default(true).notNull(),
+  emailEnabled: boolean('emailEnabled').default(true).notNull(), // 邮件通知开关
+  emailNotify: boolean('emailNotify').default(false).notNull(), // 邮件通知设置
   refreshInterval: integer('refreshInterval').default(60).notNull(),
   songVotedThreshold: integer('songVotedThreshold').default(1).notNull(),
 });
@@ -127,6 +129,13 @@ export const systemSettings = pgTable('SystemSettings', {
   weeklySubmissionLimit: integer('weeklySubmissionLimit'),
   showBlacklistKeywords: boolean('showBlacklistKeywords').default(false).notNull(),
   hideStudentInfo: boolean('hideStudentInfo').default(true).notNull(),
+  // SMTP配置字段
+  smtpHost: text('smtpHost'),
+  smtpPort: integer('smtpPort'),
+  smtpSecure: boolean('smtpSecure').default(false),
+  smtpUser: text('smtpUser'),
+  smtpPass: text('smtpPass'),
+  smtpFrom: text('smtpFrom'),
 });
 
 // 歌曲黑名单表

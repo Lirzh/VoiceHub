@@ -38,7 +38,8 @@ export default defineEventHandler(async (event) => {
         songVotedEnabled: true,
         songPlayedEnabled: true,
         refreshInterval: 60,
-        songVotedThreshold: 1
+        songVotedThreshold: 1,
+        emailNotify: false // 邮件通知设置
       }).returning()
       
       dbSettings = insertResult[0]
@@ -52,6 +53,7 @@ export default defineEventHandler(async (event) => {
       songPlayedNotify: dbSettings.songPlayedEnabled,
       songVotedNotify: dbSettings.songVotedEnabled,
       systemNotify: dbSettings.enabled,
+      emailNotify: dbSettings.emailNotify, // 邮件通知设置
       refreshInterval: dbSettings.refreshInterval,
       songVotedThreshold: dbSettings.songVotedThreshold,
       meowUserId: userInfo?.meowNickname || ''
