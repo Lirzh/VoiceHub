@@ -2,15 +2,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# 复制依赖文件和 scripts 目录
-COPY package*.json ./
-COPY scripts ./scripts
+COPY . .
 
 # 安装所有依赖
 RUN npm ci
 
 # 复制源代码并构建应用
-COPY . .
 RUN npm run build
 
 # 环境变量配置
