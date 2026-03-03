@@ -11,7 +11,22 @@ FROM ppc64le/node:24-slim AS builder-ppc64le
 # 根据 TARGETARCH 选择对应的构建镜像
 FROM builder-${TARGETARCH} AS builder
 
+USER root
 WORKDIR /app
+
+# 安装编译bcrypt所需的系统依赖
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat \
+    linux-headers
+
+# 设置node-gyp的Python路径
+ENV PYTHON=/usr/bin/python3
+
+# 强制bcrypt使用预编译包
+ENV BCRYPT_BUILD_FROM_SOURCE=false
 
 # 复制依赖文件和 scripts 目录
 COPY package*.json ./
@@ -41,6 +56,20 @@ FROM runtime-${TARGETARCH} AS runtime
 
 USER root
 WORKDIR /app
+
+# 安装编译bcrypt所需的系统依赖
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    libc6-compat \
+    linux-headers
+
+# 设置node-gyp的Python路径
+ENV PYTHON=/usr/bin/python3
+
+# 强制bcrypt使用预编译包
+ENV BCRYPT_BUILD_FROM_SOURCE=false
 
 # 从构建阶段复制必要文件
 COPY --from=builder /app/package*.json ./
