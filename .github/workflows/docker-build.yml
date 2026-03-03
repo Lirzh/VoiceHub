@@ -45,7 +45,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           # 扩展QEMU支持的架构，覆盖ppc64le和s390x
-          platforms: arm,arm64,ppc64le,s390x
+          platforms: arm,arm64,s390x
 
       - name: Set up Docker Buildx
         id: buildx
@@ -81,6 +81,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # 扩展构建平台列表，包含全部目标架构
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/ppc64le,linux/s390x
+          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/s390x
           cache-from: type=gha
           cache-to: type=gha,mode=max
