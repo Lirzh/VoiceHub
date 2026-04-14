@@ -7,6 +7,7 @@ FROM node:24-alpine AS builder-arm64
 FROM node:20-alpine AS builder-arm
 FROM node:24-trixie-slim AS builder-s390x
 FROM node:24-trixie-slim AS builder-ppc64le
+FROM ghcr.io/lirzh/nodejs-docker-image:riscv64 AS builder-riscv64
 
 # 根据 TARGETARCH 选择对应的构建镜像
 FROM builder-${TARGETARCH} AS builder
@@ -46,6 +47,7 @@ FROM node:24-alpine AS runtime-arm64
 FROM node:20-alpine AS runtime-arm
 FROM node:24-trixie-slim AS runtime-s390x
 FROM node:24-trixie-slim AS runtime-ppc64le
+FROM ghcr.io/lirzh/nodejs-docker-image:riscv64 AS runtime-riscv64
 
 # 根据 TARGETARCH 选择对应的运行时镜像
 FROM runtime-${TARGETARCH} AS runtime
