@@ -2,7 +2,9 @@ name: Build and Push Docker Image
 
 on:
   push:
-    branches: [main],[riscv64]
+    branches: 
+      - main
+      - riscv64
   pull_request:
     branches: [main]
   workflow_dispatch:
