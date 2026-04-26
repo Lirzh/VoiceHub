@@ -1,6 +1,6 @@
 import { parseState, getRedirectUri } from '~~/server/utils/oauth'
 import { generateBindingToken } from '~~/server/utils/oauth-token'
-import { db, eq, users } from '~/drizzle/db'
+import { db, eq, users, userIdentities } from '~/drizzle/db'
 import { JWTEnhanced } from '~~/server/utils/jwt-enhanced'
 import { getOAuthStrategy } from '~~/server/utils/oauth-strategies'
 import { isUserBlocked, getUserBlockRemainingTime } from '~~/server/services/securityService'
@@ -165,7 +165,7 @@ async function handleUserLoginOrBind(
     if (user.status === 'withdrawn') {
       return sendRedirect(
         event,
-        `/auth/error?code=ACCOUNT_WITHDRAWN&message=${encodeURIComponent('账号已注销')}`
+        `/auth/error?code=ACCOUNT_WITHDRAWN&message=${encodeURIComponent('该账号已退学，限制访问')}`
       )
     }
     if (user.status === 'graduate') {

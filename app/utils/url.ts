@@ -121,3 +121,46 @@ export const getBilibiliUrl = (song: {
 
   return '#'
 }
+
+/**
+ * 判断 URL 是否属于 VoiceHub 内部 API
+ * @param input 请求的 URL 或 Request 对象
+ * @returns boolean
+ */
+export const isVoiceHubApi = (input: RequestInfo | URL): boolean => {
+  try {
+    let urlStr = ''
+    if (typeof input === 'string') {
+      urlStr = input
+    } else if (input instanceof URL) {
+      urlStr = input.href
+    } else if (input instanceof Request) {
+      urlStr = input.url
+    }
+
+    // 相对路径直接判断
+    if (urlStr.startsWith('/api')) return true
+
+    // 如果在客户端环境中，可以检查是否属于当前域名
+    if (typeof window !== 'undefined') {
+      const urlObj = new URL(urlStr, window.location.origin)
+      return urlObj.origin === window.location.origin && urlObj.pathname.startsWith('/api')
+    }
+
+    return false
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 从 localStorage 中获取网易云音乐 Cookie
+ * @returns {string | undefined} 返回 Cookie 字符串或 undefined
+ */
+export const getNeteaseCookie = (): string | undefined => {
+  if (import.meta.client) {
+    return localStorage.getItem('netease_cookie') || undefined
+  }
+  return undefined
+}
+
