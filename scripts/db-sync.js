@@ -112,13 +112,17 @@ async function seedLegacyMigrationRecords(sql) {
 }
 
 async function enumExists(sql, enumName) {
+  // pg_type.typname 通常为小写（未加引号标识符会被规范化），
+  // Drizzle 可能使用带引号的混合大小写标识符，这里同时检查原始名和小写名。
+  const rawName = String(enumName)
+  const lowerName = rawName.toLowerCase()
   const result = await sql`
     SELECT EXISTS (
       SELECT 1
       FROM pg_type t
       JOIN pg_namespace n ON n.oid = t.typnamespace
       WHERE n.nspname = 'public'
-        AND t.typname = ${enumName}
+        AND t.typname IN (${rawName}, ${lowerName})
         AND t.typtype = 'e'
     ) AS exists
   `
@@ -127,6 +131,8 @@ async function enumExists(sql, enumName) {
 }
 
 async function enumValueExists(sql, enumName, enumValue) {
+  const rawName = String(enumName)
+  const lowerName = rawName.toLowerCase()
   const result = await sql`
     SELECT EXISTS (
       SELECT 1
@@ -134,7 +140,7 @@ async function enumValueExists(sql, enumName, enumValue) {
       JOIN pg_namespace n ON n.oid = t.typnamespace
       JOIN pg_enum e ON e.enumtypid = t.oid
       WHERE n.nspname = 'public'
-        AND t.typname = ${enumName}
+        AND t.typname IN (${rawName}, ${lowerName})
         AND e.enumlabel = ${enumValue}
     ) AS exists
   `
@@ -143,12 +149,17 @@ async function enumValueExists(sql, enumName, enumValue) {
 }
 
 async function tableExists(sql, tableName) {
+  // Drizzle 可能使用带引号的大小写混合标识符建表（如 "User"），
+  // 也可能被 PostgreSQL 规范化为小写。这里同时检查原始名称与小写名称，
+  // 避免因大小写差异导致误判。
+  const rawName = String(tableName)
+  const lowerName = rawName.toLowerCase()
   const result = await sql`
     SELECT EXISTS (
       SELECT 1
       FROM information_schema.tables
       WHERE table_schema = 'public'
-        AND table_name = ${tableName}
+        AND table_name IN (${rawName}, ${lowerName})
     ) AS exists
   `
 
@@ -156,13 +167,19 @@ async function tableExists(sql, tableName) {
 }
 
 async function columnExists(sql, tableName, columnName) {
+  // 同上：Drizzle 可能使用带引号的驼峰列名建表，information_schema 中会保留原始大小写。
+  // 同时检查原始名称和小写名称，两种都命中其一即视为存在。
+  const rawTable = String(tableName)
+  const lowerTable = rawTable.toLowerCase()
+  const rawColumn = String(columnName)
+  const lowerColumn = rawColumn.toLowerCase()
   const result = await sql`
     SELECT EXISTS (
       SELECT 1
       FROM information_schema.columns
       WHERE table_schema = 'public'
-        AND table_name = ${tableName}
-        AND column_name = ${columnName}
+        AND table_name IN (${rawTable}, ${lowerTable})
+        AND column_name IN (${rawColumn}, ${lowerColumn})
     ) AS exists
   `
 
@@ -173,12 +190,32 @@ async function columnExists(sql, tableName, columnName) {
 async function checkSchemaConsistency(sql) {
   const requiredEnums = [
     ['user_status', ['graduate']],
-    ['card_code_status', ['AVAILABLE', 'LOCKED', 'REDEEMED', 'INVALID']]
+    ['card_code_status', ['AVAILABLE', 'LOCKED', 'REDEEMED', 'INVALID']],
+    ['collaborator_status', ['PENDING', 'ACCEPTED', 'REJECTED']],
+    ['replay_request_status', ['PENDING', 'FULFILLED', 'REJECTED']],
+    ['BlacklistType', ['SONG', 'KEYWORD']]
   ]
   const requiredTables = [
+    'User',
+    'Song',
+    'Schedule',
+    'SystemSettings',
+    'PlayTime',
+    'Semester',
+    'Notification',
+    'NotificationSettings',
+    'UserIdentity',
+    'Vote',
+    'SongBlacklist',
+    'user_status_logs',
     'api_keys',
     'api_key_permissions',
     'api_logs',
+    'RequestTime',
+    'song_collaborators',
+    'collaboration_logs',
+    'song_replay_requests',
+    'EmailTemplate',
     'CardCode',
     'CardCodeRedeemLog'
   ]
