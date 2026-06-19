@@ -54,6 +54,7 @@ function createSqlClient() {
   return postgres(process.env.DATABASE_URL, { max: 1 })
 }
 
+// 判断数据库中是否有任何业务表
 async function isEmptyDatabase(sql) {
   const result = await sql`
     SELECT COUNT(*)::int AS count
@@ -62,24 +63,21 @@ async function isEmptyDatabase(sql) {
       AND table_type = 'BASE TABLE'
       AND table_name <> '__drizzle_migrations__'
   `
-
   return result[0]?.count === 0
 }
 
+// 判断是否已经有 drizzle 迁移记录
 async function hasMigrationRecords(sql) {
   const migrationTable = await sql`
     SELECT to_regclass('public.__drizzle_migrations__') AS table_name
   `
-
   if (!migrationTable[0]?.table_name) {
     return false
   }
-
   const result = await sql`
     SELECT COUNT(*)::int AS count
     FROM public.__drizzle_migrations__
   `
-
   return (result[0]?.count || 0) > 0
 }
 
@@ -89,6 +87,8 @@ function loadMigrationJournalEntries() {
   return [...journal.entries].sort((a, b) => a.when - b.when)
 }
 
+// 给历史上用 push 建表的 legacy 数据库写入迁移基线，
+// 以便后续版本可以平滑切换到 migrate 流程。
 async function seedLegacyMigrationRecords(sql) {
   const entries = loadMigrationJournalEntries()
 
@@ -111,209 +111,6 @@ async function seedLegacyMigrationRecords(sql) {
   }
 }
 
-async function enumExists(sql, enumName) {
-  // pg_type.typname 通常为小写（未加引号标识符会被规范化），
-  // Drizzle 可能使用带引号的混合大小写标识符，这里同时检查原始名和小写名。
-  const rawName = String(enumName)
-  const lowerName = rawName.toLowerCase()
-  const result = await sql`
-    SELECT EXISTS (
-      SELECT 1
-      FROM pg_type t
-      JOIN pg_namespace n ON n.oid = t.typnamespace
-      WHERE n.nspname = 'public'
-        AND t.typname IN (${rawName}, ${lowerName})
-        AND t.typtype = 'e'
-    ) AS exists
-  `
-
-  return result[0]?.exists === true
-}
-
-async function enumValueExists(sql, enumName, enumValue) {
-  const rawName = String(enumName)
-  const lowerName = rawName.toLowerCase()
-  const result = await sql`
-    SELECT EXISTS (
-      SELECT 1
-      FROM pg_type t
-      JOIN pg_namespace n ON n.oid = t.typnamespace
-      JOIN pg_enum e ON e.enumtypid = t.oid
-      WHERE n.nspname = 'public'
-        AND t.typname IN (${rawName}, ${lowerName})
-        AND e.enumlabel = ${enumValue}
-    ) AS exists
-  `
-
-  return result[0]?.exists === true
-}
-
-async function tableExists(sql, tableName) {
-  // Drizzle 可能使用带引号的大小写混合标识符建表（如 "User"），
-  // 也可能被 PostgreSQL 规范化为小写。这里同时检查原始名称与小写名称，
-  // 避免因大小写差异导致误判。
-  const rawName = String(tableName)
-  const lowerName = rawName.toLowerCase()
-  const result = await sql`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_name IN (${rawName}, ${lowerName})
-    ) AS exists
-  `
-
-  return result[0]?.exists === true
-}
-
-async function columnExists(sql, tableName, columnName) {
-  // 同上：Drizzle 可能使用带引号的驼峰列名建表，information_schema 中会保留原始大小写。
-  // 同时检查原始名称和小写名称，两种都命中其一即视为存在。
-  const rawTable = String(tableName)
-  const lowerTable = rawTable.toLowerCase()
-  const rawColumn = String(columnName)
-  const lowerColumn = rawColumn.toLowerCase()
-  const result = await sql`
-    SELECT EXISTS (
-      SELECT 1
-      FROM information_schema.columns
-      WHERE table_schema = 'public'
-        AND table_name IN (${rawTable}, ${lowerTable})
-        AND column_name IN (${rawColumn}, ${lowerColumn})
-    ) AS exists
-  `
-
-  return result[0]?.exists === true
-}
-
-// 检查数据库schema是否包含当前代码依赖的关键对象。
-async function checkSchemaConsistency(sql) {
-  const requiredEnums = [
-    ['user_status', ['graduate']],
-    ['card_code_status', ['AVAILABLE', 'LOCKED', 'REDEEMED', 'INVALID']],
-    ['collaborator_status', ['PENDING', 'ACCEPTED', 'REJECTED']],
-    ['replay_request_status', ['PENDING', 'FULFILLED', 'REJECTED']],
-    ['BlacklistType', ['SONG', 'KEYWORD']]
-  ]
-  const requiredTables = [
-    'User',
-    'Song',
-    'Schedule',
-    'SystemSettings',
-    'PlayTime',
-    'Semester',
-    'Notification',
-    'NotificationSettings',
-    'UserIdentity',
-    'Vote',
-    'SongBlacklist',
-    'user_status_logs',
-    'api_keys',
-    'api_key_permissions',
-    'api_logs',
-    'RequestTime',
-    'song_collaborators',
-    'collaboration_logs',
-    'song_replay_requests',
-    'EmailTemplate',
-    'CardCode',
-    'CardCodeRedeemLog'
-  ]
-  const requiredColumns = {
-    User: ['status', 'statusChangedAt', 'statusChangedBy', 'email', 'emailVerified'],
-    Song: ['playUrl', 'submissionNote', 'submissionNotePublic', 'hitRequestId', 'cardCodeId'],
-    Schedule: ['isDraft', 'publishedAt'],
-    SystemSettings: [
-      'instance_id',
-      'telemetryEnabled',
-      'smtpEnabled',
-      'smtpHost',
-      'smtpPort',
-      'smtpSecure',
-      'smtpUsername',
-      'smtpPassword',
-      'smtpFromEmail',
-      'smtpFromName',
-      'enableRequestTimeLimitation',
-      'forceBlockAllRequests',
-      'enableReplayRequests',
-      'enableCollaborativeSubmission',
-      'enableSubmissionRemarks',
-      'enableCardCodeRequests',
-      'requireCardCodeForRequests',
-      'captchaProvider',
-      'turnstileSiteKey',
-      'turnstileSecretKey',
-      'allowOAuthRegistration',
-      'oauthRedirectUri',
-      'oauthStateSecret',
-      'oauthProviders',
-      'githubOAuthEnabled',
-      'githubClientId',
-      'githubClientSecret',
-      'casdoorOAuthEnabled',
-      'casdoorServerUrl',
-      'casdoorClientId',
-      'casdoorClientSecret',
-      'casdoorOrganizationName',
-      'googleOAuthEnabled',
-      'googleClientId',
-      'googleClientSecret',
-      'customOAuthEnabled',
-      'customOAuthDisplayName',
-      'customOAuthAuthorizeUrl',
-      'customOAuthTokenUrl',
-      'customOAuthUserInfoUrl',
-      'customOAuthScope',
-      'customOAuthClientId',
-      'customOAuthClientSecret',
-      'customOAuthUserIdField',
-      'customOAuthUsernameField',
-      'customOAuthNameField',
-      'customOAuthEmailField',
-      'customOAuthAvatarField',
-      'captchaEnabled',
-      'captchaMaxFailures'
-    ]
-  }
-
-  const missing = []
-
-  for (const [enumName, enumValues] of requiredEnums) {
-    if (!(await enumExists(sql, enumName))) {
-      missing.push(`${enumName} enum type`)
-      continue
-    }
-
-    for (const enumValue of enumValues) {
-      if (!(await enumValueExists(sql, enumName, enumValue))) {
-        missing.push(`${enumName}.${enumValue} enum value`)
-      }
-    }
-  }
-
-  for (const tableName of requiredTables) {
-    if (!(await tableExists(sql, tableName))) {
-      missing.push(`${tableName} table`)
-    }
-  }
-
-  for (const [tableName, columns] of Object.entries(requiredColumns)) {
-    for (const columnName of columns) {
-      if (!(await columnExists(sql, tableName, columnName))) {
-        missing.push(`${tableName}.${columnName} column`)
-      }
-    }
-  }
-
-  if (missing.length > 0) {
-    warn(`检测到数据库schema不完整，缺少: ${missing.join(', ')}`)
-    return false
-  }
-
-  return true
-}
-
 async function main() {
   log('🔄 数据库同步', 'cyan')
 
@@ -328,70 +125,33 @@ async function main() {
 
   try {
     const emptyDb = await isEmptyDatabase(sql)
+
     if (emptyDb) {
-      log('🆕 检测到空库，执行迁移 (migrate)...', 'cyan')
+      // 全新空库：直接走迁移流程
+      log('🆕 检测到空库，执行 migrate 创建 schema...', 'cyan')
       if (!safeExec('pnpm run db:migrate', { env: NON_INTERACTIVE_ENV })) {
         err('数据库迁移失败')
         process.exit(1)
       }
       ok('空库迁移完成')
     } else {
-      log('🔁 检测到非空库，检查schema一致性...', 'cyan')
+      // 已有数据的库：交给 Drizzle push 自己对比 schema 并补齐差异
+      // 不再手写检查表/列/枚举 —— Drizzle push 本身就会精确对比 schema.ts
+      log('🔁 检测到非空库，使用 drizzle-kit push 同步 schema（Drizzle 会自动对比差异）...', 'cyan')
 
+      const pushCommand = 'pnpm exec drizzle-kit push --config=drizzle.config.ts'
+      if (!safeExec(pushCommand, { env: { ...NON_INTERACTIVE_ENV, DRIZZLE_KIT_NON_INTERACTIVE: 'true' } })) {
+        err('push 失败')
+        process.exit(1)
+      }
+      ok('push 完成 —— 如果 schema 已是最新，Drizzle 不会做任何改动')
+
+      // 处理 legacy 情况：schema 存在但迁移记录为空
       const migrationRecordsExist = await hasMigrationRecords(sql)
-      let schemaConsistent = await checkSchemaConsistency(sql)
-
-      if (!schemaConsistent) {
-        warn('数据库schema不完整，尝试使用 push --force 进行修复...', 'cyan')
-        const pushCommand = 'pnpm exec drizzle-kit push --force --config=drizzle.config.ts'
-        if (
-          !safeExec(pushCommand, {
-            env: { ...NON_INTERACTIVE_ENV, DRIZZLE_KIT_NON_INTERACTIVE: 'true' }
-          })
-        ) {
-          err('数据库schema修复失败')
-          process.exit(1)
-        }
-        schemaConsistent = await checkSchemaConsistency(sql)
-        if (!schemaConsistent) {
-          err('push 后数据库schema仍不完整')
-          process.exit(1)
-        }
-        ok('schema修复成功')
-
-        if (!migrationRecordsExist) {
-          warn('检测到 legacy 数据库迁移记录为空，写入迁移基线记录以便后续版本继续 migrate。')
-          await seedLegacyMigrationRecords(sql)
-          ok('legacy 迁移基线记录写入完成')
-        }
-      } else if (!migrationRecordsExist) {
-        warn('检测到 legacy 数据库：schema 已存在，但迁移记录为空。跳过 migrate 以避免重放历史迁移。')
+      if (!migrationRecordsExist) {
+        warn('检测到迁移记录为空（legacy 数据库），写入迁移基线以便后续继续 migrate。')
         await seedLegacyMigrationRecords(sql)
-        ok('legacy schema 检查通过，迁移基线记录写入完成')
-      } else {
-        log('🔁 数据库schema一致，尝试执行 migrate 同步...', 'cyan')
-
-        const migrateSuccess = safeExec('pnpm run db:migrate', {
-          env: { ...NON_INTERACTIVE_ENV, DRIZZLE_KIT_NON_INTERACTIVE: 'true' }
-        })
-
-        if (migrateSuccess) {
-          ok('migrate 同步成功')
-        } else {
-          warn('migrate 同步失败，可能是由于数据库结构与迁移记录不一致。')
-          log('🔄 尝试使用 push --force 进行强制同步...', 'cyan')
-
-          const pushCommand = 'pnpm exec drizzle-kit push --force --config=drizzle.config.ts'
-          if (
-            !safeExec(pushCommand, {
-              env: { ...NON_INTERACTIVE_ENV, DRIZZLE_KIT_NON_INTERACTIVE: 'true' }
-            })
-          ) {
-            err('数据库同步完全失败。请检查数据库连接或手动运行 pnpm exec drizzle-kit push 以解决歧义。')
-            process.exit(1)
-          }
-          ok('强制同步 (push) 成功')
-        }
+        ok('legacy 迁移基线记录写入完成')
       }
     }
   } finally {
