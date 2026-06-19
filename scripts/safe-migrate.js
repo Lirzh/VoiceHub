@@ -1,9 +1,22 @@
 #!/usr/bin/env node
-
+/**
+ * safe-migrate.js — 安全数据库迁移脚本
+ *
+ * 核心改动：不再依赖 drizzle-kit introspect 的文本输出判断 schema 状态，
+ * 而是直接查询 PostgreSQL 系统表（pg_type, pg_enum, information_schema）
+ * 来判断数据库是否缺少关键对象，从而决定走 migrate 还是 push --force。
+ *
+ * 三种数据库状态：
+ * 1. 空库（没有任何用户表） → drizzle-kit migrate（标准迁移）
+ * 2. Legacy 库（有表但 __drizzle_migrations__ 为空，且 schema 已完整） → 跳过迁移
+ * 3. Schema 缺失关键对象的库 → drizzle-kit push --force 修复
+ * 4. 有迁移记录的库 → drizzle-kit migrate（增量迁移）
+ */
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { config } from 'dotenv'
+import pg from 'pg'
 
 // 加载环境变量
 config({ path: path.resolve(process.cwd(), '.env') })
@@ -15,21 +28,17 @@ const colors = {
   red: '\x1b[31m',
   green: '\x1b[32m',
   yellow: '\x1b[33m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 }
-
 function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`)
 }
-
 function logSuccess(message) {
   log(`✅ ${message}`, 'green')
 }
-
 function logWarning(message) {
   log(`⚠️ ${message}`, 'yellow')
 }
-
 function logError(message) {
   log(`❌ ${message}`, 'red')
 }
@@ -61,163 +70,367 @@ function fileExists(filePath) {
   }
 }
 
-// 处理数据冲突的函数
-async function handleDataConflicts() {
+/**
+ * 从 DATABASE_URL 中提取 PostgreSQL 连接参数
+ * 支持格式：postgresql://user:password@host:port/dbname
+ */
+function parseDatabaseUrl(url) {
   try {
-    // 在Vercel环境中，我们主要关注schema同步而不是数据冲突处理
-    log('检查数据库连接...', 'cyan')
+    const parsed = new URL(url)
+    return {
+      host: parsed.hostname || 'localhost',
+      port: parseInt(parsed.port, 10) || 5432,
+      database: parsed.pathname.slice(1),
+      user: decodeURIComponent(parsed.username || 'postgres'),
+      password: decodeURIComponent(parsed.password || ''),
+    }
+  } catch {
+    return null
+  }
+}
 
-    // 简单的连接测试
-    if (!safeExec('cd .. && pnpm exec drizzle-kit check --config=drizzle.config.ts', { stdio: 'pipe' })) {
-      logWarning('数据库schema检查失败，将尝试强制同步')
+/**
+ * 查询 PostgreSQL 系统表，检查关键 schema 对象是否存在
+ *
+ * 检查项：
+ * - user_status 枚举类型及其值（active, withdrawn, graduate）
+ * - api_keys 表
+ * - SystemSettings.instance_id 和 telemetryEnabled 列
+ * - card_code_status 枚举类型
+ * - CardCode 表
+ * - Song.cardCodeId 列
+ *
+ * 返回 { missing: string[], isLegacy: boolean }
+ *   missing: 缺少的关键对象列表
+ *   isLegacy: 是否为 legacy 数据库（有表但无迁移记录）
+ */
+async function checkSchemaConsistency() {
+  const params = parseDatabaseUrl(process.env.DATABASE_URL)
+  if (!params) {
+    logError('无法解析 DATABASE_URL')
+    return { missing: ['DATABASE_URL 解析失败'], isLegacy: false }
+  }
+
+  const client = new pg.Client({
+    host: params.host,
+    port: params.port,
+    database: params.database,
+    user: params.user,
+    password: params.password,
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+    connectionTimeoutMillis: 10000,
+  })
+
+  const missing = []
+
+  try {
+    await client.connect()
+
+    // --- 1. 检查是否有任何用户表（判断空库） ---
+    const tableCountResult = await client.query(`
+      SELECT COUNT(*) as cnt
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+        AND table_name NOT IN ('__drizzle_migrations__', 'spatial_ref_sys')
+    `)
+    const tableCount = parseInt(tableCountResult.rows[0].cnt, 10)
+
+    if (tableCount === 0) {
+      log('🆕 检测到空数据库', 'cyan')
+      return { missing: [], isEmpty: true, isLegacy: false }
     }
 
-    logSuccess('数据冲突检查完成')
+    // --- 2. 检查 __drizzle_migrations__ 表是否存在且有记录 ---
+    let hasMigrationRecords = false
+    const migrationTableExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = '__drizzle_migrations__'
+      )
+    `)
+    if (migrationTableExists.rows[0].exists) {
+      const migrationCount = await client.query(`
+        SELECT COUNT(*) as cnt FROM public.__drizzle_migrations__
+      `)
+      hasMigrationRecords = parseInt(migrationCount.rows[0].cnt, 10) > 0
+    }
+
+    // --- 3. 检查 user_status 枚举类型 ---
+    const enumResult = await client.query(`
+      SELECT e.enumlabel
+      FROM pg_type t
+      JOIN pg_enum e ON t.oid = e.enumtypid
+      JOIN pg_namespace n ON t.typnamespace = n.oid
+      WHERE n.nspname = 'public' AND t.typname = 'user_status'
+      ORDER BY e.enumsortorder
+    `)
+    const enumValues = enumResult.rows.map((r) => r.enumlabel)
+    const requiredValues = ['active', 'withdrawn', 'graduate']
+    const missingValues = requiredValues.filter((v) => !enumValues.includes(v))
+    if (enumValues.length === 0) {
+      missing.push('user_status enum type')
+    } else if (missingValues.length > 0) {
+      missing.push(`user_status enum 缺少值: ${missingValues.join(', ')}`)
+    }
+
+    // --- 4. 检查 api_keys 表 ---
+    const apiKeysExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'api_keys'
+      )
+    `)
+    if (!apiKeysExists.rows[0].exists) {
+      missing.push('api_keys table')
+    }
+
+    // --- 5. 检查 SystemSettings.instance_id 和 telemetryEnabled ---
+    const systemSettingsCols = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'SystemSettings'
+        AND column_name IN ('instance_id', 'telemetryEnabled')
+    `)
+    const sysCols = systemSettingsCols.rows.map((r) => r.column_name)
+    if (!sysCols.includes('instance_id')) {
+      missing.push('SystemSettings.instance_id column')
+    }
+    if (!sysCols.includes('telemetryEnabled')) {
+      missing.push('SystemSettings.telemetryEnabled column')
+    }
+
+    // --- 6. 检查 card_code_status 枚举和 CardCode 表 ---
+    const cardCodeStatusExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_type t
+        JOIN pg_namespace n ON t.typnamespace = n.oid
+        WHERE n.nspname = 'public' AND t.typname = 'card_code_status'
+      )
+    `)
+    if (!cardCodeStatusExists.rows[0].exists) {
+      missing.push('card_code_status enum type')
+    }
+
+    const cardCodeExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'CardCode'
+      )
+    `)
+    if (!cardCodeExists.rows[0].exists) {
+      missing.push('CardCode table')
+    }
+
+    // --- 7. 检查 Song.cardCodeId 列 ---
+    const songCardCodeCol = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'Song'
+          AND column_name = 'cardCodeId'
+      )
+    `)
+    if (!songCardCodeCol.rows[0].exists) {
+      missing.push('Song.cardCodeId column')
+    }
+
+    // --- 8. 检查 collaborator_status 枚举 ---
+    const collaboratorStatusExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_type t
+        JOIN pg_namespace n ON t.typnamespace = n.oid
+        WHERE n.nspname = 'public' AND t.typname = 'collaborator_status'
+      )
+    `)
+    if (!collaboratorStatusExists.rows[0].exists) {
+      missing.push('collaborator_status enum type')
+    }
+
+    // --- 9. 检查 song_collaborators 表 ---
+    const collaboratorsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'song_collaborators'
+      )
+    `)
+    if (!collaboratorsExists.rows[0].exists) {
+      missing.push('song_collaborators table')
+    }
+
+    // --- 10. 检查 replay_request_status 枚举 ---
+    const replayStatusExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_type t
+        JOIN pg_namespace n ON t.typnamespace = n.oid
+        WHERE n.nspname = 'public' AND t.typname = 'replay_request_status'
+      )
+    `)
+    if (!replayStatusExists.rows[0].exists) {
+      missing.push('replay_request_status enum type')
+    }
+
+    // --- 11. 检查 song_replay_requests 表 ---
+    const replayRequestsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'song_replay_requests'
+      )
+    `)
+    if (!replayRequestsExists.rows[0].exists) {
+      missing.push('song_replay_requests table')
+    }
+
+    // --- 12. 检查 UserIdentity 表 ---
+    const userIdentityExists = await client.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'UserIdentity'
+      )
+    `)
+    if (!userIdentityExists.rows[0].exists) {
+      missing.push('UserIdentity table')
+    }
+
+    // 判断是否为 legacy 数据库
+    const isLegacy = !hasMigrationRecords
+
+    return { missing, isEmpty: false, isLegacy }
   } catch (error) {
-    logWarning(`数据冲突处理警告: ${error.message}`)
+    logError(`数据库查询失败: ${error.message}`)
+    return { missing: ['数据库查询失败: ' + error.message], isEmpty: false, isLegacy: false }
+  } finally {
+    await client.end()
   }
+}
+
+/**
+ * 自动执行 generate 命令并处理交互提示
+ */
+function runGenerateWithAutoConfirm(env) {
+  return new Promise((resolve) => {
+    const { spawn } = require('child_process')
+    const child = spawn('pnpm', ['run', 'db:generate'], {
+      env,
+      shell: true,
+    })
+    child.stdout.on('data', (data) => {
+      process.stdout.write(data)
+      const str = data.toString()
+      if (str.includes('?') || str.includes('renamed') || str.includes('created')) {
+        try {
+          child.stdin.write('\n')
+        } catch (e) {
+          // 忽略写入错误
+        }
+      }
+    })
+    child.stderr.on('data', (data) => {
+      process.stderr.write(data)
+    })
+    child.on('close', (code) => {
+      resolve(code === 0)
+    })
+    child.on('error', () => {
+      resolve(false)
+    })
+  })
 }
 
 async function safeMigrate() {
   log('🔄 开始安全数据库迁移流程...', 'bright')
-
   try {
-    // 获取项目根目录路径
     const projectRoot = path.resolve(process.cwd(), '..')
     const drizzleConfigPath = path.join(projectRoot, 'drizzle.config.ts')
     const schemaPath = path.join(projectRoot, 'app/drizzle/schema.ts')
     const migrationsPath = path.join(projectRoot, 'app/drizzle/migrations')
 
-    // 1. 确保drizzle配置存在
+    // 1. 确保配置文件存在
     if (!fileExists(drizzleConfigPath)) {
       throw new Error(`drizzle.config.ts 配置文件不存在: ${drizzleConfigPath}`)
     }
-
-    // 2. 检查schema文件
     if (!fileExists(schemaPath)) {
       throw new Error(`app/drizzle/schema.ts 文件不存在: ${schemaPath}`)
     }
-
-    // 3. 创建迁移目录（如果不存在）
     if (!fileExists(migrationsPath)) {
       log('创建迁移目录...', 'cyan')
       fs.mkdirSync(migrationsPath, { recursive: true })
     }
 
-    // 自动执行 generate 命令并处理交互
-    async function runGenerateWithAutoConfirm(env) {
-      return new Promise((resolve) => {
-        const { spawn } = require('child_process')
-        const child = spawn('pnpm', ['run', 'db:generate'], {
-          env,
-          shell: true
-        })
-
-        // 监听输出，透传给用户，并自动响应提示
-        child.stdout.on('data', (data) => {
-          process.stdout.write(data)
-          const str = data.toString()
-          // 如果检测到交互提示（通常包含问号或选项），自动发送回车
-          if (str.includes('?') || str.includes('renamed') || str.includes('created')) {
-            try {
-              // 发送回车以选择默认选项（通常是 Created）
-              child.stdin.write('\n')
-            } catch (e) {
-              // 忽略写入错误
-            }
-          }
-        })
-
-        child.stderr.on('data', (data) => {
-          process.stderr.write(data)
-        })
-
-        child.on('close', (code) => {
-          resolve(code === 0)
-        })
-
-        child.on('error', () => {
-          resolve(false)
-        })
-      })
-    }
-
-    // 4. 生成迁移文件（如果需要）
+    // 2. 生成迁移文件（如果需要）
     log('生成数据库迁移文件...', 'cyan')
-
-    // 设置非交互式环境变量
     const nonInteractiveEnv = {
       ...process.env,
       DRIZZLE_KIT_FORCE: 'true',
       CI: 'true',
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
     }
-
-    // 使用新的自动确认函数
     const generateSuccess = await runGenerateWithAutoConfirm(nonInteractiveEnv)
-
     if (!generateSuccess) {
       logWarning('迁移文件生成可能遇到问题，尝试继续...')
     } else {
       logSuccess('迁移文件生成完成')
     }
 
-    // 5. 预处理数据冲突
-    log('🔍 检查并处理数据冲突...', 'cyan')
-    await handleDataConflicts()
-
-    // 6. 检查是否为全新部署（数据库为空）
-    log('📋 检查数据库状态...', 'cyan')
+    // 3. 直接查询 PG 系统表检查 schema 一致性
+    log('📋 检查数据库 schema 状态...', 'cyan')
+    const { missing, isEmpty, isLegacy } = await checkSchemaConsistency()
 
     // 设置非交互式环境变量
     const env = {
       ...process.env,
       DRIZZLE_KIT_FORCE: 'true',
       CI: 'true',
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
     }
 
-    // 检查数据库是否有任何表（基于 introspect 输出更稳健的判断）
-    let isEmptyDatabase = false
-    try {
-      const checkResult = execSync(
-        'cd .. && pnpm exec drizzle-kit introspect --config=drizzle.config.ts',
-        {
-          stdio: 'pipe',
-          env,
-          encoding: 'utf8'
-        }
-      )
-
-      // 优先解析 "<n> tables" 提示，其次检查是否包含 columns 索引等摘要
-      const tablesMatch = checkResult.match(/(\d+)\s+tables/i)
-      const hasTablesCount = tablesMatch && Number(tablesMatch[1]) > 0
-      const listsTables = /\bcolumns\b|\bindexes\b|\bfks\b/i.test(checkResult)
-
-      // 数据库为空当且仅当：统计为0且没有任何表摘要
-      isEmptyDatabase = !(hasTablesCount || listsTables)
-    } catch (error) {
-      // introspect 失败时不轻易判定为空库，改为保守：视为非空库，走 push 路径
-      logWarning('数据库状态检查失败，按非空库处理以避免重复建表')
-      isEmptyDatabase = false
-    }
-
-    if (isEmptyDatabase) {
+    // --- 情况 1: 空库 → 标准迁移 ---
+    if (isEmpty) {
       log('🆕 检测到全新部署，执行标准迁移...', 'cyan')
-      // 对于全新部署，直接使用migrate避免交互式提示
       if (!safeExec('cd .. && pnpm run db:migrate', { env })) {
         throw new Error('数据库迁移失败')
       }
       logSuccess('全新数据库迁移成功')
-    } else {
-      log('🔄 检测到现有数据库，执行schema同步...', 'cyan')
-      // 对于现有数据库，使用push进行增量更新
-      if (safeExec('cd .. && pnpm exec drizzle-kit push --force --config=drizzle.config.ts', { env })) {
-        logSuccess('数据库schema同步成功')
-      } else {
-        logWarning('schema同步失败，尝试标准迁移...')
+      return
+    }
 
-        // 7. 执行迁移（作为后备）
+    // --- 情况 2: Legacy 库（有表但无迁移记录）且 schema 完整 → 跳过迁移 ---
+    if (isLegacy && missing.length === 0) {
+      log('🔄 检测到 legacy 数据库（通过 push 创建），schema 已完整', 'cyan')
+      log('⏭️  跳过迁移，避免重放历史迁移导致冲突', 'cyan')
+      logSuccess('数据库 schema 验证通过，无需迁移')
+      return
+    }
+
+    // --- 情况 3: Legacy 库且 schema 不完整 → push --force 修复 ---
+    if (isLegacy && missing.length > 0) {
+      logWarning(`检测到 legacy 数据库，schema 不完整，缺少: ${missing.join(', ')}`)
+      log('🔧 尝试使用 push --force 修复 schema...', 'cyan')
+      if (safeExec('cd .. && pnpm exec drizzle-kit push --force --config=drizzle.config.ts', { env })) {
+        logSuccess('schema 修复成功')
+      } else {
+        logError('push --force 修复失败')
+        throw new Error('legacy 数据库 schema 修复失败，请手动检查')
+      }
+      return
+    }
+
+    // --- 情况 4: 有迁移记录的库 → 标准增量迁移 ---
+    if (missing.length === 0) {
+      log('📋 数据库 schema 完整，执行增量迁移...', 'cyan')
+      if (!safeExec('cd .. && pnpm run db:migrate', { env })) {
+        throw new Error('数据库迁移失败')
+      }
+      logSuccess('数据库增量迁移成功')
+    } else {
+      // 有迁移记录但 schema 不完整（异常状态）
+      logWarning(`数据库有迁移记录但 schema 不完整，缺少: ${missing.join(', ')}`)
+      log('🔧 尝试使用 push --force 修复...', 'cyan')
+      if (safeExec('cd .. && pnpm exec drizzle-kit push --force --config=drizzle.config.ts', { env })) {
+        logSuccess('schema 修复成功')
+      } else {
+        logWarning('push --force 失败，尝试标准迁移...')
         if (!safeExec('cd .. && pnpm run db:migrate', { env })) {
           throw new Error('数据库迁移完全失败')
         }
@@ -225,7 +438,6 @@ async function safeMigrate() {
       }
     }
 
-    // 8. 验证迁移结果
     log('✅ 数据库迁移流程完成！', 'green')
   } catch (error) {
     logError(`迁移失败: ${error.message}`)
