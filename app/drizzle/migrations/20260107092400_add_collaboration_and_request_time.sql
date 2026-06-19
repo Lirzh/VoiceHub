@@ -1,5 +1,9 @@
-CREATE TYPE "public"."collaborator_status" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');--> statement-breakpoint
-CREATE TABLE "collaboration_logs"
+DO $$ BEGIN
+  CREATE TYPE "public"."collaborator_status" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "collaboration_logs"
 (
     "id"              uuid PRIMARY KEY         DEFAULT gen_random_uuid() NOT NULL,
     "collaborator_id" uuid                                               NOT NULL,
@@ -9,7 +13,7 @@ CREATE TABLE "collaboration_logs"
     "created_at"      timestamp with time zone DEFAULT now()             NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "RequestTime"
+CREATE TABLE IF NOT EXISTS "RequestTime"
 (
     "id"          serial PRIMARY KEY         NOT NULL,
     "createdAt"   timestamp(6) DEFAULT now() NOT NULL,
@@ -24,7 +28,7 @@ CREATE TABLE "RequestTime"
     "past"        boolean      DEFAULT false NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "song_collaborators"
+CREATE TABLE IF NOT EXISTS "song_collaborators"
 (
     "id"         uuid PRIMARY KEY         DEFAULT gen_random_uuid() NOT NULL,
     "song_id"    integer                                            NOT NULL,
@@ -34,9 +38,6 @@ CREATE TABLE "song_collaborators"
     "updated_at" timestamp with time zone DEFAULT now()             NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "Song"
-    ADD COLUMN "hitRequestId" integer;--> statement-breakpoint
-ALTER TABLE "SystemSettings"
-    ADD COLUMN "enableRequestTimeLimitation" boolean DEFAULT false NOT NULL;--> statement-breakpoint
-ALTER TABLE "SystemSettings"
-    ADD COLUMN "forceBlockAllRequests" boolean DEFAULT false NOT NULL;
+ALTER TABLE "Song" ADD COLUMN IF NOT EXISTS "hitRequestId" integer;--> statement-breakpoint
+ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "enableRequestTimeLimitation" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "forceBlockAllRequests" boolean DEFAULT false NOT NULL;

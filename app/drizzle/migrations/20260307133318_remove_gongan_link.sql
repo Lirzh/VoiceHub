@@ -1,1 +1,1 @@
-ALTER TABLE "SystemSettings" DROP COLUMN "gonganLink";
+ALTER TABLE "SystemSettings" DROP COLUMN IF EXISTS "gonganLink";

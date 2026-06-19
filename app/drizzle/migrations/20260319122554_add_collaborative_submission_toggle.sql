@@ -1,1 +1,1 @@
-ALTER TABLE "SystemSettings" ADD COLUMN "enableCollaborativeSubmission" boolean DEFAULT true NOT NULL;
+ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "enableCollaborativeSubmission" boolean DEFAULT true NOT NULL;

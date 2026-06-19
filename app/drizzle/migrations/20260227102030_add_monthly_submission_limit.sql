@@ -1,1 +1,1 @@
-ALTER TABLE "SystemSettings" ADD COLUMN "monthlySubmissionLimit" integer;
+ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "monthlySubmissionLimit" integer;

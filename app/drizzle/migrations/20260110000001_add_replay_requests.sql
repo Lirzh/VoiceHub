@@ -6,5 +6,5 @@ CREATE TABLE IF NOT EXISTS "song_replay_requests" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "song_replay_requests_song_id_user_id_unique" UNIQUE("song_id","user_id")
 );
-
-ALTER TABLE "SystemSettings" ADD COLUMN "enableReplayRequests" boolean DEFAULT false NOT NULL;
+--> statement-breakpoint
+ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "enableReplayRequests" boolean DEFAULT false NOT NULL;

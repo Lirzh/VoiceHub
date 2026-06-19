@@ -1,1 +1,1 @@
-ALTER TABLE "SystemSettings" ADD COLUMN "allowOAuthRegistration" boolean DEFAULT false NOT NULL;
+ALTER TABLE "SystemSettings" ADD COLUMN IF NOT EXISTS "allowOAuthRegistration" boolean DEFAULT false NOT NULL;

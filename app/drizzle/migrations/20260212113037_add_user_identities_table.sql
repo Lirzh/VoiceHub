@@ -1,4 +1,4 @@
-CREATE TABLE "UserIdentity" (
+CREATE TABLE IF NOT EXISTS "UserIdentity" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"userId" integer NOT NULL,
 	"provider" text NOT NULL,
@@ -8,4 +8,8 @@ CREATE TABLE "UserIdentity" (
 	CONSTRAINT "UserIdentity_provider_providerUserId_unique" UNIQUE("provider","providerUserId")
 );
 --> statement-breakpoint
-ALTER TABLE "UserIdentity" ADD CONSTRAINT "UserIdentity_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;
+DO $$ BEGIN
+  ALTER TABLE "UserIdentity" ADD CONSTRAINT "UserIdentity_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
