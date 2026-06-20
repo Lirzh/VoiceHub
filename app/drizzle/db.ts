@@ -72,12 +72,11 @@ const escIdent = (s: string) => `"${s.replace(/"/g, '""')}"`;
 // ──────────────────────────────────────────────────────────────────────
 
 type ColumnDef = {
-  pgType: string;       // PostgreSQL 列类型
+  pgType: string;       // PostgreSQL 列类型（枚举列的 pgType 即枚举名）
   notNull: boolean;     // 是否 NOT NULL
   isPrimary: boolean;   // 是否主键列
   default: string | null; // DEFAULT 子句（如 "now()" / "'USER'"），无则 null
   isSerial: boolean;    // serial 自带隐式 nextval，不重复声明
-  isEnum: boolean;      // 是否为用户自定义枚举类型
 };
 
 // Drizzle 类型名 → PostgreSQL 类型名（大部分一致，少量规范化）
@@ -136,7 +135,7 @@ function defaultToSql(d: unknown): string | null {
   return null;
 }
 
-function getColumnDef(col: unknown, enumNames: Set<string>): ColumnDef {
+function getColumnDef(col: unknown): ColumnDef {
   const c = col as { getSQLType?: () => string; primary?: boolean; notNull?: boolean; default?: unknown };
   const rawType = typeof c.getSQLType === 'function' ? c.getSQLType() : 'text';
   const pgType = TYPE_MAP[rawType] ?? (typeof rawType === 'string' && rawType.startsWith('character varying') ? rawType.replace('character varying', 'varchar') : rawType);
@@ -144,8 +143,7 @@ function getColumnDef(col: unknown, enumNames: Set<string>): ColumnDef {
   const isPrimary = !!c.primary;
   const notNull = !!c.notNull || isPrimary;
   const defaultStr = isSerial ? null : defaultToSql(c.default);
-  const isEnum = enumNames.has(pgType);
-  return { pgType, notNull, isPrimary, default: defaultStr, isSerial, isEnum };
+  return { pgType, notNull, isPrimary, default: defaultStr, isSerial };
 }
 
 // 从 schema.ts 中扫描表和枚举
@@ -166,8 +164,6 @@ function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string,
       enums.set(v.enumName, { name: v.enumName, values: v.values as string[] });
     }
   }
-  const enumNames = new Set(enums.keys());
-
   // ── 第 2 轮：处理表 ──────────────────────────────────────────
   const skipKeys = new Set(['$inferSelect', '$inferInsert']);
   for (const [, val] of entries) {
@@ -186,7 +182,7 @@ function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string,
       if (skipKeys.has(key) || key.startsWith('$')) continue;
       const c = col as { getSQLType?: unknown; name?: unknown; fieldName?: unknown };
       if (typeof c.getSQLType !== 'function') continue;
-      const def = getColumnDef(col, enumNames);
+      const def = getColumnDef(col);
       const colName: string = typeof c.name === 'string' ? c.name : (typeof c.fieldName === 'string' ? c.fieldName : key);
       cols.push({ colName, def });
     }
@@ -271,9 +267,8 @@ function findEnumCI(name: string): EnumInfo | undefined {
 }
 
 function targetFromError(err: unknown): SchemaTarget | null {
-  const e = err as { code?: string; message?: string };
-  const code = e?.code ?? '';
-  const msg = e?.message ?? '';
+  const code = (err as { code?: string })?.code ?? '';
+  const msg = (err as { message?: string })?.message ?? '';
 
   // relation "User" does not exist
   const tableMatch = msg.match(/relation\s+"([^"]+)"/i);
@@ -325,9 +320,11 @@ async function objectMissing(target: SchemaTarget): Promise<boolean> {
       `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${escString(target.table)}' AND column_name = '${escString(target.col)}'`
     );
     return (rows as unknown as { length: number }).length === 0;
-  } catch {
-    // 数据库不可用，留给调用方处理原错误
-    return false;
+  } catch (e) {
+    // 数据库元数据查询失败（如连接断开）：不认为是"对象已存在"，让调用方收到原始错误
+    const msg = (e as { message?: string })?.message ?? String(e);
+    console.warn(`[db] ⚠️ objectMissing 查询失败: ${msg}`);
+    throw e;
   }
 }
 
