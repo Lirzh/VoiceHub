@@ -235,12 +235,12 @@ echo -e "${YELLOW}[5/7] 重新部署项目...${NC}"
 echo -e "执行: pnpm run deploy"
 echo ""
 
-# 尝试执行 pnpm run deploy (包含数据库迁移、管理员创建、构建)
+# 尝试执行 pnpm run deploy (包含管理员创建、构建；schema 在运行时按需自动创建)
 if pnpm run deploy; then
     echo -e "${GREEN}✓ 部署更新脚本执行成功${NC}"
 else
     echo -e "${RED}部署更新脚本执行失败，尝试仅执行构建...${NC}"
-    echo -e "${YELLOW}注意: 数据库迁移可能未完成，请检查日志${NC}"
+    echo -e "${YELLOW}注意: schema 在首次访问数据库时会自动创建${NC}"
     pnpm run build
 fi
 

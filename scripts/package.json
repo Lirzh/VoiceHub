@@ -6,10 +6,7 @@
   "type": "module",
   "scripts": {
     "create-admin": "pnpm exec tsx create-admin.js",
-    "clear-db": "pnpm exec tsx clear-database.js",
-    "safe-migrate": "pnpm exec tsx safe-migrate.js",
-    "db:generate": "cd .. && pnpm exec drizzle-kit generate --config=drizzle.config.ts",
-    "db:migrate": "cd .. && pnpm exec drizzle-kit migrate --config=drizzle.config.ts"
+    "clear-db": "pnpm exec tsx clear-database.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

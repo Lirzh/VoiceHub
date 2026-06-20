@@ -231,12 +231,12 @@ check_and_update_image() {
 
 # ==================== 交互式初始化函数（仅重新部署使用） ====================
 run_interactive_init() {
-    echo -e "\n${BLUE}=== 进入交互式初始化环境 ===${NC}"
-    echo -e "${YELLOW}提示：进入容器后执行可能需要按回车${NC}"
+    echo -e "\n${BLUE}=== 进入容器创建管理员账户 ===${NC}"
+    echo -e "${YELLOW}提示：schema 在首次访问数据库时会自动补齐${NC}"
 
     cd "${COMPOSE_DIR}"
-    # 临时启动容器进入bash，退出自动删除
-    ${DOCKER_COMPOSE_CMD} run --rm voicehub pnpm run init-help
+    # 临时启动容器创建管理员，退出自动删除
+    ${DOCKER_COMPOSE_CMD} run --rm voicehub pnpm run create-admin
 }
 
 # ==================== 1.重新部署（清空数据卷 + 执行初始化） ====================

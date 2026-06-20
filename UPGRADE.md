@@ -118,26 +118,22 @@ git pull origin main
 pnpm install --frozen-lockfile
 ```
 
-### 3.4 数据库迁移
+### 3.4 数据库 schema（自动处理，无需手动执行）
 
-**重要**：新版本通常包含数据库结构变更，必须执行迁移。
+新版本可能包含数据库结构变更。`app/drizzle/db.ts` 会在应用首次访问数据库时，按幂等方式自动补齐缺失的表与列；**升级过程中不需要显式执行 `db:migrate` / `db:push` / `db:generate`**。
+
+以下命令仅作为手动诊断与对比工具保留（可选）：
 
 ```bash
-# 方式 1：使用自动同步脚本（推荐）
-node scripts/db-sync.js
+# 生成迁移文件存档
+pnpm run db:generate
 
-# 方式 2：手动执行迁移
+# 手动执行迁移（可选）
 pnpm run db:migrate
 
-# 方式 3：如果迁移失败，且确信可以覆盖（仅开发环境）
+# 强制同步（仅开发环境，可选）
 # pnpm run db:push
 ```
-
-**迁移说明**：
-
-- `db-sync.js` 脚本会自动检测数据库状态并选择合适的迁移方式
-- 空数据库会执行完整迁移
-- 已有数据的数据库会使用 push 方式同步结构
 
 ### 3.5 重新构建应用
 

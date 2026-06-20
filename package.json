@@ -17,10 +17,8 @@
     "db:studio": "pnpm exec drizzle-kit studio",
     "db:drop": "pnpm exec drizzle-kit drop",
     "db:check": "pnpm exec drizzle-kit check",
-    "setup": "pnpm install --frozen-lockfile && pnpm run db:generate",
     "create-admin": "pnpm exec tsx scripts/create-admin.js",
     "clear-db": "pnpm exec tsx scripts/clear-database.js",
-    "safe-migrate": "pnpm exec tsx scripts/safe-migrate.js",
     "deploy": "node scripts/deploy.js",
     "vercel-build": "node scripts/deploy.js",
     "netlify-build": "node scripts/netlify-build.js",
@@ -28,8 +26,7 @@
     "postinstall": "nuxt prepare && node scripts/postinstall.js",
     "lint": "nuxt prepare && eslint .",
     "lint:fix": "nuxt prepare && eslint . --fix",
-    "format": "prettier --write .",
-    "init-help": "pnpm run db:push && pnpm run create-admin"
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@applemusic-like-lyrics/lyric": "^0.3.0",

@@ -321,25 +321,7 @@ JWT_SECRET="your-very-secure-jwt-secret-key"
 NODE_ENV=development
 ```
 
-4. 初始化数据库
-
-首次运行需要初始化数据库结构：
-
-```bash
-# 生成数据库迁移文件
-pnpm run db:generate
-
-# 执行数据库迁移
-pnpm run db:migrate
-```
-
-或使用一键部署命令（推荐）：
-
-```bash
-pnpm run deploy
-```
-
-5. 创建管理员账户
+4. 创建管理员账户
 
 系统会在首次部署时自动创建管理员账户。如需手动创建：
 
@@ -352,7 +334,9 @@ pnpm run create-admin
 - 用户名：admin
 - 密码：admin123
 
-6. 启动开发服务器
+> 数据库 schema 不需要提前初始化。在首次访问数据库时，`app/drizzle/db.ts` 会按幂等方式自动创建缺失的表与列。
+
+5. 启动开发服务器
 
 ```bash
 pnpm run dev
@@ -374,19 +358,24 @@ pnpm run build
 pnpm run start
 ```
 
-### 数据库管理命令
+或使用一键部署命令（推荐）：
 
 ```bash
-# 新的数据库初始化
-pnpm run init-help
+pnpm run deploy
+```
 
+### 数据库管理命令
+
+以下命令保留为手动诊断与对比工具。在正常的部署流程中不需要执行它们，因为 schema 由 `app/drizzle/db.ts` 在首次访问数据库时自动补齐。
+
+```bash
 # 生成迁移文件
 pnpm run db:generate
 
-# 执行数据库迁移
+# 执行数据库迁移（可选，用于手工对齐 schema）
 pnpm run db:migrate
 
-# 推送模式变更到数据库（开发环境）
+# 推送模式变更到数据库（开发环境，可选）
 pnpm run db:push
 
 # 启动 Drizzle Studio（数据库管理界面）
@@ -394,9 +383,6 @@ pnpm run db:studio
 
 # 清空数据库并重新创建管理员
 pnpm run clear-db
-
-# 安全迁移（带备份）
-pnpm run safe-migrate
 ```
 
 ### 升级与迁移
@@ -1190,13 +1176,14 @@ pnpm run deploy
 
 1. 检查环境变量配置
 2. 安装依赖
-3. 执行数据库迁移
-4. 创建默认管理员账户
-5. 构建应用
+3. 创建默认管理员账户
+4. 构建应用
 
-#### 手动初始化
+> schema 不需要提前迁移。在应用首次访问数据库时，`app/drizzle/db.ts` 会按幂等方式自动补齐缺失的表与列。
 
-如需手动管理数据库：
+#### 手动工具（可选）
+
+以下命令仅保留作为手动诊断与对比工具，通常不需要在部署流程中显式调用：
 
 1. 生成迁移文件
 
@@ -1204,7 +1191,7 @@ pnpm run deploy
 pnpm run db:generate
 ```
 
-2. 执行数据库迁移
+2. 手动执行迁移
 
 ```bash
 pnpm run db:migrate
@@ -1293,10 +1280,12 @@ psql -h localhost -U username -d database_name < backup.sql
 如需修改数据库模型：
 
 1. 编辑`app/drizzle/schema.ts`文件中的表结构定义
-2. 生成新的迁移文件：`pnpm run db:generate`
-3. 应用迁移到数据库：`pnpm run db:migrate`
+2. （可选）生成迁移文件存档：`pnpm run db:generate`
+3. （可选）手动应用迁移：`pnpm run db:migrate`
 4. 确保同时更新 `types/index.ts` 中的TypeScript类型定义
-5. 使用Drizzle Studio查看数据库：`pnpm run db:studio`
+5. （可选）使用Drizzle Studio查看数据库：`pnpm run db:studio`
+
+> 说明：`app/drizzle/db.ts` 会在应用首次访问数据库时，按幂等方式自动补齐缺失的表与列，因此在常规的开发与部署流程中并不需要显式执行 `db:generate` / `db:migrate` / `db:push`。上述命令仅作为手动对比与诊断的工具。
 
 ### OAuth 平台扩展指南
 
@@ -1781,9 +1770,9 @@ const transformMusicApiResponse = (response: any): any[] => {
 
 如果您希望为 VoiceHub 贡献代码，请注意以下几点，特别是涉及数据库变更时：
 
-1. **数据库迁移文件**：
-   - 任何对 `schema.ts` 的更改都**必须**伴随相应的迁移文件。
-   - 迁移文件需要使用有意义的命名。请通过命令 `pnpm exec drizzle-kit generate --name=your_meaningful_name` 生成。
+1. **数据库 schema 变更**：
+   - 对 `schema.ts` 的表结构变更，运行时会由 `app/drizzle/db.ts` 在首次访问数据库时按幂等方式自动补齐缺失的表与列。
+   - 如需生成迁移文件存档或手动对齐，可使用 `pnpm exec drizzle-kit generate --name=your_meaningful_name`。
 2. **备份与恢复支持**：
    - 当向系统设置（`systemSettings`）或其它关键表添加新字段时，**必须**同步更新数据备份和恢复的相关端点。
    - 需要检查并更新的文件：
