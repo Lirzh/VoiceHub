@@ -64,20 +64,33 @@ const getDatabaseConfig = () => {
 const rawClient = postgres(connectionString, getDatabaseConfig());
 
 // ─── lazy schema 自动修复（mkdir -p 风格）─────────────────────────────
-// 数据库查询失败时（缺表/缺列/缺枚举），当场调用 drizzle-kit push
-// 对齐 schema，然后把失败的查询重试一次。进程生命周期内最多同步一次。
+// 任何一次数据库查询，若遇到 schema 缺失类错误（缺表 / 缺列 / 缺枚举），
+// 当场调用 drizzle-kit push 补齐，然后把失败的查询**重试一次**。
 //
 // PostgreSQL 错误码（本模块关心的）：
 //   42P01  relation does not exist （缺表）
 //   42703  column does not exist    （缺列）
 //   42704  type does not exist      （缺枚举类型）
+//
+// 关于默认值（DEFAULT / NOT NULL）：
+//   drizzle-kit push 在补齐列时自动生成：
+//     ALTER TABLE "Table" ADD COLUMN "col" TIMESTAMP DEFAULT now() NOT NULL
+//   并用该默认值 UPDATE 已存在的行。因此用户代码中的
+//   .defaultNow() / .default('USER') / .default(false) / .default(true)
+//   在"缺列 → 补齐 → 重试"的链路里是安全的，无需手写 SQL。
+//
+// 幂等性：drizzle-kit push 本身幂等 —— schema 已对齐时什么都不做，
+// 因此重复触发不会有副作用。为避免性能浪费，修复完成后的 60 秒内不再
+// 重复调用 push（冷却期）。
 // ──────────────────────────────────────────────────────────────────────
 
-let schemaSyncedOK = false;
 let schemaSyncInProgress: Promise<void> | null = null;
+let schemaSyncLastDoneAt = 0;
+const SCHEMA_SYNC_COOLDOWN_MS = 60 * 1000; // 60 秒
 
-async function syncSchemaOnce(): Promise<void> {
-  if (schemaSyncedOK) return;
+async function syncSchemaNow(): Promise<void> {
+  const now = Date.now();
+  if (now - schemaSyncLastDoneAt < SCHEMA_SYNC_COOLDOWN_MS) return;
   if (schemaSyncInProgress) return schemaSyncInProgress;
 
   schemaSyncInProgress = (async () => {
@@ -100,10 +113,9 @@ async function syncSchemaOnce(): Promise<void> {
         }
       );
       console.log('✅ schema 自动修复完成');
-      schemaSyncedOK = true;
+      schemaSyncLastDoneAt = Date.now();
     } catch (e: any) {
-      console.warn('⚠️ schema 自动修复失败，将在下一次查询时再次尝试：', e?.message ?? e);
-      // 失败后不设置 schemaSyncedOK，允许下一次查询再次尝试
+      console.warn('⚠️ schema 自动修复失败（下一次遇到 schema 错误将再次尝试）：', e?.message ?? e);
     } finally {
       schemaSyncInProgress = null;
     }
@@ -115,8 +127,8 @@ async function syncSchemaOnce(): Promise<void> {
 async function tryFixSchema(err: any): Promise<boolean> {
   const code: string | undefined = err?.code;
   if (!['42P01', '42703', '42704'].includes(code || '')) return false;
-  await syncSchemaOnce();
-  return schemaSyncedOK;
+  await syncSchemaNow();
+  return Date.now() - schemaSyncLastDoneAt < SCHEMA_SYNC_COOLDOWN_MS; // 真的完成过才算修复成功
 }
 
 // 包装 Promise：await 时捕获 schema 错误并重试
