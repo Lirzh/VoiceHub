@@ -58,6 +58,25 @@ const BUILTIN_TYPES = new Set([
   'character varying', 'varchar', 'character', 'char'
 ]);
 
+// 判断是否为 PG 内置类型（包括带长度/精度的变体）
+// 例：timestamp → yes，timestamp with time zone → yes，timestamp(6) → yes，
+// varchar(100) → yes，user_status → no
+function isBuiltinType(type: string): boolean {
+  if (BUILTIN_TYPES.has(type)) return true;
+  // 检查是否以内置类型名开头（后面可能跟参数，如 varchar(100), timestamp(6)）
+  const lower = type.toLowerCase();
+  for (const builtin of BUILTIN_TYPES) {
+    if (lower.startsWith(builtin)) {
+      // 必须是完全匹配或后跟空格/括号（避免把 varchar2 等意外匹配为 varchar）
+      const rest = lower.slice(builtin.length);
+      if (rest.length === 0 || rest.startsWith(' ') || rest.startsWith('(')) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // defaultToSql: drizzle 列的 default 对象 → SQL 字面量/表达式
 function defaultToSql(d: unknown): string | null {
   if (d === undefined || d === null) return null;
@@ -194,7 +213,7 @@ function findEnumCI(name: string): EnumInfo | undefined {
 // 以兼容老版本 PG 以及部分 PG 兼容数据库。
 
 function colTypeSql(col: ColumnDef): string {
-  return BUILTIN_TYPES.has(col.pgType) ? col.pgType : escI(col.pgType);
+  return isBuiltinType(col.pgType) ? col.pgType : escI(col.pgType);
 }
 
 function buildCreateTableSql(info: TableInfo): string {
