@@ -274,7 +274,11 @@ function targetFromError(err: unknown): SchemaTarget | null {
   const tableMatch = msg.match(/relation\s+"([^"]+)"/i);
   if (code === '42P01' && tableMatch) {
     const info = findTableCI(tableMatch[1]);
-    if (info) return { kind: 'table', name: info.tableName, info };
+    if (info) {
+      log(`🔍 解析 schema 错误 → 缺表 "${tableMatch[1]}"，映射到 "${info.tableName}"`);
+      return { kind: 'table', name: info.tableName, info };
+    }
+    warn(`⚠️ 42P01 但 schema.ts 中找不到表 "${tableMatch[1]}"`);
   }
 
   // column "emailVerified" of relation "User" does not exist
@@ -283,7 +287,11 @@ function targetFromError(err: unknown): SchemaTarget | null {
     const tbl = findTableCI(colMatch[2]);
     if (tbl) {
       const col = findColumnCI(tbl, colMatch[1]);
-      if (col) return { kind: 'column', table: tbl.tableName, col: col.colName, info: tbl, colDef: col.def };
+      if (col) {
+        log(`🔍 解析 schema 错误 → 缺列 "${colMatch[1]}"（表 "${tbl.tableName}"），映射到 "${col.colName}"`);
+        return { kind: 'column', table: tbl.tableName, col: col.colName, info: tbl, colDef: col.def };
+      }
+      warn(`⚠️ 42703 但 schema.ts 表 "${tbl.tableName}" 中找不到列 "${colMatch[1]}"`);
     }
   }
 
@@ -291,7 +299,11 @@ function targetFromError(err: unknown): SchemaTarget | null {
   const typeMatch = msg.match(/type\s+"([^"]+)"/i);
   if (code === '42704' && typeMatch) {
     const info = findEnumCI(typeMatch[1]);
-    if (info) return { kind: 'type', name: info.name, info };
+    if (info) {
+      log(`🔍 解析 schema 错误 → 缺枚举类型 "${typeMatch[1]}"，映射到 "${info.name}"`);
+      return { kind: 'type', name: info.name, info };
+    }
+    warn(`⚠️ 42704 但 schema.ts 中找不到枚举类型 "${typeMatch[1]}"`);
   }
 
   return null;
@@ -300,6 +312,8 @@ function targetFromError(err: unknown): SchemaTarget | null {
 // 真正查询数据库，确认对象是否真的不存在。
 // 完全基于真实数据库状态，不依赖任何延时/冷却假设。
 async function objectMissing(target: SchemaTarget): Promise<boolean> {
+  const kind = target.kind === 'type' ? `枚举 ${target.name}` : target.kind === 'table' ? `表 ${target.name}` : `列 ${target.table}.${target.col}`;
+  log(`🔎 检查数据库中是否存在: ${kind}`);
   try {
     if (target.kind === 'type') {
       // SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid
@@ -313,17 +327,21 @@ async function objectMissing(target: SchemaTarget): Promise<boolean> {
       const rows = await rawClient.unsafe(
         `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = '${escString(target.name)}'`
       );
-      return (rows as unknown as { length: number }).length === 0;
+      const missing = (rows as unknown as { length: number }).length === 0;
+      log(`🔎 "${target.name}" 在 information_schema.tables 中 ${missing ? '不存在' : '已存在'}`);
+      return missing;
     }
     // column
     const rows = await rawClient.unsafe(
       `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${escString(target.table)}' AND column_name = '${escString(target.col)}'`
     );
-    return (rows as unknown as { length: number }).length === 0;
+    const colMissing = (rows as unknown as { length: number }).length === 0;
+    log(`🔎 "${target.table}.${target.col}" 在 information_schema.columns 中 ${colMissing ? '不存在' : '已存在'}`);
+    return colMissing;
   } catch (e) {
     // 数据库元数据查询失败（如连接断开）：不认为是"对象已存在"，让调用方收到原始错误
     const msg = (e as { message?: string })?.message ?? String(e);
-    console.warn(`[db] ⚠️ objectMissing 查询失败: ${msg}`);
+    warn(`⚠️ objectMissing 查询失败（DB 不可用）: ${msg}`);
     throw e;
   }
 }
@@ -354,27 +372,33 @@ async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
     try {
       // 真正查询数据库确认对象是否缺失
       const missing = await objectMissing(target);
-      if (!missing) return true; // 对象已存在（瞬时错误），让调用方重试
+      if (!missing) {
+        log(`✅ 对象 "${key}" 已存在（瞬时错误），让调用方重试`);
+        return true; // 对象已存在（瞬时错误），让调用方重试
+      }
 
       if (target.kind === 'type') {
-        console.log(`[db] 创建缺失枚举类型: ${target.name}`);
-        await rawClient.unsafe(buildCreateTypeSql(target.info));
-        console.log(`[db] ✅ 枚举 ${target.name} 已创建`);
+        const sql = buildCreateTypeSql(target.info);
+        log(`📦 执行 DDL: ${sql}`);
+        await rawClient.unsafe(sql);
+        log(`✅ 枚举 ${target.name} 已创建`);
       }
       if (target.kind === 'table') {
-        console.log(`[db] 创建缺失表: ${target.name}`);
-        await rawClient.unsafe(buildCreateTableSql(target.info));
-        console.log(`[db] ✅ 表 ${target.name} 已创建`);
+        const sql = buildCreateTableSql(target.info);
+        log(`📦 执行 DDL: ${sql}`);
+        await rawClient.unsafe(sql);
+        log(`✅ 表 ${target.name} 已创建`);
       }
       if (target.kind === 'column') {
-        console.log(`[db] 为表 ${target.table} 添加缺失列: ${target.col}`);
-        await rawClient.unsafe(buildAlterTableSql(target.table, target.col, target.colDef));
-        console.log(`[db] ✅ 列 ${target.col} 已添加`);
+        const sql = buildAlterTableSql(target.table, target.col, target.colDef);
+        log(`📦 执行 DDL: ${sql}`);
+        await rawClient.unsafe(sql);
+        log(`✅ 列 ${target.col} 已添加`);
       }
       return true;
     } catch (e) {
       const msg = (e as { message?: string })?.message ?? String(e);
-      console.warn(`[db] ⚠️ schema 修复失败（${key}）:`, msg);
+      warn(`⚠️ schema 修复失败（${key}）: ${msg}`);
       return false;
     } finally {
       runningFixes.delete(key);
@@ -401,7 +425,11 @@ function wrapWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
       if (!SCHEMA_ERROR_CODES.has(code)) throw err;
 
       const fixed = await ensureSchemaFixedFor(err);
-      if (fixed) return await retry();
+      if (fixed) {
+        log(`🔁 重试查询（schema 已修复）`);
+        return await retry();
+      }
+      log(`⚠️ schema 修复失败，抛出原错误`);
       throw err;
     }
   })();
@@ -427,6 +455,11 @@ const client = new Proxy(rawClient as any, {
   }
 }) as ReturnType<typeof postgres>;
 
+// ── Dev 模式日志 ─────────────────────────────────────────────────────────
+const DEV = process.env.NODE_ENV === 'development';
+const log = (...args: unknown[]) => { if (DEV) console.log('[db]', ...args); };
+const warn = (...args: unknown[]) => { if (DEV) console.warn('[db]', ...args); };
+
 // ── 对外导出 ──────────────────────────────────────────────────────────────
 
 export const db = drizzle(client, { schema });
@@ -437,10 +470,10 @@ export { eq, ne, and, gt, gte, lt, lte, count, exists, desc, asc, or, sql };
 export async function testConnection(): Promise<boolean> {
   try {
     await client`SELECT 1`;
-    console.log('[db] ✅ 连接正常');
+    log('✅ 连接正常');
     return true;
   } catch (error) {
-    console.error('[db] ❌ 连接失败:', error);
+    warn(`❌ 连接失败: ${error}`);
     return false;
   }
 }
@@ -459,10 +492,10 @@ export async function closeConnection(): Promise<void> {
   try {
     if (!client.ended) {
       await client.end({ timeout: 10 });
-      console.log('[db] ✅ 连接已优雅关闭');
+      log('✅ 连接已优雅关闭');
     }
   } catch (error) {
-    console.error('[db] ❌ 关闭连接失败:', error);
+    warn(`❌ 关闭连接失败: ${error}`);
   }
 }
 
