@@ -120,28 +120,33 @@ function sqlExprToString(expr: any): string | null {
 
 function resolveDefault(col: any): string | null {
   if (!col) return null;
-  if (col.hasDefault === false && !col.default) return null;
+  // Drizzle 列对象未声明默认值 → 不生成 DEFAULT 子句
+  if (col.hasDefault === false && col.default === undefined) return null;
 
-  // 优先使用 col.default（Drizzle 暴露的默认值表达式）
   const d = col.default;
-  if (d !== undefined && d !== null) {
-    // 如果是函数，调用一次获取值（.defaultNow() / .defaultRandom() 传的是函数）
-    let val: any = d;
-    if (typeof d === 'function' && d.length === 0) {
-      try { val = d(); } catch { /* ignore */ }
-    }
-    const exprStr = sqlExprToString(val);
+
+  // --- 1) SQL 表达式对象（.defaultNow() → sql`now()`, .defaultRandom() → sql`gen_random_uuid()`）
+  if (d && typeof d === 'object' && !Array.isArray(d)) {
+    const exprStr = sqlExprToString(d);
     if (exprStr) return exprStr;
-    // val 是 SQL 对象但上面没识别到，再做一次保险
-    if (val && typeof val === 'object') {
-      const s = String(val);
-      if (s !== '[object Object]') return s;
-    }
+    // 兜底：对象 toString
+    const s = d.toString?.();
+    if (s && s !== '[object Object]') return s;
   }
 
-  // 退而求其次：通过类型 + 列名推断（serial / uuid 主键有隐式默认值）
+  // --- 2) 字面量（字符串 / 布尔 / 数字）
+  if (typeof d === 'string') return `'${d.replace(/'/g, "''")}'`;
+  if (typeof d === 'boolean' || typeof d === 'number') return String(d);
+
+  // --- 3) 函数：.default(() => 'x') / .default(Math.random) 等
+  //   → 应用层动态默认值，不在数据库层声明 DEFAULT，留给 Drizzle INSERT 时计算
+  //   → 返回 null，后续生成 SQL 时不加 DEFAULT 子句
+  if (typeof d === 'function') return null;
+
+  // --- 4) serial 主键有隐式 nextval 默认值
   const type = typeof col.getSQLType === 'function' ? col.getSQLType() : '';
-  if (type === 'serial') return "nextval('" + (col.name ?? '') + "_seq'::regclass)";
+  if (type === 'serial') return `nextval('"${col.name ?? ''}_seq"'::regclass)`;
+
   return null;
 }
 
