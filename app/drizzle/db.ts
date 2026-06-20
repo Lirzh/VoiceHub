@@ -511,9 +511,11 @@ const client = new Proxy(rawClient as any, {
 }) as ReturnType<typeof postgres>;
 
 // ── Dev 模式日志 ─────────────────────────────────────────────────────────
+// log：仅开发模式，非错误流程信息（解析、存在性检查、DDL 执行）
+// warn：始终输出，警告类信息（schema 找不到、DB 不可用、修复失败）
 const DEV = process.env.NODE_ENV === 'development';
 const log = (...args: unknown[]) => { if (DEV) console.log('[db]', ...args); };
-const warn = (...args: unknown[]) => { if (DEV) console.warn('[db]', ...args); };
+const warn = (...args: unknown[]) => { console.warn('[db]', ...args); };
 
 // ── 对外导出 ──────────────────────────────────────────────────────────────
 
