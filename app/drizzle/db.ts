@@ -463,7 +463,7 @@ function wrapQueryWithSchemaFix(query: any, retry: () => any): any {
         const fixed = await ensureSchemaFixedFor(err);
         if (fixed) {
           log(`🔁 重试查询（schema 已修复）`);
-          return retry(); // 返回新的 Query，由上层继续 await
+          return await retry(); // 返回新的 Query，由上层继续 await；失败则 throw
         }
         log(`⚠️ schema 修复失败，抛出原错误`);
         throw err;
