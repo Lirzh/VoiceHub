@@ -368,6 +368,8 @@ function targetFromError(err: unknown): SchemaTarget | null {
 }
 
 // 真正查询数据库，确认对象是否真的不存在。
+// 注意：这里不使用 try/catch 吞掉 DB 查询错误——连接断开等错误
+// 应该透明向上传播，不应被误解释为"修复失败（return false）"。
 async function objectMissing(target: SchemaTarget): Promise<boolean> {
   const kindLabel = target.kind === 'type' ? `枚举 ${target.name}`
     : target.kind === 'table' ? `表 ${target.name}`
