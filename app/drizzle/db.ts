@@ -8,7 +8,7 @@
 //     42704  type does not exist       缺枚举类型
 //   当场：
 //     1) 从错误消息解析出缺失对象 → 2) 查询元数据确认缺失 → 3) 执行幂等 DDL
-//     4) 如 DDL 本身还缺其他对象（如 enum 类型），递归修复后重试
+//     4) 如 DDL 自身还缺其他对象（如 enum 类型），递归修复后重试
 //     5) 把失败的用户查询重试一次
 //
 // 并发控制：
@@ -23,7 +23,7 @@
 // PostgreSQL 大小写规范：
 //   schema.ts 中的 dbName 原样保留大小写；未加引号的标识符会被 PG 小写化。
 //   所有 DDL 中表/列/枚举类型名都经过 escIdent() 加双引号。
-//   元数据查询的匹配同时支持大小写敏感 + 大小写不敏感两套路径。
+//   元数据查询使用 LOWER() 做大小写不敏感匹配，兼容历史遗留 DB。
 // ==========================================================================
 
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -68,22 +68,11 @@ const rawClient = postgres(connectionString, {
 
 // ── SQL 字面量/标识符 转义 ───────────────────────────────────────────────
 
-// 单引号字面量转义（WHERE name = 'O''Neil'）
 const escString = (s: string) => s.replace(/'/g, "''");
-// 双引号标识符转义（"User""Profile"）— 仅对 schema 中定义的名称使用
 const escIdent = (s: string) => `"${s.replace(/"/g, '""')}"`;
 
-// ── Schema 内省：从 schema.ts 构建"表/枚举 → DDL 生成信息"的映射 ───────
-//
-// 两轮遍历：枚举先，表随后。
-//   - 列属性：col.name / col.getSQLType() / col.notNull / col.primary /
-//             col.default / col.fieldName（回退到外层 key）
-//   - 枚举属性：obj.enumName / obj.values
-//
-// 跳过：非对象、$ 开头的 key（如 $$pgTable）、Drizzle 内部辅助对象。
-// ==========================================================================
+// ── Drizzle 内置类型 → PG 类型名 ─────────────────────────────────────────
 
-// Drizzle 内置类型 → PG 类型名（大部分一致，少量规范化）
 const TYPE_MAP: Record<string, string> = {
   serial: 'serial',
   integer: 'integer',
@@ -123,7 +112,7 @@ function defaultToSql(d: unknown): string | null {
 
   if (typeof d === 'object' && !Array.isArray(d)) {
     const obj = d as {
-      getSQL?: () => string;
+      getSQL?: () => unknown;
       queryChunks?: { chunk?: string; sql?: string }[];
       sql?: string;
       toString?: () => string;
@@ -149,65 +138,98 @@ function defaultToSql(d: unknown): string | null {
   return null;
 }
 
+// ── Schema 内省 ───────────────────────────────────────────────────────────
+//
+// Drizzle v0.x schema 对象的真实结构：
+//   表 (PgTable):
+//     - Symbol(drizzle:IsDrizzleTable) = true
+//     - Symbol(drizzle:Name) = 表 DB 名（如 'User'）
+//     - 每个属性（除 enableRLS）都是列对象
+//     - 列对象 (PgSerial/PgText/PgTimestamp/PgEnumColumn/...)：
+//         .name         DB 列名
+//         .getSQLType() 返回 PG 类型名（如 'serial', 'text', 'user_status'）
+//         .primary      是否主键
+//         .notNull      是否 NOT NULL
+//         .default      默认值（字面量或 SQL 对象）
+//   枚举 (pgEnum):
+//     - typeof === 'function'
+//     - .enumName     PG 类型名（如 'BlacklistType'）
+//     - .enumValues   值数组（如 ['SONG', 'KEYWORD']）
+// ==========================================================================
+
 type ColumnDef = {
   colName: string;
-  pgType: string;           // 原始类型名（可能是 enum 名）
+  pgType: string;
   notNull: boolean;
-  isPrimary: boolean;
   defaultSql: string | null;
   isSerial: boolean;
-  isEnum: boolean;          // true 表示 pgType 是 schema 中定义的枚举名 → DDL 需加引号
+  isEnum: boolean;
+  isPrimary: boolean;
 };
 
 type TableInfo = { tableName: string; columns: ColumnDef[] };
 type EnumInfo = { name: string; values: string[] };
 
-const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
+// 运行时查找 drizzle Symbol key
+function findDrizzleSymbol(obj: any, name: string): symbol | undefined {
+  const symbols = Object.getOwnPropertySymbols(obj);
+  return symbols.find((s) => s.toString() === `Symbol(drizzle:${name})`);
+}
+
+// 构建"表/枚举 → 定义"的稳定映射，缓存结果
+let cachedMaps: { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo> } | undefined;
 
 function buildSchemaMaps(): {
   tables: Map<string, TableInfo>;
   enums: Map<string, EnumInfo>;
 } {
+  if (cachedMaps) return cachedMaps;
+
   const enums = new Map<string, EnumInfo>();
   const tables = new Map<string, TableInfo>();
   const entries = Object.entries(schema);
 
   // ── 第 1 轮：收集枚举 ────────────────────────────────────────
+  // pgEnum 是 function，带 .enumName 和 .enumValues 属性
   for (const [, val] of entries) {
-    if (!val || typeof val !== 'object') continue;
-    const v = val as { enumName?: unknown; values?: unknown };
-    if (typeof v.enumName === 'string' && Array.isArray(v.values)) {
+    if (!val) continue;
+    const v = val as { enumName?: unknown; enumValues?: unknown };
+    if (typeof v.enumName === 'string' && Array.isArray(v.enumValues)) {
       enums.set(v.enumName, {
         name: v.enumName,
-        values: (v.values as unknown[]).map((x) => String(x))
+        values: (v.enumValues as unknown[]).map((x) => String(x))
       });
     }
   }
 
   // ── 第 2 轮：处理表 ──────────────────────────────────────────
+  // PgTable 有 Symbol(drizzle:IsDrizzleTable) = true，表名在 Symbol(drizzle:Name)
+  let nameSym: symbol | undefined;
+  let isTableSym: symbol | undefined;
+
   for (const [, val] of entries) {
     if (!val || typeof val !== 'object') continue;
-    const v = val as {
-      enumName?: unknown; values?: unknown;
-      dbName?: unknown; name?: unknown;
-    };
-    // 已在第 1 轮处理过的枚举
-    if (typeof v.enumName === 'string' && Array.isArray(v.values)) continue;
 
-    const tableName: string | undefined =
-      typeof v.dbName === 'string' ? v.dbName
-      : typeof v.name === 'string' ? v.name
-      : undefined;
+    // 惰性查找表标识 Symbol（只在第一个表对象上查一次）
+    if (!nameSym || !isTableSym) {
+      isTableSym = findDrizzleSymbol(val, 'IsDrizzleTable');
+      nameSym = findDrizzleSymbol(val, 'Name');
+      if (isTableSym && !(val as any)[isTableSym]) continue;
+    }
+
+    if (isTableSym && !(val as any)[isTableSym]) continue;
+    const tableName = nameSym ? String((val as any)[nameSym]) : undefined;
     if (!tableName) continue;
 
+    // 枚举对象被 PgTable 误匹配？排除（枚举是 function，这里都是 object，所以安全）
+
+    // 遍历列：每个看起来像列的属性（有 getSQLType() 方法）
     const cols: ColumnDef[] = [];
-    for (const [key, col] of Object.entries(v)) {
+    for (const [key, col] of Object.entries(val)) {
       if (!col || typeof col !== 'object') continue;
-      if (key.startsWith('$')) continue;
       const c = col as {
         getSQLType?: () => unknown;
         name?: unknown;
-        fieldName?: unknown;
         primary?: unknown;
         notNull?: unknown;
         default?: unknown;
@@ -221,27 +243,24 @@ function buildSchemaMaps(): {
       const isPrimary = !!c.primary;
       const notNull = !!c.notNull || isPrimary;
       const defaultSql = isSerial ? null : defaultToSql(c.default);
-      const colName: string =
-        typeof c.name === 'string' ? c.name
-        : typeof c.fieldName === 'string' ? c.fieldName
-        : key;
-      const isEnum = schemaEnums.has(pgType) || !!findEnumCI(pgType);
-      cols.push({ colName, pgType, notNull, isPrimary, defaultSql, isSerial, isEnum });
+      const colName: string = typeof c.name === 'string' ? c.name : key;
+      const isEnum = enums.has(pgType) || !!findEnumCI(pgType, enums);
+      cols.push({ colName, pgType, notNull, defaultSql, isSerial, isEnum, isPrimary });
     }
 
     if (cols.length > 0) tables.set(tableName, { tableName, columns: cols });
   }
 
-  return { tables, enums };
+  cachedMaps = { tables, enums };
+  return cachedMaps;
 }
 
-// ── 大小写不敏感的 schema 查找 ────────────────────────────────────────
-
-function findTableCI(name: string): TableInfo | undefined {
-  const exact = schemaTables.get(name);
+// 大小写不敏感的查找辅助
+function findTableCI(name: string, tables: Map<string, TableInfo>): TableInfo | undefined {
+  const exact = tables.get(name);
   if (exact) return exact;
   const lower = name.toLowerCase();
-  for (const [key, info] of schemaTables) {
+  for (const [key, info] of tables) {
     if (key.toLowerCase() === lower) return info;
   }
   return undefined;
@@ -254,22 +273,25 @@ function findColumnCI(tbl: TableInfo, colName: string): ColumnDef | undefined {
   return tbl.columns.find((c) => c.colName.toLowerCase() === lower);
 }
 
-function findEnumCI(name: string): EnumInfo | undefined {
-  const exact = schemaEnums.get(name);
+function findEnumCI(name: string, enums: Map<string, EnumInfo>): EnumInfo | undefined {
+  const exact = enums.get(name);
   if (exact) return exact;
   const lower = name.toLowerCase();
-  for (const [key, info] of schemaEnums) {
+  for (const [key, info] of enums) {
     if (key.toLowerCase() === lower) return info;
   }
   return undefined;
 }
+
+// 构建 schema maps 后导出给下游使用
+const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
 
 // 列类型在 DDL 中的书写：枚举类型加双引号，内置类型直接写
 function colTypeSql(col: ColumnDef): string {
   return col.isEnum ? escIdent(col.pgType) : col.pgType;
 }
 
-// ── DDL 生成（全部幂等） ────────────────────────────────────────────────
+// ── DDL 生成（全部幂等：CREATE IF NOT EXISTS） ─────────────────────────
 
 function buildCreateTableSql(info: TableInfo): string {
   const colDefs = info.columns.map((col) => {
@@ -288,15 +310,13 @@ function buildCreateTableSql(info: TableInfo): string {
 }
 
 function buildAlterTableSql(tableName: string, col: ColumnDef): string {
+  const base = `ADD COLUMN IF NOT EXISTS ${escIdent(col.colName)} ${colTypeSql(col)}`;
   if (col.defaultSql) {
-    const parts = [
-      `ADD COLUMN IF NOT EXISTS ${escIdent(col.colName)} ${colTypeSql(col)}`,
-      `DEFAULT ${col.defaultSql}`
-    ];
+    const parts = [base, `DEFAULT ${col.defaultSql}`];
     if (col.notNull) parts.push('NOT NULL');
     return `ALTER TABLE ${escIdent(tableName)} ${parts.join(' ')}`;
   }
-  return `ALTER TABLE ${escIdent(tableName)} ADD COLUMN IF NOT EXISTS ${escIdent(col.colName)} ${colTypeSql(col)}`;
+  return `ALTER TABLE ${escIdent(tableName)} ${base}`;
 }
 
 function buildCreateTypeSql(info: EnumInfo): string {
@@ -320,7 +340,7 @@ function targetKey(t: SchemaTarget): string {
 function targetDdl(t: SchemaTarget): string {
   if (t.kind === 'type') return buildCreateTypeSql(t.info);
   if (t.kind === 'table') return buildCreateTableSql(t.info);
-  return buildAlterTableSql(t.table, t.col, t.colDef);
+  return buildAlterTableSql(t.table, t.colDef);
 }
 
 // ── 错误解析：从 PG 错误消息 → SchemaTarget ──────────────────────────
@@ -340,7 +360,7 @@ function targetFromError(err: unknown): SchemaTarget | null {
   if (code === '42P01') {
     const m = msg.match(/relation\s+"([^"]+)"/i);
     if (m) {
-      const info = findTableCI(m[1]);
+      const info = findTableCI(m[1], schemaTables);
       if (info) {
         log(`🔍 schema错误 → 缺表 "${m[1]}"，映射到 "${info.tableName}"`);
         return { kind: 'table', name: info.tableName, info };
@@ -352,7 +372,7 @@ function targetFromError(err: unknown): SchemaTarget | null {
   if (code === '42703') {
     const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"/i);
     if (m) {
-      const tbl = findTableCI(m[2]);
+      const tbl = findTableCI(m[2], schemaTables);
       if (tbl) {
         const col = findColumnCI(tbl, m[1]);
         if (col) {
@@ -367,7 +387,7 @@ function targetFromError(err: unknown): SchemaTarget | null {
   if (code === '42704') {
     const m = msg.match(/type\s+"([^"]+)"/i);
     if (m) {
-      const info = findEnumCI(m[1]);
+      const info = findEnumCI(m[1], schemaEnums);
       if (info) {
         log(`🔍 schema错误 → 缺枚举类型 "${m[1]}"，映射到 "${info.name}"`);
         return { kind: 'type', name: info.name, info };
@@ -379,40 +399,40 @@ function targetFromError(err: unknown): SchemaTarget | null {
   return null;
 }
 
-// ── 真实数据库检查：对象是否真的缺失 ─────────────────────────────────
+// ── 真实数据库检查：对象是否真的缺失（大小写不敏感） ───────────────
 
 async function objectMissing(target: SchemaTarget): Promise<boolean> {
   if (target.kind === 'type') {
     const rows = await rawClient.unsafe(
-      `SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE t.typname = $1 AND n.nspname = current_schema()`,
+      `SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE LOWER(t.typname) = LOWER($1) AND n.nspname = current_schema()`,
       [target.name]
     );
-    return !rows || (rows as unknown as { length: number }).length === 0;
+    return !rows || (rows as unknown[]).length === 0;
   }
   if (target.kind === 'table') {
     const rows = await rawClient.unsafe(
-      `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = $1`,
+      `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER($1)`,
       [target.name]
     );
-    const missing = !rows || (rows as unknown as { length: number }).length === 0;
+    const missing = !rows || (rows as unknown[]).length === 0;
     log(`🔎 表 "${target.name}" 在数据库中 ${missing ? '不存在' : '已存在'}`);
     return missing;
   }
   const rows = await rawClient.unsafe(
-    `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = $1 AND column_name = $2`,
+    `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER($1) AND LOWER(column_name) = LOWER($2)`,
     [target.table, target.col]
   );
-  return !rows || (rows as unknown as { length: number }).length === 0;
+  return !rows || (rows as unknown[]).length === 0;
 }
 
 // ── 修复引擎：递归/并发安全 ────────────────────────────────────────
 //
-// fixTarget(target, depth) 做三件事：
-//   1) 如果目标已在被修复（runningFixes 中），等它完成
-//   2) 检查数据库是否真缺失
-//   3) 生成并执行 DDL — 如果 DDL 自身遇到 schema 错误，递归修复依赖后重试
-//
-// 递归深度上限：8（应对 "表 → enum → enum → ..." 这类极深依赖的极端情况）
+// 修复逻辑：
+//   1) runningFixes 中已有该 key → await（避免并发重复修复）
+//   2) 查 information_schema 确认对象缺失
+//   3) 生成并执行幂等 DDL；若 DDL 自身报 schema 错误（如依赖 enum），
+//      递归修复依赖后重试本目标 DDL
+//   4) 递归深度上限：8，防御循环依赖
 // ==========================================================================
 
 const runningFixes = new Map<string, Promise<boolean>>();
@@ -483,26 +503,34 @@ async function fixTarget(target: SchemaTarget, depth: number): Promise<boolean> 
 //   unsafe 返回 postgres.js 的 Query 对象（extends Promise）。
 //   我们保留原始 Query 对象，只覆盖 .then 捕获 schema 错误。
 //
-// 两条路径合并为一个 wrapResult：
-//   - apply 路径：client`...` → Promise，走 Promise 级包装
-//   get 路径：client.unsafe(...) → Query 对象 → 覆盖 .then，注入 schema 修复/重试
+// 统一 wrap 逻辑：
+//   - 若结果有 .values 函数 → Query 对象，覆盖 .then
+//   - 否则 → 普通 Promise，用 try/catch 包一层
 // ==========================================================================
 
 const NON_QUERY_METHODS = new Set(['end', 'destroy', 'close', 'cancel']);
 
-function wrapResult<T>(result: any, retry: () => any): any {
-  // 非查询方法（end/close/destroy/cancel）：直接透传；它们不返回可重试对象
+function wrapWithSchemaFix<T>(result: any, retry: () => any): any {
   if (result && typeof result.values === 'function') {
-    // postgres.js Query 对象：覆盖 .then 注入 schema 修复
-    return wrapQueryWithSchemaFix<T>(result, retry);
+    // postgres.js Query 对象：保留链式方法，只覆盖 .then
+    const origThen = result.then.bind(result);
+    result.then = function (onFulfilled: any, onRejected: any): any {
+      return origThen(
+        onFulfilled,
+        async (err: any) => {
+          if (!isSchemaError(err)) throw err;
+          const fixed = await ensureSchemaFixedFor(err);
+          if (!fixed) throw err;
+          log(`🔁 重试查询（schema 已修复）`);
+          return await retry();
+        }
+      );
+    } as Promise<T>['then'];
+    return result;
   }
-  // 普通 Promise：用 wrapPromiseWithRetry 包装
-  return wrapPromiseWithRetry<T>(result as Promise<T>, retry as () => Promise<T>);
-}
-
-function wrapPromiseWithRetry<T>(promise: Promise<T>, retry: () => Promise<T>): Promise<T> {
+  // 普通 Promise：用 try/catch 包一层
   return (async () => {
-    try { return await promise; } catch (err) {
+    try { return await result; } catch (err) {
       if (!isSchemaError(err)) throw err;
       const fixed = await ensureSchemaFixedFor(err);
       if (!fixed) throw err;
@@ -512,30 +540,11 @@ function wrapPromiseWithRetry<T>(promise: Promise<T>, retry: () => Promise<T>): 
   })();
 }
 
-function wrapQueryWithSchemaFix<T>(query: any, retry: () => any): any {
-  const origThen = query.then.bind(query);
-  query.then = function (onFulfilled: any, onRejected: any): any {
-    return origThen(
-      onFulfilled,
-      async (err: any) => {
-        if (!isSchemaError(err)) throw err;
-        const fixed = await ensureSchemaFixedFor(err);
-        if (!fixed) throw err;
-        log(`🔁 重试查询（schema 已修复）`);
-        return await retry();
-      }
-    );
-  } as Promise<T>['then'];
-  return query;
-}
-
 const client = new Proxy(rawClient as any, {
   apply(_target, _thisArg, args) {
-    const argsCopy = args as any;
-    return wrapPromiseWithRetry(
-      rawClient(...argsCopy),
-      () => rawClient(...argsCopy)
-    );
+    // 模板标签调用：client`SELECT 1`
+    const result = rawClient(...(args as any));
+    return wrapWithSchemaFix(result, () => rawClient(...(args as any)));
   },
   get(target, prop, _receiver) {
     const value = Reflect.get(target, prop);
@@ -544,11 +553,9 @@ const client = new Proxy(rawClient as any, {
 
     return function (this: unknown, ...args: unknown[]) {
       const result = boundFn(...args);
+      // 非查询方法：直接透传，不包装
       if (typeof prop === 'string' && NON_QUERY_METHODS.has(prop)) return result;
-      if (result && typeof (result as any).values === 'function') {
-        return wrapQueryWithSchemaFix(result as any, () => boundFn(...args));
-      }
-      return wrapPromiseWithRetry(result as Promise<any>, () => boundFn(...args) as Promise<any>);
+      return wrapWithSchemaFix(result, () => boundFn(...args));
     };
   }
 }) as ReturnType<typeof postgres>;
