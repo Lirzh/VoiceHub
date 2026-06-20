@@ -17,7 +17,7 @@
     "db:studio": "pnpm exec drizzle-kit studio",
     "db:drop": "pnpm exec drizzle-kit drop",
     "db:check": "pnpm exec drizzle-kit check",
-    "setup": "pnpm install --frozen-lockfile && pnpm run db:migrate",
+    "setup": "pnpm install --frozen-lockfile && pnpm run db:generate",
     "create-admin": "pnpm exec tsx scripts/create-admin.js",
     "clear-db": "pnpm exec tsx scripts/clear-database.js",
     "safe-migrate": "pnpm exec tsx scripts/safe-migrate.js",
