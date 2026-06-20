@@ -429,17 +429,17 @@ async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
         return true;
       }
 
-      let sql = '';
+      let ddl = '';
       if (target.kind === 'type') {
-        sql = buildCreateTypeSql(target.info);
+        ddl = buildCreateTypeSql(target.info);
       } else if (target.kind === 'table') {
-        sql = buildCreateTableSql(target.info);
+        ddl = buildCreateTableSql(target.info);
       } else {
-        sql = buildAlterTableSql(target.table, target.col, target.colDef);
+        ddl = buildAlterTableSql(target.table, target.col, target.colDef);
       }
 
-      log(`📦 执行 DDL: ${sql}`);
-      await rawClient.unsafe(sql);
+      log(`📦 执行 DDL: ${ddl}`);
+      await rawClient.unsafe(ddl);
 
       if (target.kind === 'type') log(`✅ 枚举 ${target.name} 已创建`);
       else if (target.kind === 'table') log(`✅ 表 ${target.name} 已创建`);
