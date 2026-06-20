@@ -143,28 +143,10 @@ async function deploy() {
       fs.mkdirSync('app/drizzle/migrations', { recursive: true })
     }
 
-    // 3. 数据库同步
-    logStep('🗄️', '同步数据库...')
-    let dbSyncSuccess = false
-    if (process.env.DATABASE_URL) {
-      const nonInteractiveEnv = {
-        ...process.env,
-        DRIZZLE_KIT_FORCE: 'true',
-        CI: 'true',
-        NODE_ENV: 'production'
-      }
-      if (safeExec('node scripts/db-sync.js', { env: nonInteractiveEnv })) {
-        logSuccess('数据库同步成功')
-        dbSyncSuccess = true
-      } else {
-        throw new Error('数据库同步失败，已终止部署以避免运行时schema不一致')
-      }
-    } else {
-      logWarning('未设置 DATABASE_URL，跳过数据库迁移')
-    }
+    // 3. 数据库同步：已移除，schema 由 app/drizzle/db.ts 在运行时按需自动对齐
 
     // 4. 创建管理员账户
-    if (fileExists('scripts/create-admin.js') && dbSyncSuccess) {
+    if (fileExists('scripts/create-admin.js')) {
       logStep('👤', '检查管理员账户...')
       safeExec('pnpm run create-admin')
     }

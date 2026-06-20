@@ -61,7 +61,95 @@ const getDatabaseConfig = () => {
   }
 };
 
-const client = postgres(connectionString, getDatabaseConfig());
+const rawClient = postgres(connectionString, getDatabaseConfig());
+
+// ─── lazy schema 自动修复（mkdir -p 风格）─────────────────────────────
+// 数据库查询失败时（缺表/缺列/缺枚举），当场调用 drizzle-kit push
+// 对齐 schema，然后把失败的查询重试一次。进程生命周期内最多同步一次。
+//
+// PostgreSQL 错误码（本模块关心的）：
+//   42P01  relation does not exist （缺表）
+//   42703  column does not exist    （缺列）
+//   42704  type does not exist      （缺枚举类型）
+// ──────────────────────────────────────────────────────────────────────
+
+let schemaSyncedOK = false;
+let schemaSyncInProgress: Promise<void> | null = null;
+
+async function syncSchemaOnce(): Promise<void> {
+  if (schemaSyncedOK) return;
+  if (schemaSyncInProgress) return schemaSyncInProgress;
+
+  schemaSyncInProgress = (async () => {
+    try {
+      const { execFileSync } = await import('node:child_process');
+      const configPath = path.resolve(process.cwd(), 'drizzle.config.ts');
+      console.log('🔧 检测到 schema 缺失，执行 drizzle-kit push 自动修复...');
+      execFileSync(
+        process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
+        ['exec', 'drizzle-kit', 'push', '--config', configPath],
+        {
+          stdio: ['ignore', process.stdout, process.stderr],
+          env: {
+            ...process.env,
+            CI: 'true',
+            DRIZZLE_KIT_FORCE: 'true',
+            DRIZZLE_KIT_NON_INTERACTIVE: 'true'
+          },
+          timeout: 120_000
+        }
+      );
+      console.log('✅ schema 自动修复完成');
+      schemaSyncedOK = true;
+    } catch (e: any) {
+      console.warn('⚠️ schema 自动修复失败，将在下一次查询时再次尝试：', e?.message ?? e);
+      // 失败后不设置 schemaSyncedOK，允许下一次查询再次尝试
+    } finally {
+      schemaSyncInProgress = null;
+    }
+  })();
+
+  return schemaSyncInProgress;
+}
+
+async function tryFixSchema(err: any): Promise<boolean> {
+  const code: string | undefined = err?.code;
+  if (!['42P01', '42703', '42704'].includes(code || '')) return false;
+  await syncSchemaOnce();
+  return schemaSyncedOK;
+}
+
+// 包装 Promise：await 时捕获 schema 错误并重试
+function wrapThenable(promise: any, retry: () => Promise<any>): any {
+  if (!promise || typeof promise.then !== 'function') return promise;
+  return (async () => {
+    try {
+      return await promise;
+    } catch (err) {
+      if (await tryFixSchema(err)) return await retry();
+      throw err;
+    }
+  })();
+}
+
+// 用 Proxy 包装 rawClient，保留所有 postgres 行为（tagged template、
+// .end()、.unsafe()、.ended 属性等），只在查询失败时注入修复逻辑
+const client = new Proxy(rawClient as any, {
+  apply(target, _thisArg, args) {
+    const result = target(...args);
+    return wrapThenable(result, () => target(...args));
+  },
+  get(target, prop, receiver) {
+    const value = Reflect.get(target, prop, receiver);
+    if (typeof value === 'function') {
+      return function (this: any, ...args: any[]) {
+        const result = value.apply(target, args);
+        return wrapThenable(result, () => value.apply(target, args));
+      };
+    }
+    return value;
+  }
+}) as ReturnType<typeof postgres>;
 
 // 创建Drizzle数据库实例
 export const db = drizzle(client, { schema });
