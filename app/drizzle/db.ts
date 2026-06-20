@@ -79,14 +79,74 @@ const rawClient = postgres(connectionString, getDatabaseConfig());
 // ──────────────────────────────────────────────────────────────────────
 
 // ── Drizzle schema 内省：从 schema.ts 提取列/枚举定义 ──────────────────
+//
+// 完全基于 Drizzle 列对象的公开属性，不猜内部结构：
+//   col.name          → 列名（来自 pgTable('x', { myCol: text('myCol') }) 中的 'myCol'）
+//   col.getSQLType()  → SQL 类型（serial / integer / text / boolean / timestamp / uuid / ...）
+//   col.notNull       → NOT NULL
+//   col.primary       → 是否主键
+//   col.hasDefault    → 是否有默认值（注意：.primaryKey().defaultRandom() 的 serial 列会为 true）
+//   col.default       → 默认值表达式：可能是 SQL 对象、字面量、或零参函数
+//
+// 枚举通过 schema 导出的 pgEnum 实例读取：
+//   enumObj.enumName  → 枚举类型名（如 'user_status'）
+//   enumObj.values    → 枚举值数组（如 ['active', 'withdrawn', 'graduate']）
+// ──────────────────────────────────────────────────────────────────────
 
-// Drizzle 内部用 Symbol 存储列元信息，通过 Symbol introspection 获取。
-const colSym = (key: string) => (Object as any).getOwnPropertySymbols?.({})?.find?.((s) => String(s).includes(key)) ?? Symbol();
+function sqlExprToString(expr: any): string | null {
+  if (expr === undefined || expr === null) return null;
+  // 是 SQL 表达式对象（sql`now()` 等），尝试字符串化
+  if (typeof expr === 'object') {
+    if (typeof expr.getSQL === 'function') return expr.getSQL();
+    // 某些版本暴露 queryChunks，例如 [ { type: 'raw', chunk: 'now()' } ]
+    if (Array.isArray((expr as any).queryChunks)) {
+      return (expr as any).queryChunks
+        .map((c: any) => (c && c.chunk ? String(c.chunk) : c && c.sql ? String(c.sql) : String(c)))
+        .join(' ');
+    }
+    // 暴露的 SQL 对象本身可能有 toString / sql 属性
+    if (typeof expr.toString === 'function' && expr.toString !== Object.prototype.toString) {
+      const s = expr.toString();
+      if (s !== '[object Object]') return s;
+    }
+    if (typeof (expr as any).sql === 'string') return (expr as any).sql;
+    return null;
+  }
+  // 是字面量
+  if (typeof expr === 'string') return `'${expr.replace(/'/g, "''")}'`;
+  if (typeof expr === 'boolean' || typeof expr === 'number') return String(expr);
+  return null;
+}
+
+function resolveDefault(col: any): string | null {
+  if (!col) return null;
+  if (col.hasDefault === false && !col.default) return null;
+
+  // 优先使用 col.default（Drizzle 暴露的默认值表达式）
+  const d = col.default;
+  if (d !== undefined && d !== null) {
+    // 如果是函数，调用一次获取值（.defaultNow() / .defaultRandom() 传的是函数）
+    let val: any = d;
+    if (typeof d === 'function' && d.length === 0) {
+      try { val = d(); } catch { /* ignore */ }
+    }
+    const exprStr = sqlExprToString(val);
+    if (exprStr) return exprStr;
+    // val 是 SQL 对象但上面没识别到，再做一次保险
+    if (val && typeof val === 'object') {
+      const s = String(val);
+      if (s !== '[object Object]') return s;
+    }
+  }
+
+  // 退而求其次：通过类型 + 列名推断（serial / uuid 主键有隐式默认值）
+  const type = typeof col.getSQLType === 'function' ? col.getSQLType() : '';
+  if (type === 'serial') return "nextval('" + (col.name ?? '') + "_seq'::regclass)";
+  return null;
+}
 
 function getColumnDef(col: any): { pgType: string; notNull: boolean; default: string | null; isSerial: boolean; isUuid: boolean } {
   const type: string = typeof col.getSQLType === 'function' ? col.getSQLType() : 'text';
-  const sym = colSym('');
-  const config = (col as any)[sym] ?? {};
 
   // 映射 Drizzle 类型 → PostgreSQL 类型
   let pgType = type;
@@ -96,7 +156,7 @@ function getColumnDef(col: any): { pgType: string; notNull: boolean; default: st
   if (type === 'serial') {
     pgType = 'serial';
     isSerial = true;
-  } else if (type === 'uuid' || (config as any)?.dataType === 'uuid') {
+  } else if (type === 'uuid') {
     pgType = 'uuid';
     isUuid = true;
   } else if (type === 'integer') {
@@ -112,58 +172,25 @@ function getColumnDef(col: any): { pgType: string; notNull: boolean; default: st
   } else if (type === 'bigint') {
     pgType = 'bigint';
   } else if (type.startsWith('varchar')) {
-    pgType = type; // 保留 varchar(n) 原样
+    pgType = type;
   } else if (type.startsWith('character varying')) {
     pgType = type.replace('character varying', 'varchar');
   }
 
-  // 处理默认值
-  let defaultStr: string | null = null;
-  const defVal = (config as any)?.default;
-  if (defVal !== undefined) {
-    if (defVal && typeof defVal === 'object' && (defVal as any).ref?.name === 'now') {
-      defaultStr = 'now()';
-    } else if (typeof defVal === 'string') {
-      defaultStr = `'${defVal.replace(/'/g, "''")}'`;
-    } else if (typeof defVal === 'boolean' || typeof defVal === 'number') {
-      defaultStr = String(defVal);
-    } else if (typeof defVal === 'function') {
-      // defaultNow() / defaultRandom() 由下面单独处理
-    }
-  }
-
-  // 检查 builder 方法链中是否有 defaultNow / defaultRandom / default(value)
-  const chainStr = col.toString?.() ?? '';
-  if (chainStr.includes('defaultNow') || chainStr.includes('default(now)')) {
-    defaultStr = 'now()';
-  } else if (chainStr.includes('defaultRandom') || chainStr.includes('default(random)')) {
-    defaultStr = 'gen_random_uuid()';
-  } else if (!defaultStr && defVal !== undefined) {
-    // 函数类型的默认值（default('value')）
-    if (typeof defVal === 'function' && defVal.length === 0) {
-      const fnResult = (defVal as any)();
-      if (typeof fnResult === 'string') defaultStr = `'${fnResult.replace(/'/g, "''")}'`;
-      else if (typeof fnResult === 'boolean' || typeof fnResult === 'number') defaultStr = String(fnResult);
-    }
-  }
-
-  const notNull = !!col.notNull || !!col.primaryKey;
+  const defaultStr = resolveDefault(col);
+  const notNull = !!col.notNull || !!col.primary;
 
   return { pgType, notNull, default: defaultStr, isSerial, isUuid };
 }
 
 function getEnumType(col: any): string | null {
-  const chainStr = col.toString?.() ?? '';
-  // 从 chain string 中提取枚举名，如 userStatusEnum('status') → user_status
-  const m = chainStr.match(/(\w+)\s*\(\s*['"]/);
-  if (m) {
-    const enumName = m[1];
-    const found = Object.values(schema).find(
-      (v: any) => v?.enumName === enumName || (v?.values?.includes?.(enumName) ? v.enumName : false)
-    );
-    if (found && (found as any).enumName) return (found as any).enumName;
-    // 直接用提取的名字（pgEnum 名）
-    return enumName;
+  // 枚举列的 getSQLType() 返回枚举类型名（如 "user_status"），或可以从列对象上直接读
+  const type = typeof col.getSQLType === 'function' ? col.getSQLType() : '';
+  if (type && schemaEnums.has(type)) return type;
+  // 退一步：从 schema 导出的枚举实例中查找，若列对象引用了某个枚举
+  for (const [enumName] of schemaEnums) {
+    // 列名或类型名中包含枚举名，认为是该枚举
+    if (type === enumName || type.includes(enumName)) return enumName;
   }
   return null;
 }
