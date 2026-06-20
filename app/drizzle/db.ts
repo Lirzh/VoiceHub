@@ -529,12 +529,21 @@ function wrapQueryWithSchemaFix<T>(query: any, retry: () => any): any {
   return query;
 }
 
+// 统一的"检测查询结果类型 → 对应包装"辅助函数
+// 保留原始 Query 对象结构（.values/.execute 等），仅覆盖 .then/.catch/.finally 注入 schema 修复
+function wrapResult<T>(result: any, retry: () => any): any {
+  if (result && typeof (result as any).values === 'function') {
+    return wrapQueryWithSchemaFix<T>(result, retry);
+  }
+  return wrapPromiseWithRetry<T>(result as Promise<T>, retry as () => Promise<T>);
+}
+
 const client = new Proxy(rawClient as any, {
   apply(_target, _thisArg, args) {
-    const result = rawClient(...(args as any));
-    return wrapPromiseWithRetry(
-      result as Promise<any>,
-      () => rawClient(...(args as any)) as Promise<any>
+    const argsCopy = args as any;
+    return wrapResult(
+      rawClient(...argsCopy),
+      () => rawClient(...argsCopy)
     );
   },
   get(target, prop, receiver) {
@@ -546,17 +555,7 @@ const client = new Proxy(rawClient as any, {
       const result = boundFn(...args);
       // 非查询方法（end / close / destroy / cancel）直接透传
       if (typeof prop === 'string' && NON_QUERY_METHODS.has(prop)) return result;
-      // Query 对象 → Query 级包装；否则 Promise 级包装
-      if (result && typeof (result as any).values === 'function') {
-        return wrapQueryWithSchemaFix(
-          result as any,
-          () => boundFn(...args)
-        );
-      }
-      return wrapPromiseWithRetry(
-        result as Promise<any>,
-        () => boundFn(...args) as Promise<any>
-      );
+      return wrapResult(result, () => boundFn(...args));
     };
   }
 }) as ReturnType<typeof postgres>;

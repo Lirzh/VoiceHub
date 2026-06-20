@@ -1,65 +1,5 @@
-import { db, testConnection } from '~/drizzle/db'
+import { db } from '~/drizzle/db'
 import { sql } from 'drizzle-orm'
-
-// 数据库健康检查
-export async function checkDatabaseHealth() {
-  try {
-    const startTime = Date.now()
-
-    // 基本连接测试
-    const isConnected = await testConnection()
-    if (!isConnected) {
-      return {
-        status: 'unhealthy',
-        message: 'Database connection failed',
-        responseTime: Date.now() - startTime
-      }
-    }
-
-    // 查询测试
-    await db.execute(sql`SELECT 1 as test`)
-
-    const responseTime = Date.now() - startTime
-
-    return {
-      status: responseTime < 1000 ? 'healthy' : 'slow',
-      message: responseTime < 1000 ? 'Database is healthy' : 'Database is responding slowly',
-      responseTime
-    }
-  } catch (error) {
-    return {
-      status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown database error',
-      responseTime: 0
-    }
-  }
-}
-
-// 数据库连接重试机制
-export async function retryDatabaseOperation<T>(
-  operation: () => Promise<T>,
-  maxRetries: number = 3,
-  delay: number = 1000
-): Promise<T> {
-  let lastError: Error
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation()
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown error')
-
-      if (attempt === maxRetries) {
-        throw lastError
-      }
-
-      // 等待后重试
-      await new Promise((resolve) => setTimeout(resolve, delay * attempt))
-    }
-  }
-
-  throw lastError!
-}
 
 // 数据库连接池状态检查
 export async function getConnectionPoolStatus() {
@@ -137,15 +77,5 @@ export async function getDatabaseMetrics() {
     throw new Error(
       `Failed to get database metrics: ${error instanceof Error ? error.message : 'Unknown error'}`
     )
-  }
-}
-
-// 数据库备份状态检查（模拟）
-export async function checkBackupStatus() {
-  // 这里可以集成实际的备份服务
-  return {
-    lastBackup: new Date().toISOString(),
-    status: 'completed',
-    size: '0 MB' // 模拟数据
   }
 }

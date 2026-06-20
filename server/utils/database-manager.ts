@@ -196,22 +196,10 @@ export class DatabaseManager {
   }
 
   /**
-   * 批量清理过期会话
+   * 会话清理（当前 schema 无 session 表，此方法保留为 no-op）
    */
   async cleanupExpiredSessions(): Promise<number> {
-    try {
-      const result = await db.execute(sql`
-        DELETE FROM session 
-        WHERE expires_at < NOW()
-      `)
-
-      // postgres-js returns count in the result array object properties
-      const deleteResult = result as { count?: number | string }
-      return Number.parseInt(String(deleteResult.count ?? '0'), 10) || 0
-    } catch (error) {
-      console.error('Failed to cleanup expired sessions:', error)
-      throw new Error('Failed to cleanup expired sessions')
-    }
+    return 0
   }
 
   /**
