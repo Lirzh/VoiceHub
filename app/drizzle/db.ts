@@ -315,31 +315,72 @@ function parseTypeError(msg: string): { kind: 'type'; type: string } | null {
   return null;
 }
 
-// ── 冷却控制 ──────────────────────────────────────────────────────────
+// ── 按"修复目标"的冷却与并发控制 ─────────────────────────────────────
+//
+// 用 Map<targetKey, state> 替代全局标记，解决两个问题：
+//   1) 修完 A 表后 60s 内，其他缺表/缺列 仍能修（不被全局冷却阻塞）
+//   2) 同一时刻 N 个请求都发现缺 A 表，只跑一次 CREATE TABLE，
+//      其他 N-1 个等 Promise 完成后各自重试自己的查询
+//
+// targetKey 规则：
+//   "t:User"               → 缺表 User
+//   "c:User:emailVerified" → 缺列 User.emailVerified
+//   "e:user_status"        → 缺枚举 user_status
+// ──────────────────────────────────────────────────────────────────────
 
-let schemaFixInProgress: Promise<void> | null = null;
-let schemaFixLastDoneAt = 0;
+type FixState = { inProgress: Promise<void> | null; lastDoneAt: number };
+const fixMap = new Map<string, FixState>();
 const SCHEMA_FIX_COOLDOWN_MS = 60 * 1000;
 
-// ── 执行一次 schema 修复 ──────────────────────────────────────────────
-
-async function applySchemaFix(err: any): Promise<boolean> {
+function targetKeyFromError(err: any): string | null {
   const msg: string = err?.message ?? '';
   const code: string = err?.code ?? '';
 
-  const relationErr = parseRelationError(msg);
-  const columnErr = parseColumnError(msg);
-  const typeErr = code === '42704' || msg.includes('type') ? parseTypeError(msg) : null;
+  const rel = parseRelationError(msg);
+  if (rel) return `t:${rel.table}`;
 
-  if (!relationErr && !columnErr && !typeErr) return false;
+  const col = parseColumnError(msg);
+  if (col) return `c:${col.table}:${col.column}`;
 
-  // 等待同进程内的其他修复完成
-  if (schemaFixInProgress) {
-    await schemaFixInProgress;
-    return true; // 另一个已完成，假设修好了
+  if (code === '42704' || msg.includes('type does not exist')) {
+    const t = parseTypeError(msg);
+    if (t) return `e:${t.type}`;
+  }
+  return null;
+}
+
+async function ensureSchemaFixedFor(err: any): Promise<boolean> {
+  const targetKey = targetKeyFromError(err);
+  if (!targetKey) return false;
+
+  const now = Date.now();
+  let state = fixMap.get(targetKey);
+
+  // 目标正在跑 → 等它完成，然后重试原查询
+  if (state && state.inProgress) {
+    await state.inProgress;
+    return true;
   }
 
-  schemaFixInProgress = (async () => {
+  // 目标 60s 内刚修过 → 直接重试（PostgreSQL DDL 是同步的，
+  // 完成后后续查询立刻能看到新表/新列）
+  if (state && now - state.lastDoneAt < SCHEMA_FIX_COOLDOWN_MS) {
+    return true;
+  }
+
+  // 新开一次修复
+  if (!state) {
+    state = { inProgress: null, lastDoneAt: 0 };
+    fixMap.set(targetKey, state);
+  }
+
+  const msg: string = err?.message ?? '';
+  const code: string = err?.code ?? '';
+  const relationErr = parseRelationError(msg);
+  const columnErr = parseColumnError(msg);
+  const typeErr = code === '42704' || msg.includes('type does not exist') ? parseTypeError(msg) : null;
+
+  state.inProgress = (async () => {
     try {
       if (typeErr) {
         const info = schemaEnums.get(typeErr.type);
@@ -371,19 +412,24 @@ async function applySchemaFix(err: any): Promise<boolean> {
         }
       }
 
-      schemaFixLastDoneAt = Date.now();
+      state!.lastDoneAt = Date.now();
     } catch (e: any) {
-      console.warn('⚠️ schema 修复失败：', e?.message ?? e);
+      console.warn('⚠️ schema 修复失败（下次遇到同一错误将再次尝试）：', e?.message ?? e);
     } finally {
-      schemaFixInProgress = null;
+      state!.inProgress = null;
     }
   })();
 
-  await schemaFixInProgress;
-  return true;
+  await state.inProgress;
+  return state.lastDoneAt > now; // 只有本次真的改过表，才认为修复成功
 }
 
 // ── Promise 包装：捕获 schema 错误 → 修复 → 重试 ─────────────────────
+//
+// 注意：PostgreSQL 本身对 DDL 是并发安全的（ACCESS EXCLUSIVE 锁），
+// 所以应用层只需要"别让多个请求各跑一遍相同的 CREATE TABLE"——
+// 上面的 fixMap + Promise 排队就够了。普通 SELECT/INSERT 之间不受阻塞。
+// ──────────────────────────────────────────────────────────────────────
 
 function wrapThenable(promise: any, retry: () => Promise<any>): any {
   if (!promise || typeof promise.then !== 'function') return promise;
@@ -391,15 +437,11 @@ function wrapThenable(promise: any, retry: () => Promise<any>): any {
     try {
       return await promise;
     } catch (err: any) {
-      const now = Date.now();
       const code: string = err?.code ?? '';
-      const isSchemaErr = ['42P01', '42703', '42704'].includes(code);
-      const cooled = now - schemaFixLastDoneAt >= SCHEMA_FIX_COOLDOWN_MS;
+      if (!['42P01', '42703', '42704'].includes(code)) throw err;
 
-      if (isSchemaErr && cooled) {
-        const fixed = await applySchemaFix(err);
-        if (fixed) return await retry();
-      }
+      const fixed = await ensureSchemaFixedFor(err);
+      if (fixed) return await retry();
       throw err;
     }
   })();
