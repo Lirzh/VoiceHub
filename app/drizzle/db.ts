@@ -6,19 +6,20 @@
 //     42P01  relation does not exist   缺表
 //     42703  column does not exist     缺列
 //     42704  type does not exist       缺枚举类型
-//   当场分析缺少什么，生成并执行精确的 CREATE / ALTER SQL，
-//   然后把失败的查询重试一次。
+//   当场：
+//     1) 从错误消息解析出缺失的对象
+//     2) 查询 information_schema / pg_type 双重确认对象不存在
+//     3) 生成并执行精确的 CREATE / ALTER SQL（全部幂等）
+//     4) 把失败的查询重试一次
 //
-// 并发与冷却：
-//   按"修复目标"细粒度控制（key = t:<table> / c:<table>:<col> / e:<enum>）
-//   - 同一时刻 N 个请求缺同一个对象：只跑一次 DDL，其他人排队等 Promise
-//   - 成功后 60s 内不再跑同一对象的 DDL（PostgreSQL DDL 同步可见）
-//   - 修复失败时：不再自动重试，直接抛原始错误，避免死循环
+// 并发：
+//   同一对象同一进程内同一时刻只会跑一次 DDL，其他请求 await Promise。
+//   没有任何"冷却时间""延时等待"设计，完全基于真实数据库状态。
 //
 // 默认值：
-//   - .defaultNow() / .defaultRandom() → SQL 表达式 DEFAULT
-//   - .default('str') / .default(n) / .default(true) → 字面量 DEFAULT
-//   - .default(() => x) / .default(Math.random) → 应用层动态值，不在数据库层声明
+//   .defaultNow() / .defaultRandom() → SQL 表达式 DEFAULT
+//   .default('str') / .default(n) / .default(true) → 字面量 DEFAULT
+//   .default(() => x) / .default(Math.random) → 应用层动态值，不在数据库层声明
 // ==========================================================================
 
 import { drizzle } from 'drizzle-orm/postgres-js';
@@ -53,28 +54,23 @@ const getDatabaseConfig = () => ({
 
 const rawClient = postgres(connectionString, getDatabaseConfig());
 
-// ── Schema 内省：从 Drizzle schema 对象提取列定义 ──────────────────
-//
-// Drizzle 列对象公开属性（足够我们生成 DDL）：
-//   col.name          → 数据库列名（来自 pgTable('x', { col: text('col') })）
-//   col.getSQLType()  → SQL 类型名（serial / integer / text / boolean / uuid / ...）
-//   col.notNull       → 是否 NOT NULL
-//   col.primary       → 是否主键列
-//   col.hasDefault    → 是否声明了默认值
-//   col.default       → 默认值（SQL 对象 / 字面量 / 函数 / undefined）
-//
-// pgEnum 导出对象：
-//   enumObj.enumName  → 枚举类型名（如 'user_status'）
-//   enumObj.values    → 枚举值数组（如 ['active', 'withdrawn', 'graduate']）
+// ── Schema 内省 ───────────────────────────────────────────────────────
+// Drizzle 列对象公开属性：
+//   col.name / col.dbName      → 数据库列名
+//   col.getSQLType()           → SQL 类型名
+//   col.notNull                → NOT NULL
+//   col.primary                → 主键列
+//   col.default                → 默认值（SQL 对象 / 字面量 / 函数 / undefined）
+// pgEnum 导出对象：enumName / values
 // ──────────────────────────────────────────────────────────────────────
 
 type ColumnDef = {
   pgType: string;       // PostgreSQL 列类型
   notNull: boolean;     // 是否 NOT NULL
   isPrimary: boolean;   // 是否主键列
-  default: string | null; // DEFAULT 子句（不含 DEFAULT 关键字），如 "now()" / "'USER'" / null
-  isSerial: boolean;    // 是否 serial 类型（serial 自带隐式 nextval DEFAULT，我们不重复声明）
-  isEnum: boolean;      // 是否枚举类型
+  default: string | null; // DEFAULT 子句（如 "now()" / "'USER'"），无则 null
+  isSerial: boolean;    // serial 自带隐式 nextval，不重复声明
+  isEnum: boolean;      // 是否为用户自定义枚举类型
 };
 
 // Drizzle 类型名 → PostgreSQL 类型名（大部分一致，少量规范化）
@@ -103,25 +99,22 @@ const TYPE_MAP: Record<string, string> = {
   bytea: 'bytea'
 };
 
-// 把 Drizzle 的 col.default 值转成 SQL 可直接使用的 DEFAULT 子句字符串
-// 返回 null 表示 "该列没有数据库层的 DEFAULT"
-function defaultToSql(col: any, d: any): string | null {
+// 把 Drizzle 的 col.default 转成 SQL DEFAULT 子句字符串
+// 返回 null 表示 "该列没有数据库层 DEFAULT"
+function defaultToSql(d: unknown): string | null {
   if (d === undefined || d === null) return null;
 
-  // 1) SQL 表达式对象（.defaultNow() → sql`now()`，.defaultRandom() → sql`gen_random_uuid()`）
+  // 1) SQL 表达式对象（.defaultNow() → sql`now()`）
   if (typeof d === 'object' && !Array.isArray(d)) {
-    // 优先尝试 getSQL()（Drizzle 公开 API）
-    if (typeof d.getSQL === 'function') {
-      try { return d.getSQL(); } catch { /* ignore */ }
+    const obj = d as { getSQL?: () => string; queryChunks?: { chunk?: string; sql?: string }[]; sql?: string; toString?: () => string };
+    if (typeof obj.getSQL === 'function') {
+      try { return obj.getSQL(); } catch { /* ignore */ }
     }
-    // queryChunks 形式
-    if (Array.isArray(d.queryChunks)) {
-      return d.queryChunks.map((c: any) => (c?.chunk ?? c?.sql ?? String(c))).join(' ');
+    if (Array.isArray(obj.queryChunks)) {
+      return obj.queryChunks.map((c) => c?.chunk ?? c?.sql ?? String(c)).join(' ');
     }
-    // 简单 sql 属性
-    if (typeof d.sql === 'string') return d.sql;
-    // 兜底 toString
-    const s = d.toString?.();
+    if (typeof obj.sql === 'string') return obj.sql;
+    const s = obj.toString?.();
     if (s && s !== '[object Object]') return s;
     return null;
   }
@@ -130,54 +123,40 @@ function defaultToSql(col: any, d: any): string | null {
   if (typeof d === 'string') return `'${d.replace(/'/g, "''")}'`;
   if (typeof d === 'boolean' || typeof d === 'number') return String(d);
 
-  // 3) 函数（.default(() => 'x') / .default(Math.random) 等）
-  //   → 应用层动态默认值，不在数据库层声明 DEFAULT，留给 Drizzle INSERT 时计算
+  // 3) 函数（应用层动态值，不在数据库层声明）
   if (typeof d === 'function') return null;
 
   return null;
 }
 
-function resolveDefault(col: any): string | null {
-  if (!col) return null;
-
-  // Drizzle 明确标记 hasDefault = false 且 col.default 是 undefined → 无默认值
-  if (col.hasDefault === false && col.default === undefined) return null;
-
-  // serial 类型：PostgreSQL 会自动创建序列并绑定 DEFAULT nextval()，
-  // 我们不在 CREATE TABLE 中重复声明，避免冲突
-  const rawType = typeof col.getSQLType === 'function' ? col.getSQLType() : '';
-  if (rawType === 'serial') return null;
-
-  return defaultToSql(col, col.default);
-}
-
-function getColumnDef(col: any, enumNames: Set<string>): ColumnDef {
-  const rawType = typeof col.getSQLType === 'function' ? col.getSQLType() : 'text';
-  const pgType = TYPE_MAP[rawType] ?? (rawType.startsWith('character varying') ? rawType.replace('character varying', 'varchar') : rawType);
+function getColumnDef(col: unknown, enumNames: Set<string>): ColumnDef {
+  const c = col as { getSQLType?: () => string; primary?: boolean; notNull?: boolean; default?: unknown };
+  const rawType = typeof c.getSQLType === 'function' ? c.getSQLType() : 'text';
+  const pgType = TYPE_MAP[rawType] ?? (typeof rawType === 'string' && rawType.startsWith('character varying') ? rawType.replace('character varying', 'varchar') : rawType);
   const isSerial = rawType === 'serial';
-  const isPrimary = !!col.primary;
-  const notNull = !!col.notNull || isPrimary;
-  const defaultStr = resolveDefault(col);
+  const isPrimary = !!c.primary;
+  const notNull = !!c.notNull || isPrimary;
+  const defaultStr = isSerial ? null : defaultToSql(c.default);
   const isEnum = enumNames.has(pgType);
-
   return { pgType, notNull, isPrimary, default: defaultStr, isSerial, isEnum };
 }
 
 // 从 schema.ts 中扫描表和枚举
-// 两轮遍历：先收集所有枚举，再处理表（避免依赖定义顺序）
+// 两轮遍历：先枚举，再表，避免依赖定义顺序
 type TableInfo = { tableName: string; columns: { colName: string; def: ColumnDef; enumType: string | null }[] };
 type EnumInfo = { name: string; values: string[] };
 
-function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo>; enumNames: Set<string> } {
+function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo> } {
   const enums = new Map<string, EnumInfo>();
   const tables = new Map<string, TableInfo>();
-  const entries = Object.entries<any>(schema);
+  const entries = Object.entries(schema);
 
   // ── 第 1 轮：收集枚举 ────────────────────────────────────────
   for (const [, val] of entries) {
     if (!val || typeof val !== 'object') continue;
-    if (typeof val.enumName === 'string' && Array.isArray(val.values)) {
-      enums.set(val.enumName, { name: val.enumName, values: val.values });
+    const v = val as { enumName?: unknown; values?: unknown };
+    if (typeof v.enumName === 'string' && Array.isArray(v.values)) {
+      enums.set(v.enumName, { name: v.enumName, values: v.values as string[] });
     }
   }
   const enumNames = new Set(enums.keys());
@@ -186,54 +165,44 @@ function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string,
   const $skipKeys = new Set(['$inferSelect', '$inferInsert']);
   for (const [, val] of entries) {
     if (!val || typeof val !== 'object') continue;
-    if (typeof val.enumName === 'string' && Array.isArray(val.values)) continue; // 已在第 1 轮处理
+    const v = val as { enumName?: unknown; values?: unknown; dbName?: unknown; name?: unknown };
+    if (typeof v.enumName === 'string' && Array.isArray(v.values)) continue; // 已在第 1 轮处理
 
     const tableName: string | undefined =
-      typeof val.dbName === 'string' ? val.dbName :
-        typeof val.name === 'string' ? val.name : undefined;
+      typeof v.dbName === 'string' ? v.dbName :
+        typeof v.name === 'string' ? v.name : undefined;
     if (!tableName) continue;
 
     const cols: TableInfo['columns'] = [];
-    for (const [key, col] of Object.entries<any>(val)) {
+    for (const [key, col] of Object.entries(v)) {
       if (!col || typeof col !== 'object') continue;
       if ($skipKeys.has(key) || key.startsWith('$')) continue;
-      if (typeof col.getSQLType !== 'function') continue; // 过滤非列字段
-
+      const c = col as { getSQLType?: unknown; name?: unknown; fieldName?: unknown };
+      if (typeof c.getSQLType !== 'function') continue;
       const def = getColumnDef(col, enumNames);
-      const enumType = def.isEnum ? def.pgType : null;
-      // col.name 是 Drizzle 的数据库列名；key 是 TS 字段名
-      const colName: string = (col as any).name ?? (col as any).fieldName ?? key;
-      cols.push({ colName, def, enumType });
+      const colName: string = typeof c.name === 'string' ? c.name : (typeof c.fieldName === 'string' ? c.fieldName : key);
+      cols.push({ colName, def, enumType: def.isEnum ? def.pgType : null });
     }
     if (cols.length > 0) tables.set(tableName, { tableName, columns: cols });
   }
 
-  return { tables, enums, enumNames };
+  return { tables, enums };
 }
 
 const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
 
-// ── SQL 生成（全部幂等） ────────────────────────────────────────────────
-//
-// 设计原则：所有补表/补列/补枚举的 SQL 必须幂等，避免并发请求产生 42P07。
-//   CREATE TABLE IF NOT EXISTS
-//   ALTER TABLE ADD COLUMN IF NOT EXISTS
-//   DO $$ BEGIN CREATE TYPE ... EXCEPTION WHEN duplicate_object THEN NULL END $$
-//   （PostgreSQL 11 开始支持 CREATE TYPE ... AS ENUM IF NOT EXISTS，但为了
-//    兼容性和不被数据库版本限制，用 DO block 写法最稳妥）
-// ──────────────────────────────────────────────────────────────────────
+// ── SQL 生成（全部幂等） ────────────────────────────────────────
 
 function buildCreateTableSql(info: TableInfo): string {
   const colDefs = info.columns.map(({ colName, def, enumType }) => {
     const type = enumType ?? def.pgType;
     const parts = [`"${colName}"`, type];
-    // serial 自带隐式 DEFAULT nextval，我们不重复声明
-    if (def.default && !def.isSerial) parts.push(`DEFAULT ${def.default}`);
+    if (def.default) parts.push(`DEFAULT ${def.default}`);
     if (def.notNull && !def.isSerial) parts.push('NOT NULL');
     return parts.join(' ');
   });
 
-  // 主键：优先找 isPrimary=true 的列；如果没有显式 primary，退化找 serial 列
+  // 主键：优先找 isPrimary=true；没有则退化找 serial 列
   let pkCol = info.columns.find((c) => c.def.isPrimary);
   if (!pkCol) pkCol = info.columns.find((c) => c.def.isSerial);
   if (pkCol) colDefs.push(`PRIMARY KEY ("${pkCol.colName}")`);
@@ -243,181 +212,178 @@ function buildCreateTableSql(info: TableInfo): string {
 
 function buildAlterTableSql(tableName: string, colName: string, def: ColumnDef, enumType: string | null): string {
   const type = enumType ?? def.pgType;
-  const stmts: string[] = [];
-
-  // 1) 添加列（幂等）
   if (def.default) {
-    // 有默认值：一条语句搞定（ADD COLUMN + DEFAULT + NOT NULL，PostgreSQL 会自动回填）
+    // 有默认值：一条语句搞定（ADD COLUMN + DEFAULT + NOT NULL，PostgreSQL 自动回填）
     const parts = [`ADD COLUMN IF NOT EXISTS "${colName}" ${type}`, `DEFAULT ${def.default}`];
     if (def.notNull) parts.push('NOT NULL');
-    stmts.push(`ALTER TABLE "${tableName}" ${parts.join(' ')}`);
-  } else {
-    // 无默认值：只加列，不设 NOT NULL（否则已有行会因 NULL 导致 SET NOT NULL 失败）
-    stmts.push(`ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "${colName}" ${type}`);
+    return `ALTER TABLE "${tableName}" ${parts.join(' ')}`;
   }
-
-  return stmts.join('; ');
+  // 无默认值：只加列，不设 NOT NULL（否则已有行因 NULL 报错）
+  return `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "${colName}" ${type}`;
 }
 
 function buildCreateTypeSql(info: EnumInfo): string {
-  const vals = info.values.map((v: string) => `'${v.replace(/'/g, "''")}'`).join(', ');
-  // 用 $drizzle_enum$ 定界符（与 SQL 内部任何内容都不会冲突）
-  // PostgreSQL < 11 不支持 CREATE TYPE IF NOT EXISTS，用 DO block 写法跨版本兼容
-  const tag = 'drizzle_enum';
-  return 'DO $' + tag + '$ BEGIN CREATE TYPE "' + info.name + '" AS ENUM (' + vals + '); EXCEPTION WHEN duplicate_object THEN NULL; END $' + tag + '$;';
+  const vals = info.values.map((v) => `'${v.replace(/'/g, "''")}'`).join(', ');
+  // $drizzle_enum$ 自定义定界符，与枚举内容永不冲突
+  return `DO $drizzle_enum$ BEGIN CREATE TYPE "${info.name}" AS ENUM (${vals}); EXCEPTION WHEN duplicate_object THEN NULL; END $drizzle_enum$;`;
 }
 
-// ── 错误 → 修复目标 key ─────────────────────────────────────────────
+// ── 错误解析 + 数据库元数据检查 ────────────────────────────────
 
-type TargetKey = { kind: 'table' | 'column' | 'type'; target: string };
+type SchemaTarget =
+  | { kind: 'type';   enumName: string;   info: EnumInfo }
+  | { kind: 'table';  tableName: string;  info: TableInfo }
+  | { kind: 'column'; tableName: string;  colName: string; colDef: ColumnDef; enumType: string | null };
 
-function targetKeyFromError(err: any): TargetKey | null {
-  const msg: string = err?.message ?? '';
-  const code: string = err?.code ?? '';
+// PostgreSQL 未加引号的标识符被规范化为小写，但 schema.ts 的 dbName 可能是
+// 混合大小写。查询时用大小写不敏感匹配，然后返回 schema 中的真实 key。
+function findTableCI(name: string): TableInfo | undefined {
+  if (schemaTables.has(name)) return schemaTables.get(name);
+  const lower = name.toLowerCase();
+  for (const [key, info] of schemaTables) {
+    if (key.toLowerCase() === lower) return info;
+  }
+  return undefined;
+}
+
+function findColumnCI(tbl: TableInfo, colName: string): { colName: string; def: ColumnDef; enumType: string | null } | undefined {
+  const exact = tbl.columns.find((c) => c.colName === colName);
+  if (exact) return exact;
+  const lower = colName.toLowerCase();
+  return tbl.columns.find((c) => c.colName.toLowerCase() === lower);
+}
+
+function findEnumCI(name: string): EnumInfo | undefined {
+  if (schemaEnums.has(name)) return schemaEnums.get(name);
+  const lower = name.toLowerCase();
+  for (const [key, info] of schemaEnums) {
+    if (key.toLowerCase() === lower) return info;
+  }
+  return undefined;
+}
+
+function targetFromError(err: unknown): SchemaTarget | null {
+  const e = err as { code?: string; message?: string };
+  const code = e?.code ?? '';
+  const msg = e?.message ?? '';
 
   // relation "User" does not exist
   const tableMatch = msg.match(/relation\s+"([^"]+)"/i);
-  if (code === '42P01' && tableMatch) return { kind: 'table', target: tableMatch[1] };
+  if (code === '42P01' && tableMatch) {
+    const info = findTableCI(tableMatch[1]);
+    if (info) return { kind: 'table', tableName: info.tableName, info };
+  }
 
   // column "emailVerified" of relation "User" does not exist
   const colMatch = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"/i);
-  if (code === '42703' && colMatch) return { kind: 'column', target: `${colMatch[2]}:${colMatch[1]}` };
+  if (code === '42703' && colMatch) {
+    const tbl = findTableCI(colMatch[2]);
+    if (tbl) {
+      const col = findColumnCI(tbl, colMatch[1]);
+      if (col) return { kind: 'column', tableName: tbl.tableName, colName: col.colName, colDef: col.def, enumType: col.enumType };
+    }
+  }
 
   // type "user_status" does not exist
   const typeMatch = msg.match(/type\s+"([^"]+)"/i);
-  if (code === '42704' && typeMatch) return { kind: 'type', target: typeMatch[1] };
+  if (code === '42704' && typeMatch) {
+    const info = findEnumCI(typeMatch[1]);
+    if (info) return { kind: 'type', enumName: info.name, info };
+  }
 
   return null;
 }
 
-// ── 大小写不敏感查找 ─────────────────────────────────────────────────
-// PostgreSQL 未引号包裹的标识符被规范化为小写（users），而 schema.ts 中
-// pgTable('User', ...) 的 dbName 可能是混合大小写（User）。
-// 先精确匹配，找不到再做大小写不敏感匹配。
-function findTableKey(name: string): string | undefined {
-  if (schemaTables.has(name)) return name;
-  const lower = name.toLowerCase();
-  return [...schemaTables.keys()].find((k) => k.toLowerCase() === lower);
+// ── 数据库元数据检查：确认对象真的缺失 ──────────────────────
+// 完全基于真实数据库状态，不依赖任何延时/冷却假设
+// PostgreSQL DDL 在同一会话中执行完就立即可见
+async function objectMissing(target: SchemaTarget): Promise<boolean> {
+  try {
+    const esc = (s: string) => s.replace(/'/g, "''");
+    if (target.kind === 'type') {
+      const rows = await rawClient.unsafe(
+        `SELECT 1 FROM pg_type WHERE typname = '${esc(target.enumName)}' AND typnamespace = current_schema()::regnamespace`
+      );
+      return (rows as unknown as { length: number }).length === 0;
+    }
+    if (target.kind === 'table') {
+      const rows = await rawClient.unsafe(
+        `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = '${esc(target.tableName)}'`
+      );
+      return (rows as unknown as { length: number }).length === 0;
+    }
+    // column
+    const rows = await rawClient.unsafe(
+      `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${esc(target.tableName)}' AND column_name = '${esc(target.colName)}'`
+    );
+    return (rows as unknown as { length: number }).length === 0;
+  } catch {
+    // 数据库不可用，留给调用方处理原错误
+    return false;
+  }
 }
 
-function findColumnKey(tbl: TableInfo, colName: string): string | undefined {
-  const found = tbl.columns.find((c) => c.colName === colName);
-  if (found) return found.colName;
-  const lower = colName.toLowerCase();
-  return tbl.columns.find((c) => c.colName.toLowerCase() === lower)?.colName;
+// ── 并发控制：每个 key 同一时刻只跑一次 DDL ────────────────
+// 没有任何"冷却时间"——每次都查询数据库元数据确认是否需要修复
+const runningFixes = new Map<string, Promise<boolean>>();
+
+function keyFor(target: SchemaTarget): string {
+  if (target.kind === 'type')   return `e:${target.enumName}`;
+  if (target.kind === 'table')  return `t:${target.tableName}`;
+  return `c:${target.tableName}:${target.colName}`;
 }
 
-// ── 细粒度冷却 + 并发控制 ────────────────────────────────────────────
-// key: t:<table> / c:<table>:<col> / e:<enum>
-// 策略：
-//   - 同 key 的并发请求：只有一个跑 DDL，其他人 await Promise
-//   - DDL 成功：60s 冷却，同 key 不再重复 DDL
-//   - DDL 失败：不设冷却，让调用方立即拿到原始错误，避免死循环
-//   - schema 中找不到目标定义：大小写不敏感重试后仍找不到 → return false
-const FIX_COOLDOWN_MS = 60 * 1000;
-type FixState = { inProgress: Promise<boolean> | null; lastDoneAt: number };
-const fixMap = new Map<string, FixState>();
-
-async function ensureSchemaFixedFor(err: any): Promise<boolean> {
-  const target = targetKeyFromError(err);
+async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
+  const target = targetFromError(err);
   if (!target) return false;
 
-  // 先看 schema 中是否有对应定义（大小写不敏感）—— 找不到就不瞎修
-  if (target.kind === 'type') {
-    const found = [...schemaEnums.keys()].find(
-      (k) => k.toLowerCase() === target.target.toLowerCase()
-    );
-    if (!found) return false;
-    target.target = found; // 修正为 schema 中的真实大小写
-  }
+  const key = keyFor(target);
 
-  if (target.kind === 'table') {
-    const matchedKey = findTableKey(target.target);
-    if (!matchedKey) return false;
-    target.target = matchedKey; // 修正为 schema 中的真实大小写
-  }
+  // 其他请求正在修同一对象 → 等它完成
+  const pending = runningFixes.get(key);
+  if (pending) return await pending;
 
-  if (target.kind === 'column') {
-    const [tName, cName] = target.target.split(':');
-    const matchedTblKey = findTableKey(tName);
-    if (!matchedTblKey) return false;
-    const tbl = schemaTables.get(matchedTblKey)!;
-    const matchedColName = findColumnKey(tbl, cName);
-    if (!matchedColName) return false;
-    // 修正 target 为 schema 中的真实大小写，供后续 get() 使用
-    target.target = `${matchedTblKey}:${matchedColName}`;
-  }
+  // 真正查询数据库确认对象是否存在
+  //   存在但仍报 schema 错误 → 可能是瞬时错误，return true 让调用方重试
+  //   不存在 → 跑 DDL
+  const missing = await objectMissing(target);
+  if (!missing) return true;
 
-  const key = `${target.kind[0]}:${target.target}`;
-  let state = fixMap.get(key);
-
-  // 1) 有其他请求在修复同一目标 → 等它完成
-  if (state && state.inProgress) {
-    return await state.inProgress;
-  }
-
-  // 2) 该目标 60s 内已修过且成功 → 直接交给调用方重试查询
-  const now = Date.now();
-  if (state && state.lastDoneAt > 0 && now - state.lastDoneAt < FIX_COOLDOWN_MS) {
-    return true;
-  }
-
-  // 3) 新修复流程（只有第一个请求到达才会走到这里）
-  if (!state) {
-    state = { inProgress: null, lastDoneAt: 0 };
-    fixMap.set(key, state);
-  }
-
-  state.inProgress = (async () => {
+  // 到这里：确认对象不存在。开始跑 DDL（同时设置 Promise 锁，并发请求会 await 它）
+  const fixPromise = (async (): Promise<boolean> => {
     try {
       if (target.kind === 'type') {
-        const info = schemaEnums.get(target.target);
-        if (!info) return false;
-        console.log(`[db] 创建缺失枚举类型: ${target.target}`);
-        await rawClient.unsafe(buildCreateTypeSql(info));
-        console.log(`[db] ✅ 枚举 ${target.target} 已创建`);
+        console.log(`[db] 创建缺失枚举类型: ${target.enumName}`);
+        await rawClient.unsafe(buildCreateTypeSql(target.info));
+        console.log(`[db] ✅ 枚举 ${target.enumName} 已创建`);
       }
-
       if (target.kind === 'table') {
-        const info = schemaTables.get(target.target);
-        if (!info) return false;
-        console.log(`[db] 创建缺失表: ${target.target}`);
-        await rawClient.unsafe(buildCreateTableSql(info));
-        console.log(`[db] ✅ 表 ${target.target} 已创建`);
+        console.log(`[db] 创建缺失表: ${target.tableName}`);
+        await rawClient.unsafe(buildCreateTableSql(target.info));
+        console.log(`[db] ✅ 表 ${target.tableName} 已创建`);
       }
-
       if (target.kind === 'column') {
-        const [tName, cName] = target.target.split(':');
-        const info = schemaTables.get(tName);
-        if (!info) return false;
-        const colInfo = info.columns.find((c) => c.colName === cName);
-        if (!colInfo) return false;
-        console.log(`[db] 为表 ${tName} 添加缺失列: ${cName}`);
-        await rawClient.unsafe(buildAlterTableSql(tName, cName, colInfo.def, colInfo.enumType));
-        console.log(`[db] ✅ 列 ${cName} 已添加`);
+        console.log(`[db] 为表 ${target.tableName} 添加缺失列: ${target.colName}`);
+        await rawClient.unsafe(buildAlterTableSql(target.tableName, target.colName, target.colDef, target.enumType));
+        console.log(`[db] ✅ 列 ${target.colName} 已添加`);
       }
-
-      state!.lastDoneAt = Date.now();
       return true;
-    } catch (e: any) {
-      console.warn(`[db] ⚠️ schema 修复失败（${key}）:`, e?.message ?? e);
+    } catch (e) {
+      const msg = (e as { message?: string })?.message ?? String(e);
+      console.warn(`[db] ⚠️ schema 修复失败（${key}）:`, msg);
       return false;
     } finally {
-      state!.inProgress = null;
+      runningFixes.delete(key);
     }
   })();
 
-  return await state.inProgress;
+  runningFixes.set(key, fixPromise);
+  return await fixPromise;
 }
 
-// ── Proxy：让所有查询自动具备 schema 修复能力 ────────────────────
-//
-// 失败路径：查询 → 捕获 42P01/42703/42704 → ensureSchemaFixedFor() →
+// ── Proxy：让所有查询自动具备 schema 修复能力 ───────────────
+// 失败路径：查询 → 捕获 42P01/42703/42704 → ensureSchemaFixedFor →
 //         成功则重试原查询一次 → 失败则抛原始错误
-// PostgreSQL 自身对 DDL 是并发安全的（ACCESS EXCLUSIVE 锁），
-// 应用层只负责"别让多个请求各自跑一遍相同 DDL"——上面的 fixMap + Promise 排队已解决。
-// ──────────────────────────────────────────────────────────────────────
-
 const SCHEMA_ERROR_CODES = new Set(['42P01', '42703', '42704']);
 const NON_QUERY_METHODS = new Set(['end', 'destroy', 'close', 'cancel']);
 
@@ -426,8 +392,8 @@ function wrapWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
   return (async () => {
     try {
       return await promise;
-    } catch (err: any) {
-      const code: string = err?.code ?? '';
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? '';
       if (!SCHEMA_ERROR_CODES.has(code)) throw err;
 
       const fixed = await ensureSchemaFixedFor(err);
@@ -438,20 +404,21 @@ function wrapWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
 }
 
 const client = new Proxy(rawClient as any, {
-  // 拦截 tagged template 调用：client`SELECT ...`
+  // tagged template 调用：client`SELECT ...`
   apply(target, _thisArg, args) {
     const result = target(...args);
     return wrapWithRetry(result, () => target(...args));
   },
-  // 拦截 client.unsafe(sql) / client.end() 等方法调用
+  // 属性访问：client.unsafe(sql) / client.end() 等
   get(target, prop, receiver) {
     const value = Reflect.get(target, prop, receiver);
     if (typeof value !== 'function') return value;
-    return function (this: any, ...args: any[]) {
-      const result = value.apply(target, args); // postgres.js 的方法不依赖 caller this
-      // 结束/销毁/取消等非查询方法跳过 schema 修复
+    // 用 bind 保持 postgres.js 方法内部 this 指向正确
+    const boundFn = (value as Function).bind(target);
+    return function (this: unknown, ...args: unknown[]) {
+      const result = boundFn(...args);
       if (typeof prop === 'string' && NON_QUERY_METHODS.has(prop)) return result;
-      return wrapWithRetry(result, () => value.apply(target, args));
+      return wrapWithRetry(result, () => boundFn(...args));
     };
   }
 }) as ReturnType<typeof postgres>;
