@@ -410,12 +410,25 @@ async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
 }
 
 // ── Proxy：让所有查询自动具备 schema 修复能力 ───────────────
-// 失败路径：查询 → 捕获 42P01/42703/42704 → ensureSchemaFixedFor →
-//         成功则重试原查询一次 → 失败则抛原始错误
+//
+// 关键设计：drizzle-orm 通过 client.unsafe(sql, params).values() 执行查询，
+//   unsafe 返回的是 postgres.js 的 Query 对象（extends Promise），
+//   带 .values() / .execute() 等链式方法。如果把返回值包成普通 Promise，
+//   drizzle 调 .values() 就会报 "client.unsafe(...).values is not a function"。
+//
+// 两条路径：
+//   1. apply — tagged template 调用 client`SELECT ...` → 直接包 Promise
+//   2. get   — client.unsafe(...) 等方法调用 → 保留原始 Query 对象，
+//              只在 .then 决议时注入 schema 错误检测与重试，
+//              不破坏 .values/.execute 等同步链式方法
+//
+// 失败路径：查询 → .then 捕获 42P01/42703/42704 → ensureSchemaFixedFor →
+//           成功则返回新 Query 重试 → 失败则抛原始错误
 const SCHEMA_ERROR_CODES = new Set(['42P01', '42703', '42704']);
 const NON_QUERY_METHODS = new Set(['end', 'destroy', 'close', 'cancel']);
 
-function wrapWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
+// 路径 1：给普通 Promise 套一层 schema 检测（用于 apply/template-string）
+function wrapPromiseWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
   if (!promise || typeof promise.then !== 'function') return promise as Promise<T>;
   return (async () => {
     try {
@@ -423,7 +436,6 @@ function wrapWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
     } catch (err) {
       const code = (err as { code?: string })?.code ?? '';
       if (!SCHEMA_ERROR_CODES.has(code)) throw err;
-
       const fixed = await ensureSchemaFixedFor(err);
       if (fixed) {
         log(`🔁 重试查询（schema 已修复）`);
@@ -435,22 +447,65 @@ function wrapWithRetry<T>(promise: any, retry: () => Promise<T>): Promise<T> {
   })();
 }
 
+// 路径 2：为 postgres.js Query 对象注入 schema 错误检测（用于 unsafe/.values 路径）
+//   不改写 Query 对象结构，只在 .then 决议时刻拦截 schema 错误并触发修复+重试
+function wrapQueryWithSchemaFix(query: any, retry: () => any): any {
+  // 取原始 Promise.then（Query extends Promise）
+  const origThen = query.then.bind(query);
+
+  // 覆盖实例的 .then，让 schema 错误在 await 决议时被捕获并修复
+  query.then = function (onFulfilled: any, onRejected: any) {
+    return origThen(
+      onFulfilled,
+      async (err: any) => {
+        const code = (err as { code?: string })?.code ?? '';
+        if (!SCHEMA_ERROR_CODES.has(code)) throw err;
+        const fixed = await ensureSchemaFixedFor(err);
+        if (fixed) {
+          log(`🔁 重试查询（schema 已修复）`);
+          return retry(); // 返回新的 Query，由上层继续 await
+        }
+        log(`⚠️ schema 修复失败，抛出原错误`);
+        throw err;
+      }
+    );
+  } as Promise<any>['then'];
+
+  query.catch = function (onRejected: any) {
+    return query.then(undefined, onRejected);
+  };
+
+  query.finally = function (onFinally: any) {
+    return query.then(
+      (v: any) => { onFinally?.(); return v; },
+      (e: any) => { onFinally?.(); throw e; }
+    );
+  };
+
+  return query;
+}
+
 const client = new Proxy(rawClient as any, {
-  // tagged template 调用：client`SELECT ...`
+  // 路径 1：tagged template 调用 client`SELECT ...` → 返回普通 Promise
   apply(target, _thisArg, args) {
     const result = target(...args);
-    return wrapWithRetry(result, () => target(...args));
+    return wrapPromiseWithRetry(result, () => target(...args));
   },
-  // 属性访问：client.unsafe(sql) / client.end() 等
+  // 路径 2：client.unsafe(sql) / client.end() 等方法调用
   get(target, prop, receiver) {
     const value = Reflect.get(target, prop, receiver);
     if (typeof value !== 'function') return value;
-    // 用 bind 保持 postgres.js 方法内部 this 指向正确
     const boundFn = (value as Function).bind(target);
     return function (this: unknown, ...args: unknown[]) {
       const result = boundFn(...args);
+      // 非查询方法（end/close/destroy/cancel）直接透传
       if (typeof prop === 'string' && NON_QUERY_METHODS.has(prop)) return result;
-      return wrapWithRetry(result, () => boundFn(...args));
+      // 有 .values 方法 → 是 postgres.js Query 对象 → 用 Query 级包装
+      // 否则 → 普通 Promise → 用 Promise 级包装
+      if (result && typeof result.values === 'function') {
+        return wrapQueryWithSchemaFix(result, () => boundFn(...args));
+      }
+      return wrapPromiseWithRetry(result, () => boundFn(...args));
     };
   }
 }) as ReturnType<typeof postgres>;
