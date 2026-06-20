@@ -1,22 +1,19 @@
 // ==========================================================================
 // VoiceHub · PostgreSQL + Drizzle 连接层
 //
-// 设计：lazy schema 自动修复（mkdir -p 风格）
-//   任意查询失败 → 如 PG 返回 42P01 / 42703 / 42704
-//   → 从错误消息解析缺失对象 → 查元数据确认缺失 → 执行 DDL
-//   → 如 DDL 自身还缺其他依赖（如 enum 类型），递归修复后重试
-//   → 失败的用户查询自动重试一次
+// Lazy schema 自动修复：任何查询失败 → 如 PG 返回 42P01/42703/42704
+// → 解析缺失对象 → 查元数据确认 → 执行 DDL → 重试查询
 // ==========================================================================
 
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import {
   and, asc, count, desc, eq, exists, gt, gte,
-  lt, lte, ne, or, sql
+  lt, lte, ne, or, sql,
 } from 'drizzle-orm';
 import * as schema from './schema.ts';
 import { config } from 'dotenv';
-import path from 'path';
+import path from 'node:path';
 
 config({ path: path.resolve(process.cwd(), '.env') });
 if (!process.env.DATABASE_URL) {
@@ -27,63 +24,50 @@ const DEV = process.env.NODE_ENV === 'development';
 const log = (...args: unknown[]) => { if (DEV) console.log('[db]', ...args); };
 const warn = (...args: unknown[]) => { console.warn('[db]', ...args); };
 
-const connectionString = process.env.DATABASE_URL;
-const isNeon = connectionString.includes('neon.tech') ||
-                connectionString.includes('neon.database.com');
-
-// innerClient：用于 schema 检查和 DDL 执行 —— 不被 Proxy 拦截
-const innerClient = postgres(connectionString, {
-  max: isNeon ? 1 : (process.env.NODE_ENV === 'production' ? 10 : 5),
-  idle_timeout: isNeon ? 0 : 20,
-  connect_timeout: isNeon ? 10 : 30,
-  max_lifetime: 3600,
-  ssl: isNeon ? 'require'
-       : (connectionString.includes('sslmode=require') || connectionString.includes('ssl=true')) ? 'require'
-       : false,
+// ── 内部 client（不被 Proxy 拦截，用于 schema 检查和 DDL）────
+const innerClient = postgres(process.env.DATABASE_URL, {
+  max: process.env.NODE_ENV === 'production' ? 10 : 5,
+  idle_timeout: 20,
+  connect_timeout: 30,
   prepare: false,
   transform: { undefined: null },
   connection: { application_name: 'voicehub-app' },
-  onnotice: DEV ? console.log : undefined
+  onnotice: DEV ? console.log : undefined,
 });
 
-// ── 工具函数 ──────────────────────────────────────────────────────────────
-
+// ── SQL 转义辅助 ────────────────────────────────────────────────────────────
 const escS = (s: string): string => s.replace(/'/g, "''");
 const escI = (s: string): string => `"${s.replace(/"/g, '""')}"`;
 
-const BUILTIN_TYPES = new Set([
+// ── PG 内置类型判断（避免把枚举类型加引号导致报错）───────────────
+const BUILTIN_PREFIXES: string[] = [
   'serial', 'integer', 'bigint', 'smallint', 'boolean', 'text', 'uuid',
   'timestamp', 'timestamptz', 'date', 'time', 'json', 'jsonb',
   'numeric', 'decimal', 'real', 'double precision', 'inet', 'bytea',
-  'character varying', 'varchar', 'character', 'char'
-]);
+  'character varying', 'varchar', 'character', 'char',
+];
 
-// 判断是否为 PG 内置类型（包括带长度/精度的变体）
-// 例：timestamp → yes，timestamp with time zone → yes，timestamp(6) → yes，
-// varchar(100) → yes，user_status → no
-function isBuiltinType(type: string): boolean {
-  if (BUILTIN_TYPES.has(type)) return true;
-  // 检查是否以内置类型名开头（后面可能跟参数，如 varchar(100), timestamp(6)）
-  const lower = type.toLowerCase();
-  for (const builtin of BUILTIN_TYPES) {
-    if (lower.startsWith(builtin)) {
-      // 必须是完全匹配或后跟空格/括号（避免把 varchar2 等意外匹配为 varchar）
-      const rest = lower.slice(builtin.length);
-      if (rest.length === 0 || rest.startsWith(' ') || rest.startsWith('(')) {
-        return true;
-      }
+function isBuiltinType(typeStr: string): boolean {
+  if (BUILTIN_PREFIXES.includes(typeStr)) return true;
+  const lower = typeStr.toLowerCase();
+  for (const prefix of BUILTIN_PREFIXES) {
+    if (lower.startsWith(prefix)) {
+      const rest = lower.slice(prefix.length);
+      if (rest.length === 0 || rest.startsWith(' ') || rest.startsWith('(')) return true;
     }
   }
   return false;
 }
 
-// defaultToSql: drizzle 列的 default 对象 → SQL 字面量/表达式
+// ── default → SQL 字面量/表达式 ───────────────────────────────────────────
 function defaultToSql(d: unknown): string | null {
   if (d === undefined || d === null) return null;
+  if (typeof d === 'boolean') return d ? 'true' : 'false';
+  if (typeof d === 'number') return String(d);
   if (typeof d === 'string') return `'${escS(d)}'`;
-  if (typeof d === 'number' || typeof d === 'boolean') return String(d);
   if (typeof d === 'object') {
-    const obj = d as { queryChunks?: unknown; sql?: unknown; toString?: () => string };
+    // drizzle SQL 表达式对象（如 defaultNow()、defaultRandom()）
+    const obj = d as { queryChunks?: unknown; sql?: unknown };
     if (Array.isArray(obj.queryChunks)) {
       const parts: string[] = [];
       for (const chunk of obj.queryChunks) {
@@ -92,113 +76,92 @@ function defaultToSql(d: unknown): string | null {
         if (Array.isArray(c.value)) parts.push(...c.value.map((v) => String(v)));
         else if (typeof c.chunk === 'string') parts.push(c.chunk);
       }
-      const s = parts.join(' ').trim();
-      if (s.length > 0) return s;
+      const joined = parts.join(' ').trim();
+      if (joined.length > 0) return joined;
     }
     if (typeof obj.sql === 'string' && obj.sql.length > 0) return obj.sql;
-    const s = obj.toString?.();
-    if (s && s !== '[object Object]' && s.length > 0) return s;
   }
   return null;
 }
 
-// ── Schema 内省：构建表 + 枚举映射（缓存） ──────────────────────
-
-interface ColumnDef { colName: string; pgType: string; notNull: boolean; defaultSql: string | null; isSerial: boolean; isPrimary: boolean; }
-interface TableInfo { tableName: string; columns: ColumnDef[]; }
-interface EnumInfo { name: string; values: string[]; }
-
-let cachedNameKey: symbol | null = null;
-let cachedIsTableKey: symbol | null = null;
-
-function resolveDrizzleKeys(obj: object) {
-  if (cachedNameKey !== null) return;
-  const symbols = Object.getOwnPropertySymbols(obj);
-  for (const sym of symbols) {
-    const desc = sym.toString();
-    if (desc === 'Symbol(drizzle:Name)') cachedNameKey = sym;
-    else if (desc === 'Symbol(drizzle:IsDrizzleTable)') cachedIsTableKey = sym;
-  }
-}
-
-let cachedMaps: { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo> } | undefined;
-
-function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo> } {
-  if (cachedMaps) return cachedMaps;
-  const entries = Object.entries(schema);
-  const enums = new Map<string, EnumInfo>();
-  const tables = new Map<string, TableInfo>();
-
-  // 枚举收集
-  for (const [, val] of entries) {
-    if (!val) continue;
-    const v = val as { enumName?: unknown; enumValues?: unknown };
-    if (typeof v.enumName === 'string' && Array.isArray(v.enumValues)) {
-      enums.set(v.enumName, {
-        name: v.enumName,
-        values: (v.enumValues as unknown[]).map((x) => String(x))
-      });
-    }
-  }
-
-  // 表 + 列 收集
-  for (const [, val] of entries) {
-    if (!val || typeof val !== 'object') continue;
-    if (cachedNameKey === null) resolveDrizzleKeys(val);
-    if (cachedIsTableKey !== null && !(val as any)[cachedIsTableKey]) continue;
-    if (cachedIsTableKey === null) {
-      const hasCol = Object.values(val).some((c) =>
-        c && typeof c === 'object' && typeof (c as any).getSQLType === 'function'
-      );
-      if (!hasCol) continue;
-    }
-    const tableName: string | undefined = cachedNameKey !== null ? String((val as any)[cachedNameKey]) : undefined;
-    if (!tableName) continue;
-
-    const cols: ColumnDef[] = [];
-    for (const [key, col] of Object.entries(val)) {
-      if (!col || typeof col !== 'object') continue;
-      const c = col as { getSQLType?: () => unknown; name?: unknown; primary?: unknown; notNull?: unknown; default?: unknown };
-      if (typeof c.getSQLType !== 'function') continue;
-      const rawType = c.getSQLType();
-      const typeStr = typeof rawType === 'string' ? rawType : 'text';
-      const isSerial = typeStr === 'serial';
-      const isPrimary = !!c.primary;
-      const notNull = !!c.notNull || isPrimary;
-      cols.push({
-        colName: typeof c.name === 'string' ? c.name : key,
-        pgType: typeStr,
-        notNull,
-        defaultSql: isSerial ? null : defaultToSql(c.default),
-        isSerial,
-        isPrimary
-      });
-    }
-    if (cols.length > 0) tables.set(tableName, { tableName, columns: cols });
-  }
-
-  cachedMaps = { tables, enums };
-  log(`✅ schema 映射完成：${tables.size} 张表，${enums.size} 个枚举`);
-  return cachedMaps;
-}
+// ── Schema 内省：构建 表 + 枚举 映射 ─────────────────────────────────
+interface ColDef { name: string; sqlType: string; notNull: boolean; isPrimary: boolean; defaultSql: string | null; isSerial: boolean; }
+interface TableDef { name: string; columns: ColDef[]; }
+interface EnumDef { name: string; values: string[]; }
 
 const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
 
-// 大小写不敏感查找
-function findTableCI(name: string): TableInfo | undefined {
+function buildSchemaMaps(): { tables: Map<string, TableDef>; enums: Map<string, EnumDef> } {
+  const tables = new Map<string, TableDef>();
+  const enums = new Map<string, EnumDef>();
+
+  // 1. 枚举收集（pgEnum 返回的 function 同时挂有 .enumName/.enumValues）
+  for (const val of Object.values(schema)) {
+    if (val && typeof val === 'function') {
+      const f = val as { enumName?: unknown; enumValues?: unknown };
+      if (typeof f.enumName === 'string' && Array.isArray(f.enumValues)) {
+        enums.set(f.enumName, { name: f.enumName, values: (f.enumValues as unknown[]).map((x) => String(x)) });
+      }
+    }
+  }
+
+  // 2. 表 + 列收集（pgTable 返回的对象挂有 Symbol(drizzle:Name)）
+  const tableSymbol = findDrizzleSymbol('drizzle:Name');
+
+  for (const val of Object.values(schema)) {
+    if (!val || typeof val !== 'object') continue;
+
+    const tableName = tableSymbol ? String((val as any)[tableSymbol]) : undefined;
+    if (!tableName) continue;
+
+    const columns: ColDef[] = [];
+    for (const col of Object.values(val as object)) {
+      if (!col || typeof col !== 'object') continue;
+      const c = col as { name?: unknown; primary?: unknown; notNull?: unknown; default?: unknown; getSQLType?: () => unknown };
+      if (typeof c.getSQLType !== 'function') continue;
+
+      const rawType = c.getSQLType();
+      const sqlType = typeof rawType === 'string' ? rawType : 'text';
+      const isSerial = sqlType === 'serial';
+      const isPrimary = !!c.primary;
+
+      columns.push({
+        name: typeof c.name === 'string' ? c.name : String(c),
+        sqlType,
+        notNull: !!c.notNull || isPrimary,
+        isPrimary,
+        defaultSql: isPrimary && isSerial ? null : defaultToSql(c.default),
+        isSerial,
+      });
+    }
+
+    if (columns.length > 0) tables.set(tableName, { name: tableName, columns });
+  }
+
+  log(`✅ schema 映射完成：${tables.size} 张表，${enums.size} 个枚举`);
+  return { tables, enums };
+}
+
+function findDrizzleSymbol(description: string): symbol | null {
+  for (const val of Object.values(schema)) {
+    if (!val || typeof val !== 'object') continue;
+    for (const sym of Object.getOwnPropertySymbols(val)) {
+      if (sym.toString().includes(description)) return sym;
+    }
+  }
+  return null;
+}
+
+// ── 大小写不敏感查找 ───────────────────────────────────────────────────────
+function findTableCI(name: string): TableDef | undefined {
   const exact = schemaTables.get(name);
   if (exact) return exact;
   const lower = name.toLowerCase();
   for (const [key, info] of schemaTables) if (key.toLowerCase() === lower) return info;
   return undefined;
 }
-function findColumnCI(tbl: TableInfo, colName: string): ColumnDef | undefined {
-  const exact = tbl.columns.find((c) => c.colName === colName);
-  if (exact) return exact;
-  const lower = colName.toLowerCase();
-  return tbl.columns.find((c) => c.colName.toLowerCase() === lower);
-}
-function findEnumCI(name: string): EnumInfo | undefined {
+
+function findEnumCI(name: string): EnumDef | undefined {
   const exact = schemaEnums.get(name);
   if (exact) return exact;
   const lower = name.toLowerCase();
@@ -206,130 +169,99 @@ function findEnumCI(name: string): EnumInfo | undefined {
   return undefined;
 }
 
-// ── DDL 生成 ─────────────────────────────────────────────────────────────
-// 注意：objectMissing 已经在执行 DDL 前确认过对象不存在，因此
-// 不需要 IF NOT EXISTS。保留 `CREATE TABLE IF NOT EXISTS` 是因为它
-// 在 PG 9.6+ 都被支持。对于 CREATE TYPE，不使用 IF NOT EXISTS
-// 以兼容老版本 PG 以及部分 PG 兼容数据库。
-
-function colTypeSql(col: ColumnDef): string {
-  return isBuiltinType(col.pgType) ? col.pgType : escI(col.pgType);
+function findColumnCI(tbl: TableDef, colName: string): ColDef | undefined {
+  const exact = tbl.columns.find((c) => c.name === colName);
+  if (exact) return exact;
+  const lower = colName.toLowerCase();
+  return tbl.columns.find((c) => c.name.toLowerCase() === lower);
 }
 
-function buildCreateTableSql(info: TableInfo): string {
-  const colDefs = info.columns.map((col) => {
-    const parts = [escI(col.colName), colTypeSql(col)];
+// ── DDL 生成 ───────────────────────────────────────────────────────────────
+function colTypeForDdl(col: ColDef): string {
+  return isBuiltinType(col.sqlType) ? col.sqlType : escI(col.sqlType);
+}
+
+function buildCreateTableSql(tbl: TableDef): string {
+  const colParts = tbl.columns.map((col) => {
+    const parts = [escI(col.name), colTypeForDdl(col)];
     if (col.defaultSql) parts.push(`DEFAULT ${col.defaultSql}`);
     if (col.notNull && !col.isSerial) parts.push('NOT NULL');
     return parts.join(' ');
   });
-  const pkCol = info.columns.find((c) => c.isPrimary) || info.columns.find((c) => c.isSerial);
-  if (pkCol) colDefs.push(`PRIMARY KEY (${escI(pkCol.colName)})`);
-  return `CREATE TABLE IF NOT EXISTS ${escI(info.tableName)} (${colDefs.join(', ')})`;
+  const pkCol = tbl.columns.find((c) => c.isPrimary);
+  if (pkCol) colParts.push(`PRIMARY KEY (${escI(pkCol.name)})`);
+  return `CREATE TABLE IF NOT EXISTS ${escI(tbl.name)} (${colParts.join(', ')})`;
 }
 
-function buildAlterTableSql(tableName: string, col: ColumnDef): string {
-  const base = `ALTER TABLE ${escI(tableName)} ADD COLUMN IF NOT EXISTS ${escI(col.colName)} ${colTypeSql(col)}`;
+function buildAlterTableSql(tbl: TableDef, col: ColDef): string {
+  const parts = [
+    `ALTER TABLE ${escI(tbl.name)} ADD COLUMN IF NOT EXISTS ${escI(col.name)} ${colTypeForDdl(col)}`,
+  ];
   if (col.defaultSql) {
-    const parts = [base, `DEFAULT ${col.defaultSql}`];
+    parts.push(`DEFAULT ${col.defaultSql}`);
     if (col.notNull) parts.push('NOT NULL');
-    return parts.join(' ');
   }
-  return base;
+  return parts.join(' ');
 }
 
-function buildCreateTypeSql(info: EnumInfo): string {
-  // 不用 IF NOT EXISTS 以兼容 PG < 11
-  const vals = info.values.map((v) => `'${escS(v)}'`).join(', ');
-  return `CREATE TYPE ${escI(info.name)} AS ENUM (${vals})`;
+function buildCreateTypeSql(en: EnumDef): string {
+  // objectMissing 已确认类型不存在，不需要 IF NOT EXISTS
+  const vals = en.values.map((v) => `'${escS(v)}'`).join(', ');
+  return `CREATE TYPE ${escI(en.name)} AS ENUM (${vals})`;
 }
 
-// ── 修复目标定义 + 错误解析 ────────────────────────────────────────
-
-type SchemaTarget =
-  | { kind: 'type'; name: string; info: EnumInfo }
-  | { kind: 'table'; name: string; info: TableInfo }
-  | { kind: 'column'; table: string; col: string; info: TableInfo; colDef: ColumnDef };
-
-function targetKey(t: SchemaTarget): string {
-  return t.kind === 'type' ? `e:${t.name}` : t.kind === 'table' ? `t:${t.name}` : `c:${t.table}:${t.col}`;
-}
-
-function targetDdl(t: SchemaTarget): string {
-  if (t.kind === 'type') return buildCreateTypeSql(t.info);
-  if (t.kind === 'table') return buildCreateTableSql(t.info);
-  return buildAlterTableSql(t.table, t.colDef);
-}
-
-const SCHEMA_ERROR_CODES = new Set(['42P01', '42703', '42704']);
-function isSchemaError(err: unknown): boolean {
-  const code = (err as { code?: string } | undefined)?.code;
-  return !!code && SCHEMA_ERROR_CODES.has(code);
-}
-
-function targetFromError(err: unknown): SchemaTarget | null {
-  const e = err as { code?: string; message?: string } | undefined;
-  const code = e?.code ?? '';
-  const msg = e?.message ?? '';
-
-  if (code === '42P01') {
-    const m = msg.match(/relation\s+"([^"]+)"/i);
-    if (m) {
-      const info = findTableCI(m[1]);
-      if (info) return { kind: 'table', name: info.tableName, info };
-    }
-  }
-  if (code === '42703') {
-    const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"/i);
-    if (m) {
-      const tbl = findTableCI(m[2]);
-      if (tbl) {
-        const col = findColumnCI(tbl, m[1]);
-        if (col) return { kind: 'column', table: tbl.tableName, col: col.colName, info: tbl, colDef: col };
-      }
-    }
-  }
-  if (code === '42704') {
-    const m = msg.match(/type\s+"([^"]+)"/i);
-    if (m) {
-      const info = findEnumCI(m[1]);
-      if (info) return { kind: 'type', name: info.name, info };
-    }
-  }
-  return null;
-}
-
-// ── 元数据检查 + schema 修复引擎（并发安全 + 递归依赖） ─────────
-
-async function objectMissing(target: SchemaTarget): Promise<boolean> {
-  if (target.kind === 'type') {
-    const rows = await innerClient.unsafe(
-      `SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE LOWER(t.typname) = LOWER('${escS(target.name)}') AND n.nspname = current_schema()`
-    );
-    return !rows || (rows as unknown[]).length === 0;
-  }
-  if (target.kind === 'table') {
-    const rows = await innerClient.unsafe(
-      `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER('${escS(target.name)}')`
-    );
-    return !rows || (rows as unknown[]).length === 0;
-  }
-  // column
+// ── 对象存在性检查（参数化查询，避免 SQL 注入）──────────────
+async function objectMissingTable(name: string): Promise<boolean> {
   const rows = await innerClient.unsafe(
-    `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER('${escS(target.table)}') AND LOWER(column_name) = LOWER('${escS(target.col)}')`
-  );
-  return !rows || (rows as unknown[]).length === 0;
+    'SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER($1)',
+    [name],
+  ) as unknown[];
+  return rows.length === 0;
 }
 
+async function objectMissingColumn(table: string, col: string): Promise<boolean> {
+  const rows = await innerClient.unsafe(
+    'SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER($1) AND LOWER(column_name) = LOWER($2)',
+    [table, col],
+  ) as unknown[];
+  return rows.length === 0;
+}
+
+async function objectMissingType(name: string): Promise<boolean> {
+  const rows = await innerClient.unsafe(
+    'SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE LOWER(t.typname) = LOWER($1) AND n.nspname = current_schema()',
+    [name],
+  ) as unknown[];
+  return rows.length === 0;
+}
+
+// ── Schema 修复引擎 ──────────────────────────────────────────────────────
+// runningFixes: 同一目标（表/列/枚举）并发请求只执行一次 DDL
 const runningFixes = new Map<string, Promise<boolean>>();
 const MAX_RECURSION = 8;
 
-async function fixTarget(target: SchemaTarget, depth: number): Promise<boolean> {
+type FixTarget =
+  | { kind: 'table'; name: string; ddl: string }
+  | { kind: 'column'; table: string; col: string; ddl: string }
+  | { kind: 'type'; name: string; ddl: string };
+
+function targetKey(t: FixTarget): string {
+  return t.kind === 'type' ? `e:${t.name}` : t.kind === 'table' ? `t:${t.name}` : `c:${t.table}:${t.col}`;
+}
+
+async function objectMissing(t: FixTarget): Promise<boolean> {
+  if (t.kind === 'table') return objectMissingTable(t.name);
+  if (t.kind === 'column') return objectMissingColumn(t.table, t.col);
+  return objectMissingType(t.name);
+}
+
+async function fixTarget(target: FixTarget, depth: number): Promise<boolean> {
   if (depth >= MAX_RECURSION) {
-    warn(`⚠️ 递归修复达到上限，放弃: ${targetKey(target)}`);
+    warn(`⚠️ 递归修复达到上限（${MAX_RECURSION}），放弃: ${targetKey(target)}`);
     return false;
   }
 
+  // 并发去重：如果已有同目标的修复 Promise，直接复用
   const key = targetKey(target);
   const pending = runningFixes.get(key);
   if (pending) return await pending;
@@ -342,20 +274,19 @@ async function fixTarget(target: SchemaTarget, depth: number): Promise<boolean> 
         return true;
       }
 
-      const ddl = targetDdl(target);
-      log(`📦 执行 DDL (depth=${depth}): ${ddl}`);
+      log(`📦 执行 DDL (depth=${depth}): ${target.ddl}`);
 
       try {
-        await innerClient.unsafe(ddl);
+        await innerClient.unsafe(target.ddl);
       } catch (ddlErr) {
-        // DDL 自身遇到 schema 错误（如 CREATE TABLE 需要的 enum 不存在）
+        // DDL 自身缺 schema 对象？递归修复依赖后重试
         if (!isSchemaError(ddlErr)) throw ddlErr;
         const dep = targetFromError(ddlErr);
         if (!dep) throw ddlErr;
         log(`🔗 DDL 依赖其他 schema 对象，先递归修复: ${targetKey(dep)}`);
         const depFixed = await fixTarget(dep, depth + 1);
         if (!depFixed) throw ddlErr;
-        await innerClient.unsafe(ddl);
+        await innerClient.unsafe(target.ddl);
       }
 
       log(`✅ schema 已修复: ${key}`);
@@ -373,90 +304,106 @@ async function fixTarget(target: SchemaTarget, depth: number): Promise<boolean> 
   return await fixPromise;
 }
 
+// ── 错误解析：从 PG 错误消息判断缺哪个 schema 对象 ─────────
+const SCHEMA_ERROR_CODES = new Set(['42P01', '42703', '42704']);
+function isSchemaError(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  return !!code && SCHEMA_ERROR_CODES.has(code);
+}
+
+function targetFromError(err: unknown): FixTarget | null {
+  const e = err as { code?: string; message?: string };
+  const code = e.code ?? '';
+  const msg = e.message ?? '';
+
+  if (code === '42P01') {
+    const m = msg.match(/relation\s+"([^"]+)"/i);
+    if (m) {
+      const info = findTableCI(m[1]);
+      if (info) return { kind: 'table', name: info.name, ddl: buildCreateTableSql(info) };
+    }
+  }
+  if (code === '42703') {
+    const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"/i);
+    if (m) {
+      const tbl = findTableCI(m[2]);
+      if (tbl) {
+        const col = findColumnCI(tbl, m[1]);
+        if (col) return { kind: 'column', table: tbl.name, col: col.name, ddl: buildAlterTableSql(tbl, col) };
+      }
+    }
+  }
+  if (code === '42704') {
+    const m = msg.match(/type\s+"([^"]+)"/i);
+    if (m) {
+      const info = findEnumCI(m[1]);
+      if (info) return { kind: 'type', name: info.name, ddl: buildCreateTypeSql(info) };
+    }
+  }
+  return null;
+}
+
 async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
   const target = targetFromError(err);
   if (!target) return false;
   return fixTarget(target, 0);
 }
 
-// ── Proxy：拦截业务查询 + schema 修复 + 自动重试 ─────────
-
-// 包装一个 Promise，捕获 schema 错误并修复后重试
-function wrapPromiseWithRetry<T>(promise: Promise<T>, retry: () => Promise<T>): Promise<T> {
+// ── Proxy 包装：拦截业务查询 + schema 错误自动修复 ────────────
+// wrapPromise: 对任意 Promise 捕获 schema 错误 → 修复 → 重新 execute
+function wrapPromise<T>(promise: Promise<T>, execute: () => Promise<T>): Promise<T> {
   return promise.catch(async (err) => {
     if (!isSchemaError(err)) throw err;
     const fixed = await ensureSchemaFixedFor(err);
     if (!fixed) throw err;
     log(`🔁 重试查询（schema 已修复）`);
-    return await retry();
+    return await execute();
   });
 }
 
-function wrapWithSchemaFix<T>(result: any, retry: () => any): any {
-  // postgres.js Query 对象：覆盖 .then/.values/.execute/.simple 等方法
+// wrapQuery: 对 postgres.js 的 Query 对象覆盖 .then / .values / .execute
+function wrapWithSchemaFix<T>(result: any, execute: () => Promise<T>): any {
   if (result && typeof result.values === 'function') {
-    // 保存原始方法
     const origThen = result.then.bind(result);
     const origValues = result.values?.bind(result);
     const origExecute = result.execute?.bind(result);
-    const origSimple = result.simple?.bind(result);
 
-    // 覆盖 .then（捕获直接 await 或 .then() 调用）
     result.then = function (onFulfilled: any, onRejected: any): any {
       return origThen(
         onFulfilled,
-        async (err: any) => {
+        async (err: unknown) => {
           if (!isSchemaError(err)) throw err;
           const fixed = await ensureSchemaFixedFor(err);
           if (!fixed) throw err;
           log(`🔁 重试查询（schema 已修复）`);
-          return await retry();
-        }
+          return await execute();
+        },
       );
-    } as Promise<T>['then'];
+    };
 
-    // 覆盖 .values（drizzle-orm 使用此方法获取行数据）
     if (origValues) {
       result.values = function (): any {
-        const valuesPromise = origValues();
-        return wrapPromiseWithRetry(valuesPromise, () => retry().then((r: any) => r.values?.() ?? r));
+        return wrapPromise(origValues(), () => execute() as any);
       };
     }
 
-    // 覆盖 .execute（某些场景使用）
     if (origExecute) {
       result.execute = function (): any {
-        const execPromise = origExecute();
-        return wrapPromiseWithRetry(execPromise, () => retry().then((r: any) => r.execute?.() ?? r));
-      };
-    }
-
-    // 覆盖 .simple（返回新的 Query，也需要包装）
-    if (origSimple) {
-      result.simple = function (): any {
-        const simpleResult = origSimple();
-        return wrapWithSchemaFix(simpleResult, () => retry().then((r: any) => r.simple?.() ?? r));
+        return wrapPromise(origExecute(), () => execute() as any);
       };
     }
 
     return result;
   }
 
-  // 普通 Promise/thenable：用 then 链捕获 schema 错误
-  return (async () => {
-    try { return await result; } catch (err) {
-      if (!isSchemaError(err)) throw err;
-      const fixed = await ensureSchemaFixedFor(err);
-      if (!fixed) throw err;
-      log(`🔁 重试查询（schema 已修复）`);
-      return await retry();
-    }
-  })();
+  // 普通 Promise / thenable
+  return wrapPromise(result as any, execute);
 }
 
+// ── 对外 client：Proxy 包装 innerClient ───────────────────────
 const client = new Proxy(innerClient as any, {
-  // client`SELECT 1` 形式
-  apply(_target, _thisArg, args) {
+  // client`SELECT 1` 形式（Tagged Template）
+  apply(_t, _this, args) {
     const result = innerClient(...(args as any));
     return wrapWithSchemaFix(result, () => innerClient(...(args as any)));
   },
@@ -465,19 +412,17 @@ const client = new Proxy(innerClient as any, {
     const value = Reflect.get(target, prop);
     if (typeof value !== 'function') return value;
     const boundFn = (value as Function).bind(target);
-    const propStr = String(prop);
-    if (propStr === 'end' || propStr === 'destroy' || propStr === 'close' || propStr === 'cancel') {
-      return boundFn; // 生命周期方法，直接透传
-    }
+    // 生命周期方法直接透传（不参与 schema 修复）
+    const s = String(prop);
+    if (s === 'end' || s === 'destroy' || s === 'close' || s === 'cancel') return boundFn;
     return function (this: unknown, ...args: unknown[]): any {
       const result = boundFn(...args);
-      return wrapWithSchemaFix(result, () => boundFn(...args));
+      return wrapWithSchemaFix(result, () => boundFn(...args) as any);
     };
-  }
+  },
 }) as ReturnType<typeof postgres>;
 
-// ── 对外导出 ──────────────────────────────────────────────────────────────
-
+// ── 对外导出 ───────────────────────────────────────────────────────────────
 export const db = drizzle(client, { schema });
 export { client };
 export * from './schema.ts';
