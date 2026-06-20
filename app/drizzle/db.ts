@@ -111,23 +111,42 @@ function defaultToSql(d: unknown): string | null {
   if (d === undefined || d === null) return null;
 
   if (typeof d === 'object' && !Array.isArray(d)) {
-    const obj = d as {
-      getSQL?: () => unknown;
-      queryChunks?: { chunk?: string; sql?: string }[];
-      sql?: string;
-      toString?: () => string;
-    };
-    if (typeof obj.getSQL === 'function') {
-      try {
-        const s = obj.getSQL();
-        if (typeof s === 'string' && s.length > 0) return s;
-      } catch { /* ignore */ }
-    }
+    const obj = d as Record<string, unknown>;
+    // 方案 1：直接从 queryChunks 提取（drizzle-orm 0.x 内部格式）
+    // 每个 chunk 可能是 { value: [...strings] } → 展开并 join
     if (Array.isArray(obj.queryChunks)) {
-      const s = obj.queryChunks.map((c) => c?.chunk ?? c?.sql ?? String(c)).join(' ').trim();
+      const parts: string[] = [];
+      for (const chunk of obj.queryChunks) {
+        if (!chunk || typeof chunk !== 'object') continue;
+        const c = chunk as Record<string, unknown>;
+        if (Array.isArray(c.value)) {
+          // { value: ["now()"] } → "now()"
+          parts.push(...c.value.map((v) => String(v)));
+        } else if (typeof c.chunk === 'string') {
+          parts.push(c.chunk);
+        } else if (typeof c.sql === 'string') {
+          parts.push(c.sql);
+        }
+      }
+      const s = parts.join(' ').trim();
       if (s.length > 0) return s;
     }
+    // 方案 2：调用 getSQL()（部分 SQL 对象支持）
+    if (typeof obj.getSQL === 'function') {
+      try {
+        const result = obj.getSQL();
+        // getSQL() 可能返回字符串、SQL 对象或数组
+        if (typeof result === 'string' && result.length > 0) return result;
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+          // 递归处理返回的 SQL 对象
+          const nested = defaultToSql(result);
+          if (nested) return nested;
+        }
+      } catch { /* ignore */ }
+    }
+    // 方案 3：直接取 .sql 字符串
     if (typeof obj.sql === 'string' && obj.sql.length > 0) return obj.sql;
+    // 方案 4：toString（用于字面量 SQL）
     const s = obj.toString?.();
     if (s && s !== '[object Object]') return s;
     return null;
