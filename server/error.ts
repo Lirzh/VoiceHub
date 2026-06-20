@@ -16,8 +16,7 @@ const errorHandler: NitroErrorHandler = async (error, event) => {
     error.message.includes('ENOTFOUND') ||
     error.message.includes('ETIMEDOUT') ||
     error.message.includes('Connection terminated') ||
-    error.message.includes('Connection lost') ||
-    error.message.includes('Prisma')
+    error.message.includes('Connection lost')
 
   if (isDatabaseError) {
     console.log('Database error detected in error handler')

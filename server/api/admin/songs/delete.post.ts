@@ -95,14 +95,6 @@ export default defineEventHandler(async (event) => {
       throw error
     }
 
-    // 处理Prisma特定错误
-    if (error.code === 'P2025') {
-      throw createError({
-        statusCode: 404,
-        message: '歌曲不存在或已被删除'
-      })
-    }
-
     // 其他未知错误
     throw createError({
       statusCode: 500,

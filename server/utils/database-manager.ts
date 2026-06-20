@@ -1,7 +1,7 @@
-import { db, getConnectionStatus } from '~/drizzle/db'
+import { db, getConnectionStatus as getClientStatus } from '~/drizzle/db'
 import { sql } from 'drizzle-orm'
 import {
-  getConnectionPoolStatus,
+  getConnectionPoolStatus as getPoolStatus,
   getDatabaseMetrics
 } from './database-health'
 import { getServerTimestamp } from './serverTime'
@@ -47,10 +47,10 @@ export class DatabaseManager {
 
     const startTime = Date.now()
     try {
-      // 获取连接状态
-      const connectionStatus = await getConnectionStatus()
+      // 读取底层连接对象状态（同步）
+      const clientStatus = getClientStatus()
 
-      // 执行简单查询测试连接
+      // 执行简单查询测试真实连通性
       await db.execute(sql`SELECT 1 as health_check`)
 
       const latency = Date.now() - startTime
@@ -58,7 +58,7 @@ export class DatabaseManager {
         status: true,
         latency,
         timestamp: new Date(),
-        connectionStatus: connectionStatus.status
+        connectionStatus: clientStatus.status
       }
 
       // 更新缓存
@@ -129,7 +129,7 @@ export class DatabaseManager {
   }
 
   /**
-   * 获取连接状态 - 适配 Neon Database 无服务器架构
+   * 获取连接状态 - 执行真实查询确认连通性
    */
   async getConnectionStatus(): Promise<{
     connected: boolean
@@ -140,9 +140,9 @@ export class DatabaseManager {
     error: string | null
   }> {
     try {
-      const connectionStatus = await getConnectionStatus()
+      const clientStatus = getClientStatus()
 
-      // 用最小查询判断真实连通性，避免底层连接对象状态或统计查询误判。
+      // 用最小查询判断真实连通性，避免底层连接对象状态误判
       await db.execute(sql`SELECT 1 as connection_check`)
 
       // 获取当前活跃连接数
@@ -162,10 +162,10 @@ export class DatabaseManager {
 
       return {
         connected: true,
-        status: connectionStatus.status || 'connected',
+        status: clientStatus.status || 'connected',
         activeConnections,
-        serverlessMode: true, // Neon Database 是无服务器架构
-        autoSuspend: true, // 支持自动暂停
+        serverlessMode: true,
+        autoSuspend: true,
         error: null
       }
     } catch (error) {
@@ -182,14 +182,14 @@ export class DatabaseManager {
   }
 
   /**
-   * 获取连接池状态
+   * 获取连接池状态（转发到 database-health）
    */
   async getConnectionPoolStatus() {
-    return await getConnectionPoolStatus()
+    return await getPoolStatus()
   }
 
   /**
-   * 获取数据库性能指标
+   * 获取数据库性能指标（转发到 database-health）
    */
   async getPerformanceMetrics() {
     return await getDatabaseMetrics()

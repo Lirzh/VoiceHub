@@ -125,7 +125,7 @@ export default defineEventHandler(async (event) => {
       'EmailTemplate'
     ]
 
-    // Prisma模型名到数据库表名的映射
+    // 模型名到数据库表名的映射
     const tableNameMap: Record<string, string> = {
       Song: 'Song',
       User: 'User',
