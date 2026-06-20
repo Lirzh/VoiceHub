@@ -65,87 +65,315 @@ const rawClient = postgres(connectionString, getDatabaseConfig());
 
 // ─── lazy schema 自动修复（mkdir -p 风格）─────────────────────────────
 // 任何一次数据库查询，若遇到 schema 缺失类错误（缺表 / 缺列 / 缺枚举），
-// 当场调用 drizzle-kit push 补齐，然后把失败的查询**重试一次**。
+// 当场分析缺少什么，生成并执行精确的 CREATE / ALTER SQL，
+// 然后把失败的查询重试一次。
 //
-// PostgreSQL 错误码（本模块关心的）：
-//   42P01  relation does not exist （缺表）
-//   42703  column does not exist    （缺列）
-//   42704  type does not exist      （缺枚举类型）
+// PostgreSQL 错误码：
+//   42P01  relation does not exist
+//   42703  column does not exist
+//   42704  type does not exist
 //
-// 关于默认值（DEFAULT / NOT NULL）：
-//   drizzle-kit push 在补齐列时自动生成：
-//     ALTER TABLE "Table" ADD COLUMN "col" TIMESTAMP DEFAULT now() NOT NULL
-//   并用该默认值 UPDATE 已存在的行。因此用户代码中的
-//   .defaultNow() / .default('USER') / .default(false) / .default(true)
-//   在"缺列 → 补齐 → 重试"的链路里是安全的，无需手写 SQL。
-//
-// 幂等性：drizzle-kit push 本身幂等 —— schema 已对齐时什么都不做，
-// 因此重复触发不会有副作用。为避免性能浪费，修复完成后的 60 秒内不再
-// 重复调用 push（冷却期）。
+// 幂等性：由 drizzle push 本身保证 —— push 本身是幂等的，
+// 重复触发不会有副作用。冷却期（60 秒）仅用于避免同一进程内
+// 短时间内重复调用。
 // ──────────────────────────────────────────────────────────────────────
 
-let schemaSyncInProgress: Promise<void> | null = null;
-let schemaSyncLastDoneAt = 0;
-const SCHEMA_SYNC_COOLDOWN_MS = 60 * 1000; // 60 秒
+// ── Drizzle schema 内省：从 schema.ts 提取列/枚举定义 ──────────────────
 
-async function syncSchemaNow(): Promise<void> {
-  const now = Date.now();
-  if (now - schemaSyncLastDoneAt < SCHEMA_SYNC_COOLDOWN_MS) return;
-  if (schemaSyncInProgress) return schemaSyncInProgress;
+// Drizzle 内部用 Symbol 存储列元信息，通过 Symbol introspection 获取。
+const colSym = (key: string) => (Object as any).getOwnPropertySymbols?.({})?.find?.((s) => String(s).includes(key)) ?? Symbol();
 
-  schemaSyncInProgress = (async () => {
+function getColumnDef(col: any): { pgType: string; notNull: boolean; default: string | null; isSerial: boolean; isUuid: boolean } {
+  const type: string = typeof col.getSQLType === 'function' ? col.getSQLType() : 'text';
+  const sym = colSym('');
+  const config = (col as any)[sym] ?? {};
+
+  // 映射 Drizzle 类型 → PostgreSQL 类型
+  let pgType = type;
+  let isSerial = false;
+  let isUuid = false;
+
+  if (type === 'serial') {
+    pgType = 'serial';
+    isSerial = true;
+  } else if (type === 'uuid' || (config as any)?.dataType === 'uuid') {
+    pgType = 'uuid';
+    isUuid = true;
+  } else if (type === 'integer') {
+    pgType = 'integer';
+  } else if (type === 'boolean') {
+    pgType = 'boolean';
+  } else if (type === 'text') {
+    pgType = 'text';
+  } else if (type === 'timestamp' || type === 'timestamp without time zone') {
+    pgType = 'timestamp';
+  } else if (type === 'timestamp with time zone' || type === 'timestamptz') {
+    pgType = 'timestamptz';
+  } else if (type === 'bigint') {
+    pgType = 'bigint';
+  } else if (type.startsWith('varchar')) {
+    pgType = type; // 保留 varchar(n) 原样
+  } else if (type.startsWith('character varying')) {
+    pgType = type.replace('character varying', 'varchar');
+  }
+
+  // 处理默认值
+  let defaultStr: string | null = null;
+  const defVal = (config as any)?.default;
+  if (defVal !== undefined) {
+    if (defVal && typeof defVal === 'object' && (defVal as any).ref?.name === 'now') {
+      defaultStr = 'now()';
+    } else if (typeof defVal === 'string') {
+      defaultStr = `'${defVal.replace(/'/g, "''")}'`;
+    } else if (typeof defVal === 'boolean' || typeof defVal === 'number') {
+      defaultStr = String(defVal);
+    } else if (typeof defVal === 'function') {
+      // defaultNow() / defaultRandom() 由下面单独处理
+    }
+  }
+
+  // 检查 builder 方法链中是否有 defaultNow / defaultRandom / default(value)
+  const chainStr = col.toString?.() ?? '';
+  if (chainStr.includes('defaultNow') || chainStr.includes('default(now)')) {
+    defaultStr = 'now()';
+  } else if (chainStr.includes('defaultRandom') || chainStr.includes('default(random)')) {
+    defaultStr = 'gen_random_uuid()';
+  } else if (!defaultStr && defVal !== undefined) {
+    // 函数类型的默认值（default('value')）
+    if (typeof defVal === 'function' && defVal.length === 0) {
+      const fnResult = (defVal as any)();
+      if (typeof fnResult === 'string') defaultStr = `'${fnResult.replace(/'/g, "''")}'`;
+      else if (typeof fnResult === 'boolean' || typeof fnResult === 'number') defaultStr = String(fnResult);
+    }
+  }
+
+  const notNull = !!col.notNull || !!col.primaryKey;
+
+  return { pgType, notNull, default: defaultStr, isSerial, isUuid };
+}
+
+function getEnumType(col: any): string | null {
+  const chainStr = col.toString?.() ?? '';
+  // 从 chain string 中提取枚举名，如 userStatusEnum('status') → user_status
+  const m = chainStr.match(/(\w+)\s*\(\s*['"]/);
+  if (m) {
+    const enumName = m[1];
+    const found = Object.values(schema).find(
+      (v: any) => v?.enumName === enumName || (v?.values?.includes?.(enumName) ? v.enumName : false)
+    );
+    if (found && (found as any).enumName) return (found as any).enumName;
+    // 直接用提取的名字（pgEnum 名）
+    return enumName;
+  }
+  return null;
+}
+
+function getTableColumns(table: any): { colName: string; def: ReturnType<typeof getColumnDef>; enumType: string | null }[] {
+  const result: { colName: string; def: ReturnType<typeof getColumnDef>; enumType: string | null }[] = [];
+  const entries = Object.entries(table);
+  for (const [key, col] of entries) {
+    if (!col || typeof col !== 'object') continue;
+    if (key === '$inferSelect' || key === '$inferInsert' || key.startsWith('$')) continue;
+    const def = getColumnDef(col);
+    const enumType = getEnumType(col);
+    // 列名从 builder config 中取（如 timestamp('createdAt') → createdAt）
+    const colName: string = (col as any).name ?? (col as any).fieldName ?? key;
+    result.push({ colName, def, enumType });
+  }
+  return result;
+}
+
+// ── 核心表 / 枚举定义映射 ─────────────────────────────────────────────
+
+// 从 schema.ts 导出中提取所有 pgTable → { tableName, columns }
+type TableInfo = { tableName: string; columns: { colName: string; pgType: string; notNull: boolean; default: string | null; isSerial: boolean; isUuid: boolean; enumType: string | null }[] };
+type EnumInfo = { name: string; values: string[] };
+
+function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo> } {
+  const tables = new Map<string, TableInfo>();
+  const enums = new Map<string, EnumInfo>();
+
+  for (const [, val] of Object.entries<any>(schema)) {
+    if (!val) continue;
+    // 枚举
+    if (val.enumName && Array.isArray(val.values)) {
+      enums.set(val.enumName, { name: val.enumName, values: val.values });
+      continue;
+    }
+    // 表
+    const tableName: string = val.dbName ?? val?.name;
+    if (!tableName || typeof tableName !== 'string') continue;
+    if (val[Symbol.toStringTag] === 'PgEnum' || !val[Symbol.for?.('drizzle::Column') ?? '']) continue;
+
+    const cols = getTableColumns(val);
+    if (cols.length > 0) {
+      tables.set(tableName, { tableName, columns: cols });
+    }
+  }
+
+  return { tables, enums };
+}
+
+const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
+
+// ── SQL 生成器 ────────────────────────────────────────────────────────
+
+function buildCreateTableSql(info: TableInfo): string {
+  const colDefs = info.columns.map(({ colName, def, enumType }) => {
+    let type = enumType ?? def.pgType;
+    if (def.isSerial) type = 'serial';
+    else if (def.isUuid && def.default === 'gen_random_uuid()') type = 'uuid';
+
+    let parts = [`"${colName}"`, type];
+    if (def.default) parts.push(`DEFAULT ${def.default}`);
+    if (def.notNull && !def.isSerial) parts.push('NOT NULL');
+    return parts.join(' ');
+  });
+
+  // 主键
+  const pkCol = info.columns.find((c) => c.def.isSerial || c.def.isUuid);
+  if (pkCol) {
+    colDefs.push(`PRIMARY KEY ("${pkCol.colName}")`);
+  }
+
+  return `CREATE TABLE "${info.tableName}" (${colDefs.join(', ')})`;
+}
+
+function buildAlterTableSql(tableName: string, colName: string, def: ReturnType<typeof getColumnDef>, enumType: string | null): string {
+  let type = enumType ?? def.pgType;
+  let parts: string[] = [`"${tableName}"`, 'ADD COLUMN', `"${colName}"`, type];
+  if (def.default) parts.push(`DEFAULT ${def.default}`);
+  if (def.notNull && def.default) parts.push('NOT NULL');
+  // 对于有默认值但无 NOT NULL 的列，先 ADD COLUMN，再（如果需要 NOT NULL）ALTER SET NOT NULL
+  const alterParts = [`ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "${colName}" ${type}`];
+  if (def.default) alterParts.push(`ALTER TABLE "${tableName}" ALTER COLUMN "${colName}" SET DEFAULT ${def.default}`);
+  if (def.notNull && def.default) {
+    alterParts.push(`ALTER TABLE "${tableName}" ALTER COLUMN "${colName}" SET NOT NULL`);
+  } else if (!def.notNull) {
+    alterParts.push(`ALTER TABLE "${tableName}" ALTER COLUMN "${colName}" DROP NOT NULL`);
+  }
+  return alterParts.join('; ');
+}
+
+function buildCreateTypeSql(info: EnumInfo): string {
+  const vals = info.values.map((v) => `'${v}'`).join(', ');
+  return `CREATE TYPE "${info.name}" AS ENUM (${vals})`;
+}
+
+// ── 错误解析 ──────────────────────────────────────────────────────────
+
+function parseRelationError(msg: string): { kind: 'table'; table: string } | null {
+  // relation "User" does not exist
+  const m = msg.match(/relation\s+"([^"]+)"/i);
+  if (m) return { kind: 'table', table: m[1] };
+  return null;
+}
+
+function parseColumnError(msg: string): { kind: 'column'; table: string; column: string } | null {
+  // column "emailVerified" of relation "User" does not exist
+  const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"/i);
+  if (m) return { kind: 'column', table: m[2], column: m[1] };
+  return null;
+}
+
+function parseTypeError(msg: string): { kind: 'type'; type: string } | null {
+  // type "user_status" does not exist
+  const m = msg.match(/type\s+"([^"]+)"/i);
+  if (m) return { kind: 'type', type: m[1] };
+  return null;
+}
+
+// ── 冷却控制 ──────────────────────────────────────────────────────────
+
+let schemaFixInProgress: Promise<void> | null = null;
+let schemaFixLastDoneAt = 0;
+const SCHEMA_FIX_COOLDOWN_MS = 60 * 1000;
+
+// ── 执行一次 schema 修复 ──────────────────────────────────────────────
+
+async function applySchemaFix(err: any): Promise<boolean> {
+  const msg: string = err?.message ?? '';
+  const code: string = err?.code ?? '';
+
+  const relationErr = parseRelationError(msg);
+  const columnErr = parseColumnError(msg);
+  const typeErr = code === '42704' || msg.includes('type') ? parseTypeError(msg) : null;
+
+  if (!relationErr && !columnErr && !typeErr) return false;
+
+  // 等待同进程内的其他修复完成
+  if (schemaFixInProgress) {
+    await schemaFixInProgress;
+    return true; // 另一个已完成，假设修好了
+  }
+
+  schemaFixInProgress = (async () => {
     try {
-      const { execFileSync } = await import('node:child_process');
-      const configPath = path.resolve(process.cwd(), 'drizzle.config.ts');
-      console.log('🔧 检测到 schema 缺失，执行 drizzle-kit push 自动修复...');
-      execFileSync(
-        process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-        ['exec', 'drizzle-kit', 'push', '--config', configPath],
-        {
-          stdio: ['ignore', process.stdout, process.stderr],
-          env: {
-            ...process.env,
-            CI: 'true',
-            DRIZZLE_KIT_FORCE: 'true',
-            DRIZZLE_KIT_NON_INTERACTIVE: 'true'
-          },
-          timeout: 120_000
+      if (typeErr) {
+        const info = schemaEnums.get(typeErr.type);
+        if (info) {
+          console.log(`🔧 创建缺失的枚举类型: ${typeErr.type}`);
+          await rawClient.unsafe(buildCreateTypeSql(info));
+          console.log(`✅ 枚举 ${typeErr.type} 创建完成`);
         }
-      );
-      console.log('✅ schema 自动修复完成');
-      schemaSyncLastDoneAt = Date.now();
+      }
+
+      if (relationErr) {
+        const info = schemaTables.get(relationErr.table);
+        if (info) {
+          console.log(`🔧 创建缺失的表: ${relationErr.table}`);
+          await rawClient.unsafe(buildCreateTableSql(info));
+          console.log(`✅ 表 ${relationErr.table} 创建完成`);
+        }
+      }
+
+      if (columnErr) {
+        const tableInfo = schemaTables.get(columnErr.table);
+        if (tableInfo) {
+          const colInfo = tableInfo.columns.find((c) => c.colName === columnErr.column);
+          if (colInfo) {
+            console.log(`🔧 为表 ${columnErr.table} 添加缺失的列: ${columnErr.column}`);
+            await rawClient.unsafe(buildAlterTableSql(columnErr.table, columnErr.column, colInfo.def, colInfo.enumType));
+            console.log(`✅ 列 ${columnErr.column} 添加完成`);
+          }
+        }
+      }
+
+      schemaFixLastDoneAt = Date.now();
     } catch (e: any) {
-      console.warn('⚠️ schema 自动修复失败（下一次遇到 schema 错误将再次尝试）：', e?.message ?? e);
+      console.warn('⚠️ schema 修复失败：', e?.message ?? e);
     } finally {
-      schemaSyncInProgress = null;
+      schemaFixInProgress = null;
     }
   })();
 
-  return schemaSyncInProgress;
+  await schemaFixInProgress;
+  return true;
 }
 
-async function tryFixSchema(err: any): Promise<boolean> {
-  const code: string | undefined = err?.code;
-  if (!['42P01', '42703', '42704'].includes(code || '')) return false;
-  await syncSchemaNow();
-  return Date.now() - schemaSyncLastDoneAt < SCHEMA_SYNC_COOLDOWN_MS; // 真的完成过才算修复成功
-}
+// ── Promise 包装：捕获 schema 错误 → 修复 → 重试 ─────────────────────
 
-// 包装 Promise：await 时捕获 schema 错误并重试
 function wrapThenable(promise: any, retry: () => Promise<any>): any {
   if (!promise || typeof promise.then !== 'function') return promise;
   return (async () => {
     try {
       return await promise;
-    } catch (err) {
-      if (await tryFixSchema(err)) return await retry();
+    } catch (err: any) {
+      const now = Date.now();
+      const code: string = err?.code ?? '';
+      const isSchemaErr = ['42P01', '42703', '42704'].includes(code);
+      const cooled = now - schemaFixLastDoneAt >= SCHEMA_FIX_COOLDOWN_MS;
+
+      if (isSchemaErr && cooled) {
+        const fixed = await applySchemaFix(err);
+        if (fixed) return await retry();
+      }
       throw err;
     }
   })();
 }
 
-// 用 Proxy 包装 rawClient，保留所有 postgres 行为（tagged template、
-// .end()、.unsafe()、.ended 属性等），只在查询失败时注入修复逻辑
+// 用 Proxy 包装 rawClient：保留所有行为，只在查询失败时注入修复逻辑
 const client = new Proxy(rawClient as any, {
   apply(target, _thisArg, args) {
     const result = target(...args);
@@ -211,7 +439,7 @@ function resetIdleTimer() {
   if (idleTimer) {
     clearTimeout(idleTimer);
   }
-  
+
   // 只在生产环境启用自动断开
   if (process.env.NODE_ENV === 'production') {
     idleTimer = setTimeout(async () => {
@@ -234,7 +462,7 @@ export function withAutoReconnect<T extends any[], R>(
 ) {
   return async (...args: T): Promise<R> => {
     resetIdleTimer();
-    
+
     try {
       return await operation(...args);
     } catch (error: any) {
@@ -255,7 +483,7 @@ export async function closeConnection() {
       clearTimeout(idleTimer);
       idleTimer = null;
     }
-    
+
     if (!client.ended) {
       await client.end({ timeout: 10 });
       console.log('✅ Database connection closed gracefully');
@@ -271,7 +499,7 @@ if (typeof process !== 'undefined') {
     console.log('🔄 Shutting down database connections...');
     await closeConnection();
   };
-  
+
   process.on('SIGINT', gracefulShutdown);
   process.on('SIGTERM', gracefulShutdown);
   process.on('beforeExit', gracefulShutdown);
