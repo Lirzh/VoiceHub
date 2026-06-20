@@ -261,8 +261,10 @@ function buildAlterTableSql(tableName: string, colName: string, def: ColumnDef, 
 
 function buildCreateTypeSql(info: EnumInfo): string {
   const vals = info.values.map((v: string) => `'${v.replace(/'/g, "''")}'`).join(', ');
-  // PostgreSQL < 11 不支持 CREATE TYPE IF NOT EXISTS，用 DO block 获得跨版本兼容性
-  return `DO $$ BEGIN CREATE TYPE "${info.name}" AS ENUM (${vals}); EXCEPTION WHEN duplicate_object THEN NULL; END $$;`;
+  // 用 $drizzle_enum$ 定界符（与 SQL 内部任何内容都不会冲突）
+  // PostgreSQL < 11 不支持 CREATE TYPE IF NOT EXISTS，用 DO block 写法跨版本兼容
+  const tag = 'drizzle_enum';
+  return 'DO $' + tag + '$ BEGIN CREATE TYPE "' + info.name + '" AS ENUM (' + vals + '); EXCEPTION WHEN duplicate_object THEN NULL; END $' + tag + '$;';
 }
 
 // ── 错误 → 修复目标 key ─────────────────────────────────────────────
@@ -288,13 +290,30 @@ function targetKeyFromError(err: any): TargetKey | null {
   return null;
 }
 
+// ── 大小写不敏感查找 ─────────────────────────────────────────────────
+// PostgreSQL 未引号包裹的标识符被规范化为小写（users），而 schema.ts 中
+// pgTable('User', ...) 的 dbName 可能是混合大小写（User）。
+// 先精确匹配，找不到再做大小写不敏感匹配。
+function findTableKey(name: string): string | undefined {
+  if (schemaTables.has(name)) return name;
+  const lower = name.toLowerCase();
+  return [...schemaTables.keys()].find((k) => k.toLowerCase() === lower);
+}
+
+function findColumnKey(tbl: TableInfo, colName: string): string | undefined {
+  const found = tbl.columns.find((c) => c.colName === colName);
+  if (found) return found.colName;
+  const lower = colName.toLowerCase();
+  return tbl.columns.find((c) => c.colName.toLowerCase() === lower)?.colName;
+}
+
 // ── 细粒度冷却 + 并发控制 ────────────────────────────────────────────
 // key: t:<table> / c:<table>:<col> / e:<enum>
 // 策略：
 //   - 同 key 的并发请求：只有一个跑 DDL，其他人 await Promise
 //   - DDL 成功：60s 冷却，同 key 不再重复 DDL
 //   - DDL 失败：不设冷却，让调用方立即拿到原始错误，避免死循环
-//   - schema 中找不到目标定义：直接返回 false（我们不认识的表/列/枚举不瞎修）
+//   - schema 中找不到目标定义：大小写不敏感重试后仍找不到 → return false
 const FIX_COOLDOWN_MS = 60 * 1000;
 type FixState = { inProgress: Promise<boolean> | null; lastDoneAt: number };
 const fixMap = new Map<string, FixState>();
@@ -303,13 +322,30 @@ async function ensureSchemaFixedFor(err: any): Promise<boolean> {
   const target = targetKeyFromError(err);
   if (!target) return false;
 
-  // 先看 schema 中是否有对应定义 —— 找不到就不瞎修
-  if (target.kind === 'table' && !schemaTables.has(target.target)) return false;
-  if (target.kind === 'type' && !schemaEnums.has(target.target)) return false;
+  // 先看 schema 中是否有对应定义（大小写不敏感）—— 找不到就不瞎修
+  if (target.kind === 'type') {
+    const found = [...schemaEnums.keys()].find(
+      (k) => k.toLowerCase() === target.target.toLowerCase()
+    );
+    if (!found) return false;
+    target.target = found; // 修正为 schema 中的真实大小写
+  }
+
+  if (target.kind === 'table') {
+    const matchedKey = findTableKey(target.target);
+    if (!matchedKey) return false;
+    target.target = matchedKey; // 修正为 schema 中的真实大小写
+  }
+
   if (target.kind === 'column') {
     const [tName, cName] = target.target.split(':');
-    const tbl = schemaTables.get(tName);
-    if (!tbl || !tbl.columns.find((c) => c.colName === cName)) return false;
+    const matchedTblKey = findTableKey(tName);
+    if (!matchedTblKey) return false;
+    const tbl = schemaTables.get(matchedTblKey)!;
+    const matchedColName = findColumnKey(tbl, cName);
+    if (!matchedColName) return false;
+    // 修正 target 为 schema 中的真实大小写，供后续 get() 使用
+    target.target = `${matchedTblKey}:${matchedColName}`;
   }
 
   const key = `${target.kind[0]}:${target.target}`;
