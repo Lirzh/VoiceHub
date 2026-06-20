@@ -13,7 +13,7 @@
 //     4) 把失败的查询重试一次
 //
 // 并发：
-//   同一对象同一进程内同一时刻只会跑一次 DDL，其他请求 await Promise。
+//   同一对象同一进程内同一时刻只会跑一次"检查+DDL"，其他请求 await 同一个 Promise。
 //   没有任何"冷却时间""延时等待"设计，完全基于真实数据库状态。
 //
 // 默认值：
@@ -53,6 +53,13 @@ const getDatabaseConfig = () => ({
 });
 
 const rawClient = postgres(connectionString, getDatabaseConfig());
+
+// ── SQL 字面量转义 ───────────────────────────────────────────────────────
+
+// 单引号字面量转义（WHERE name = 'O''Neil'）
+const escString = (s: string) => s.replace(/'/g, "''");
+// 双引号标识符转义（"User""Profile"）— 仅对 schema 中定义的名称使用，避免 SQL 注入
+const escIdent = (s: string) => `"${s.replace(/"/g, '""')}"`;
 
 // ── Schema 内省 ───────────────────────────────────────────────────────
 // Drizzle 列对象公开属性：
@@ -120,7 +127,7 @@ function defaultToSql(d: unknown): string | null {
   }
 
   // 2) 字面量（字符串 / 布尔 / 数字）
-  if (typeof d === 'string') return `'${d.replace(/'/g, "''")}'`;
+  if (typeof d === 'string') return `'${escString(d)}'`;
   if (typeof d === 'boolean' || typeof d === 'number') return String(d);
 
   // 3) 函数（应用层动态值，不在数据库层声明）
@@ -143,7 +150,7 @@ function getColumnDef(col: unknown, enumNames: Set<string>): ColumnDef {
 
 // 从 schema.ts 中扫描表和枚举
 // 两轮遍历：先枚举，再表，避免依赖定义顺序
-type TableInfo = { tableName: string; columns: { colName: string; def: ColumnDef; enumType: string | null }[] };
+type TableInfo = { tableName: string; columns: { colName: string; def: ColumnDef }[] };
 type EnumInfo = { name: string; values: string[] };
 
 function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string, EnumInfo> } {
@@ -162,7 +169,7 @@ function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string,
   const enumNames = new Set(enums.keys());
 
   // ── 第 2 轮：处理表 ──────────────────────────────────────────
-  const $skipKeys = new Set(['$inferSelect', '$inferInsert']);
+  const skipKeys = new Set(['$inferSelect', '$inferInsert']);
   for (const [, val] of entries) {
     if (!val || typeof val !== 'object') continue;
     const v = val as { enumName?: unknown; values?: unknown; dbName?: unknown; name?: unknown };
@@ -176,12 +183,12 @@ function buildSchemaMaps(): { tables: Map<string, TableInfo>; enums: Map<string,
     const cols: TableInfo['columns'] = [];
     for (const [key, col] of Object.entries(v)) {
       if (!col || typeof col !== 'object') continue;
-      if ($skipKeys.has(key) || key.startsWith('$')) continue;
+      if (skipKeys.has(key) || key.startsWith('$')) continue;
       const c = col as { getSQLType?: unknown; name?: unknown; fieldName?: unknown };
       if (typeof c.getSQLType !== 'function') continue;
       const def = getColumnDef(col, enumNames);
       const colName: string = typeof c.name === 'string' ? c.name : (typeof c.fieldName === 'string' ? c.fieldName : key);
-      cols.push({ colName, def, enumType: def.isEnum ? def.pgType : null });
+      cols.push({ colName, def });
     }
     if (cols.length > 0) tables.set(tableName, { tableName, columns: cols });
   }
@@ -194,51 +201,51 @@ const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
 // ── SQL 生成（全部幂等） ────────────────────────────────────────
 
 function buildCreateTableSql(info: TableInfo): string {
-  const colDefs = info.columns.map(({ colName, def, enumType }) => {
-    const type = enumType ?? def.pgType;
-    const parts = [`"${colName}"`, type];
+  const colDefs = info.columns.map(({ colName, def }) => {
+    // 枚举列的 pgType 就是枚举名，直接用；普通列用类型名
+    const parts = [escIdent(colName), def.pgType];
     if (def.default) parts.push(`DEFAULT ${def.default}`);
     if (def.notNull && !def.isSerial) parts.push('NOT NULL');
     return parts.join(' ');
   });
 
-  // 主键：优先找 isPrimary=true；没有则退化找 serial 列
+  // 主键：优先 isPrimary=true；退化找 serial 列
   let pkCol = info.columns.find((c) => c.def.isPrimary);
   if (!pkCol) pkCol = info.columns.find((c) => c.def.isSerial);
-  if (pkCol) colDefs.push(`PRIMARY KEY ("${pkCol.colName}")`);
+  if (pkCol) colDefs.push(`PRIMARY KEY (${escIdent(pkCol.colName)})`);
 
-  return `CREATE TABLE IF NOT EXISTS "${info.tableName}" (${colDefs.join(', ')})`;
+  return `CREATE TABLE IF NOT EXISTS ${escIdent(info.tableName)} (${colDefs.join(', ')})`;
 }
 
-function buildAlterTableSql(tableName: string, colName: string, def: ColumnDef, enumType: string | null): string {
-  const type = enumType ?? def.pgType;
+function buildAlterTableSql(tableName: string, colName: string, def: ColumnDef): string {
   if (def.default) {
     // 有默认值：一条语句搞定（ADD COLUMN + DEFAULT + NOT NULL，PostgreSQL 自动回填）
-    const parts = [`ADD COLUMN IF NOT EXISTS "${colName}" ${type}`, `DEFAULT ${def.default}`];
+    const parts = [`ADD COLUMN IF NOT EXISTS ${escIdent(colName)} ${def.pgType}`, `DEFAULT ${def.default}`];
     if (def.notNull) parts.push('NOT NULL');
-    return `ALTER TABLE "${tableName}" ${parts.join(' ')}`;
+    return `ALTER TABLE ${escIdent(tableName)} ${parts.join(' ')}`;
   }
   // 无默认值：只加列，不设 NOT NULL（否则已有行因 NULL 报错）
-  return `ALTER TABLE "${tableName}" ADD COLUMN IF NOT EXISTS "${colName}" ${type}`;
+  return `ALTER TABLE ${escIdent(tableName)} ADD COLUMN IF NOT EXISTS ${escIdent(colName)} ${def.pgType}`;
 }
 
 function buildCreateTypeSql(info: EnumInfo): string {
-  const vals = info.values.map((v) => `'${v.replace(/'/g, "''")}'`).join(', ');
+  const vals = info.values.map((v) => `'${escString(v)}'`).join(', ');
   // $drizzle_enum$ 自定义定界符，与枚举内容永不冲突
-  return `DO $drizzle_enum$ BEGIN CREATE TYPE "${info.name}" AS ENUM (${vals}); EXCEPTION WHEN duplicate_object THEN NULL; END $drizzle_enum$;`;
+  return `DO $drizzle_enum$ BEGIN CREATE TYPE ${escIdent(info.name)} AS ENUM (${vals}); EXCEPTION WHEN duplicate_object THEN NULL; END $drizzle_enum$;`;
 }
 
 // ── 错误解析 + 数据库元数据检查 ────────────────────────────────
 
 type SchemaTarget =
-  | { kind: 'type';   enumName: string;   info: EnumInfo }
-  | { kind: 'table';  tableName: string;  info: TableInfo }
-  | { kind: 'column'; tableName: string;  colName: string; colDef: ColumnDef; enumType: string | null };
+  | { kind: 'type';   name: string; info: EnumInfo }
+  | { kind: 'table';  name: string; info: TableInfo }
+  | { kind: 'column'; table: string; col: string; info: TableInfo; colDef: ColumnDef };
 
-// PostgreSQL 未加引号的标识符被规范化为小写，但 schema.ts 的 dbName 可能是
-// 混合大小写。查询时用大小写不敏感匹配，然后返回 schema 中的真实 key。
+// PostgreSQL 未加引号的标识符被规范化为小写，schema.ts 的 dbName 可能是混合大小写。
+// 先精确匹配，找不到再做大小写不敏感匹配。
 function findTableCI(name: string): TableInfo | undefined {
-  if (schemaTables.has(name)) return schemaTables.get(name);
+  const exact = schemaTables.get(name);
+  if (exact) return exact;
   const lower = name.toLowerCase();
   for (const [key, info] of schemaTables) {
     if (key.toLowerCase() === lower) return info;
@@ -246,7 +253,7 @@ function findTableCI(name: string): TableInfo | undefined {
   return undefined;
 }
 
-function findColumnCI(tbl: TableInfo, colName: string): { colName: string; def: ColumnDef; enumType: string | null } | undefined {
+function findColumnCI(tbl: TableInfo, colName: string): { colName: string; def: ColumnDef } | undefined {
   const exact = tbl.columns.find((c) => c.colName === colName);
   if (exact) return exact;
   const lower = colName.toLowerCase();
@@ -254,7 +261,8 @@ function findColumnCI(tbl: TableInfo, colName: string): { colName: string; def: 
 }
 
 function findEnumCI(name: string): EnumInfo | undefined {
-  if (schemaEnums.has(name)) return schemaEnums.get(name);
+  const exact = schemaEnums.get(name);
+  if (exact) return exact;
   const lower = name.toLowerCase();
   for (const [key, info] of schemaEnums) {
     if (key.toLowerCase() === lower) return info;
@@ -271,7 +279,7 @@ function targetFromError(err: unknown): SchemaTarget | null {
   const tableMatch = msg.match(/relation\s+"([^"]+)"/i);
   if (code === '42P01' && tableMatch) {
     const info = findTableCI(tableMatch[1]);
-    if (info) return { kind: 'table', tableName: info.tableName, info };
+    if (info) return { kind: 'table', name: info.tableName, info };
   }
 
   // column "emailVerified" of relation "User" does not exist
@@ -280,7 +288,7 @@ function targetFromError(err: unknown): SchemaTarget | null {
     const tbl = findTableCI(colMatch[2]);
     if (tbl) {
       const col = findColumnCI(tbl, colMatch[1]);
-      if (col) return { kind: 'column', tableName: tbl.tableName, colName: col.colName, colDef: col.def, enumType: col.enumType };
+      if (col) return { kind: 'column', table: tbl.tableName, col: col.colName, info: tbl, colDef: col.def };
     }
   }
 
@@ -288,33 +296,33 @@ function targetFromError(err: unknown): SchemaTarget | null {
   const typeMatch = msg.match(/type\s+"([^"]+)"/i);
   if (code === '42704' && typeMatch) {
     const info = findEnumCI(typeMatch[1]);
-    if (info) return { kind: 'type', enumName: info.name, info };
+    if (info) return { kind: 'type', name: info.name, info };
   }
 
   return null;
 }
 
-// ── 数据库元数据检查：确认对象真的缺失 ──────────────────────
-// 完全基于真实数据库状态，不依赖任何延时/冷却假设
-// PostgreSQL DDL 在同一会话中执行完就立即可见
+// 真正查询数据库，确认对象是否真的不存在。
+// 完全基于真实数据库状态，不依赖任何延时/冷却假设。
 async function objectMissing(target: SchemaTarget): Promise<boolean> {
   try {
-    const esc = (s: string) => s.replace(/'/g, "''");
     if (target.kind === 'type') {
+      // SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid
+      // WHERE t.typname = '...' AND n.nspname = current_schema()
       const rows = await rawClient.unsafe(
-        `SELECT 1 FROM pg_type WHERE typname = '${esc(target.enumName)}' AND typnamespace = current_schema()::regnamespace`
+        `SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE t.typname = '${escString(target.name)}' AND n.nspname = current_schema()`
       );
       return (rows as unknown as { length: number }).length === 0;
     }
     if (target.kind === 'table') {
       const rows = await rawClient.unsafe(
-        `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = '${esc(target.tableName)}'`
+        `SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = '${escString(target.name)}'`
       );
       return (rows as unknown as { length: number }).length === 0;
     }
     // column
     const rows = await rawClient.unsafe(
-      `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${esc(target.tableName)}' AND column_name = '${esc(target.colName)}'`
+      `SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${escString(target.table)}' AND column_name = '${escString(target.col)}'`
     );
     return (rows as unknown as { length: number }).length === 0;
   } catch {
@@ -323,14 +331,15 @@ async function objectMissing(target: SchemaTarget): Promise<boolean> {
   }
 }
 
-// ── 并发控制：每个 key 同一时刻只跑一次 DDL ────────────────
-// 没有任何"冷却时间"——每次都查询数据库元数据确认是否需要修复
+// ── 并发控制：每 key 同刻只跑一次"检查+DDL" ────────────────
+// 没有任何"冷却时间"——每次都先查 information_schema 确认。
+// key = t:<table> / c:<table>:<col> / e:<enum>
 const runningFixes = new Map<string, Promise<boolean>>();
 
 function keyFor(target: SchemaTarget): string {
-  if (target.kind === 'type')   return `e:${target.enumName}`;
-  if (target.kind === 'table')  return `t:${target.tableName}`;
-  return `c:${target.tableName}:${target.colName}`;
+  if (target.kind === 'type')   return `e:${target.name}`;
+  if (target.kind === 'table')  return `t:${target.name}`;
+  return `c:${target.table}:${target.col}`;
 }
 
 async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
@@ -339,33 +348,31 @@ async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
 
   const key = keyFor(target);
 
-  // 其他请求正在修同一对象 → 等它完成
+  // 1) 其他请求正在修同一对象 → 等它完成
   const pending = runningFixes.get(key);
   if (pending) return await pending;
 
-  // 真正查询数据库确认对象是否存在
-  //   存在但仍报 schema 错误 → 可能是瞬时错误，return true 让调用方重试
-  //   不存在 → 跑 DDL
-  const missing = await objectMissing(target);
-  if (!missing) return true;
-
-  // 到这里：确认对象不存在。开始跑 DDL（同时设置 Promise 锁，并发请求会 await 它）
+  // 2) 新的"检查+修复"流程。立即 set Promise 作为锁，并发请求会被 1) 拦截。
   const fixPromise = (async (): Promise<boolean> => {
     try {
+      // 真正查询数据库确认对象是否缺失
+      const missing = await objectMissing(target);
+      if (!missing) return true; // 对象已存在（瞬时错误），让调用方重试
+
       if (target.kind === 'type') {
-        console.log(`[db] 创建缺失枚举类型: ${target.enumName}`);
+        console.log(`[db] 创建缺失枚举类型: ${target.name}`);
         await rawClient.unsafe(buildCreateTypeSql(target.info));
-        console.log(`[db] ✅ 枚举 ${target.enumName} 已创建`);
+        console.log(`[db] ✅ 枚举 ${target.name} 已创建`);
       }
       if (target.kind === 'table') {
-        console.log(`[db] 创建缺失表: ${target.tableName}`);
+        console.log(`[db] 创建缺失表: ${target.name}`);
         await rawClient.unsafe(buildCreateTableSql(target.info));
-        console.log(`[db] ✅ 表 ${target.tableName} 已创建`);
+        console.log(`[db] ✅ 表 ${target.name} 已创建`);
       }
       if (target.kind === 'column') {
-        console.log(`[db] 为表 ${target.tableName} 添加缺失列: ${target.colName}`);
-        await rawClient.unsafe(buildAlterTableSql(target.tableName, target.colName, target.colDef, target.enumType));
-        console.log(`[db] ✅ 列 ${target.colName} 已添加`);
+        console.log(`[db] 为表 ${target.table} 添加缺失列: ${target.col}`);
+        await rawClient.unsafe(buildAlterTableSql(target.table, target.col, target.colDef));
+        console.log(`[db] ✅ 列 ${target.col} 已添加`);
       }
       return true;
     } catch (e) {
