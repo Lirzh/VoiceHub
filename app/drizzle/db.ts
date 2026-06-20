@@ -362,10 +362,27 @@ async function ensureSchemaFixedFor(err: unknown): Promise<boolean> {
 
 // ── Proxy：拦截业务查询 + schema 修复 + 自动重试 ─────────
 
+// 包装一个 Promise，捕获 schema 错误并修复后重试
+function wrapPromiseWithRetry<T>(promise: Promise<T>, retry: () => Promise<T>): Promise<T> {
+  return promise.catch(async (err) => {
+    if (!isSchemaError(err)) throw err;
+    const fixed = await ensureSchemaFixedFor(err);
+    if (!fixed) throw err;
+    log(`🔁 重试查询（schema 已修复）`);
+    return await retry();
+  });
+}
+
 function wrapWithSchemaFix<T>(result: any, retry: () => any): any {
-  // postgres.js Query 对象：只覆盖 .then，保留 .values/.execute 等
+  // postgres.js Query 对象：覆盖 .then/.values/.execute/.simple 等方法
   if (result && typeof result.values === 'function') {
+    // 保存原始方法
     const origThen = result.then.bind(result);
+    const origValues = result.values?.bind(result);
+    const origExecute = result.execute?.bind(result);
+    const origSimple = result.simple?.bind(result);
+
+    // 覆盖 .then（捕获直接 await 或 .then() 调用）
     result.then = function (onFulfilled: any, onRejected: any): any {
       return origThen(
         onFulfilled,
@@ -378,8 +395,35 @@ function wrapWithSchemaFix<T>(result: any, retry: () => any): any {
         }
       );
     } as Promise<T>['then'];
+
+    // 覆盖 .values（drizzle-orm 使用此方法获取行数据）
+    if (origValues) {
+      result.values = function (): any {
+        const valuesPromise = origValues();
+        return wrapPromiseWithRetry(valuesPromise, () => retry().then((r: any) => r.values?.() ?? r));
+      };
+    }
+
+    // 覆盖 .execute（某些场景使用）
+    if (origExecute) {
+      result.execute = function (): any {
+        const execPromise = origExecute();
+        return wrapPromiseWithRetry(execPromise, () => retry().then((r: any) => r.execute?.() ?? r));
+      };
+    }
+
+    // 覆盖 .simple（返回新的 Query，也需要包装）
+    if (origSimple) {
+      result.simple = function (): any {
+        const simpleResult = origSimple();
+        return wrapWithSchemaFix(simpleResult, () => retry().then((r: any) => r.simple?.() ?? r));
+      };
+    }
+
     return result;
   }
+
+  // 普通 Promise/thenable：用 then 链捕获 schema 错误
   return (async () => {
     try { return await result; } catch (err) {
       if (!isSchemaError(err)) throw err;
