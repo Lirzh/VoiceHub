@@ -14,11 +14,11 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository | lower }}
 
 jobs:
-  build-and-push:
-    if: github.repository == 'laoshuikaixue/VoiceHub' ||github.event_name == 'workflow_dispatch'
+  build-amd64:
+    if: github.repository == 'laoshuikaixue/VoiceHub' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -71,14 +71,96 @@ jobs:
             # 使用主版本.次版本格式
             type=raw,value=${{ steps.extract-version.outputs.major-minor-version }}
 
-      - name: Build and push Docker image
-        id: build-and-push
+      # 优先构建 amd64 并推送所有标签，构建完成即可拉取新版
+      - name: Build and push AMD64 first
+        id: build-amd64
         uses: docker/build-push-action@v7
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/s390x
+          platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  build-other-arch:
+    needs: build-amd64
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: '0'
+
+      # 提取版本号并处理成不同格式
+      - name: Extract version from package.json
+        id: extract-version
+        run: |
+          FULL_VERSION=$(node -p "require('./package.json').version")
+          MAJOR_MINOR_VERSION=$(echo "$FULL_VERSION" | sed -E 's/^([0-9]+\.[0-9]+)\.[0-9]+$/\1/')
+          echo "full-version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "major-minor-version=$MAJOR_MINOR_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 构建其余架构并打上独立后缀标签
+      - name: Build other architectures
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv7
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:armv6
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ppc64le
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:s390x
+          platforms: linux/arm64,linux/arm/v7,linux/arm/v6,linux/ppc64le,linux/s390x
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 合并多架构Manifest清单，覆盖latest、版本号、分支标签
+      - name: Create multi-arch manifest list
+        run: |
+          IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          TAGS=(
+            latest
+            main
+            ${{ steps.extract-version.outputs.full-version }}
+            ${{ steps.extract-version.outputs.major-minor-version }}
+          )
+          for TAG in "${TAGS[@]}"; do
+            docker manifest create --amend "$IMAGE:$TAG" \
+              "$IMAGE:amd64" \
+              "$IMAGE:arm64" \
+              "$IMAGE:armv7" \
+              "$IMAGE:armv6" \
+              "$IMAGE:ppc64le" \
+              "$IMAGE:s390x"
+
+            docker manifest annotate "$IMAGE:$TAG" "$IMAGE:arm64" --os linux --arch arm64
+            docker manifest annotate "$IMAGE:$TAG" "$IMAGE:armv7" --os linux --arch arm --variant v7
+            docker manifest annotate "$IMAGE:$TAG" "$IMAGE:armv6" --os linux --arch arm --variant v6
+            docker manifest annotate "$IMAGE:$TAG" "$IMAGE:ppc64le" --os linux --arch ppc64le
+            docker manifest annotate "$IMAGE:$TAG" "$IMAGE:s390x" --os linux --arch s390x
+
+            docker manifest push --purge "$IMAGE:$TAG"
+          done

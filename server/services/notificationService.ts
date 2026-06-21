@@ -253,8 +253,24 @@ export async function createSongPlayedNotification(songId: number) {
       return null
     }
 
+    // 获取用户通知设置
+    const settingsResult = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, song.requesterId))
+      .limit(1)
+    const settings = settingsResult[0]
+
+    // 如果用户关闭了此类通知，则不发送
+    if (settings && !settings.songPlayedEnabled) {
+      return null
+    }
+
+    // 创建通知
+    const message = `您投稿的歌曲《${song.title}》已播放。`
+
     // 获取所有关联用户（投稿人 + 联合投稿人）
-    const userIdsToNotify = new Set<number>([song.requesterId])
+    const userIdsToNotify = [song.requesterId]
 
     // 获取联合投稿人
     const collaborators = await db
@@ -262,71 +278,73 @@ export async function createSongPlayedNotification(songId: number) {
       .from(songCollaborators)
       .where(and(eq(songCollaborators.songId, songId), eq(songCollaborators.status, 'ACCEPTED')))
 
-    for (const c of collaborators) userIdsToNotify.add(c.userId)
+    collaborators.forEach((c) => {
+      if (!userIdsToNotify.includes(c.userId)) {
+        userIdsToNotify.push(c.userId)
+      }
+    })
 
-    // 一次查询获取所有用户的通知设置（替代 N+1）
-    const allUserIds = Array.from(userIdsToNotify)
-    const settingsList = allUserIds.length > 0
-      ? await db.select().from(notificationSettings).where(inArray(notificationSettings.userId, allUserIds))
-      : []
-    const settingsByUser = new Map(settingsList.map((s) => [s.userId, s]))
+    const notificationsCreated = []
 
-    // 准备批量插入通知的 rows（主通知只插数据库一次）
-    const notificationRows: Array<typeof notifications.$inferInsert> = []
-    // 保留按用户发送的 MeoW/邮件（外部服务，不适合批量走一个 SQL）
-    const usersToNotifyOnline: Array<{ userId: number; message: string }> = []
-
-    for (const targetUserId of allUserIds) {
-      const settings = settingsByUser.get(targetUserId)
-      if (settings && !settings.songPlayedEnabled) continue
-
-      const userMessage =
-        targetUserId === song.requesterId
-          ? `您投稿的歌曲《${song.title}》已播放。`
-          : `您参与联合投稿的歌曲《${song.title}》已播放。`
-
-      notificationRows.push({
-        userId: targetUserId,
-        type: 'SONG_PLAYED',
-        message: userMessage,
-        songId,
-      })
-      usersToNotifyOnline.push({ userId: targetUserId, message: userMessage })
-    }
-
-    // 批量插入通知 —— 一次 INSERT 替代 N 次 INSERT
-    let firstCreated: any = null
-    if (notificationRows.length > 0) {
+    for (const targetUserId of userIdsToNotify) {
       try {
-        const inserted = await db.insert(notifications).values(notificationRows).returning()
-        firstCreated = inserted[0] || null
+        // 获取用户通知设置
+        const settingsResult = await db
+          .select()
+          .from(notificationSettings)
+          .where(eq(notificationSettings.userId, targetUserId))
+          .limit(1)
+        const settings = settingsResult[0]
+
+        // 如果用户关闭了此类通知，则不发送
+        if (settings && !settings.songPlayedEnabled) {
+          continue
+        }
+
+        const userMessage =
+          targetUserId === song.requesterId
+            ? message
+            : `您参与联合投稿的歌曲《${song.title}》已播放。`
+
+        const notificationResult = await db
+          .insert(notifications)
+          .values({
+            userId: targetUserId,
+            type: 'SONG_PLAYED',
+            message: userMessage,
+            songId: songId
+          })
+          .returning()
+        notificationsCreated.push(notificationResult[0])
+
+        // 同步发送 MeoW 通知
+        try {
+          await sendMeowNotificationToUser(targetUserId, '歌曲已播放', userMessage)
+        } catch (error) {
+          console.error(`发送 MeoW 通知失败 (User: ${targetUserId}):`, error)
+        }
+
+        // 同步发送邮件通知
+        try {
+          await sendEmailNotificationToUser(
+            targetUserId,
+            '歌曲已播放',
+            userMessage,
+            undefined,
+            'notification.songPlayed',
+            {
+              songTitle: song.title,
+            }
+          )
+        } catch (error) {
+          console.error(`发送邮件通知失败 (User: ${targetUserId}):`, error)
+        }
       } catch (err) {
-        console.error('批量插入播放通知失败:', err)
+        console.error(`处理播放通知失败 (User: ${targetUserId}):`, err)
       }
     }
 
-    // 外部通知：MeoW + 邮件 —— 保留逐用户发送
-    for (const { userId, message } of usersToNotifyOnline) {
-      try {
-        await sendMeowNotificationToUser(userId, '歌曲已播放', message)
-      } catch (error) {
-        console.error(`发送 MeoW 通知失败 (User: ${userId}):`, error)
-      }
-      try {
-        await sendEmailNotificationToUser(
-          userId,
-          '歌曲已播放',
-          message,
-          undefined,
-          'notification.songPlayed',
-          { songTitle: song.title }
-        )
-      } catch (error) {
-        console.error(`发送邮件通知失败 (User: ${userId}):`, error)
-      }
-    }
-
-    return firstCreated
+    return notificationsCreated.length > 0 ? notificationsCreated[0] : null
   } catch (err) {
     return null
   }
