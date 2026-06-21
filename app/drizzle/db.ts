@@ -274,15 +274,54 @@ function addColumnDDL(table: PgTable, columnName: string): string | null {
   const wantsNotNull = col.notNull === true || isPrimary;
   const colIdent = qIdent(col.name);
   const tblIdent = qIdent(cfg.name);
+  const defClause = defaultClauseFor(col);
   const ddl: string[] = [];
+
+  // 1) 加列（IF NOT EXISTS 保证幂等）
   if (!wantsNotNull) {
-    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type}${defaultClauseFor(col)};`);
+    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type}${defClause};`);
   } else if (hasUsableDefault(col) || isPrimary) {
-    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type}${defaultClauseFor(col)} NOT NULL;`);
+    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type}${defClause} NOT NULL;`);
   } else {
     ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type};`);
-    ddl.push(`ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET NOT NULL;`);
   }
+
+  // 2) 补 DEFAULT（列已存在但缺 DEFAULT 时补上）
+  //    用 DO $$ 包裹：先查当前 default，不同才 SET
+  if (defClause) {
+    const defVal = defClause.replace(/^ DEFAULT /, '');
+    ddl.push(
+      `DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_attribute
+    WHERE attrelid = ${tblIdent}::regclass
+      AND attname = ${colIdent}
+      AND (attgenerated = '' OR attgenerated IS NULL)
+      AND pg_get_expr(adbin, adrelid) = ${defVal}
+  ) THEN
+    ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET DEFAULT ${defVal};
+  END IF;
+END $$;`,
+    );
+  }
+
+  // 3) 补 NOT NULL（列已存在但缺 NOT NULL 时补上）
+  if (wantsNotNull) {
+    ddl.push(
+      `DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_attribute
+    WHERE attrelid = ${tblIdent}::regclass
+      AND attname = ${colIdent}
+      AND attnotnull = true
+  ) THEN
+    ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET NOT NULL;
+  END IF;
+END $$;`,
+    );
+  }
+
+  // 4) PK
   if (isPrimary) {
     ddl.push(
       `DO $$ BEGIN
