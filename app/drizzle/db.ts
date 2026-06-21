@@ -90,16 +90,33 @@ function buildSchemaMaps(): { tables: Map<string, TableDef>; enums: Map<string, 
     }
   }
 
-  // 2. 表识别（Symbol(drizzle:Name) 存真实表名）
+  // 2. 表识别
+  //    主策略：Symbol(drizzle:Name) — Drizzle 内部规范，表对象上挂此 Symbol = 真实表名
+  //    fallback：.dbName 属性 — 部分 drizzle 版本/配置也暴露此属性
+  //    如果两种方式都识别失败（如 Drizzle 升级改动 Symbol 形状），
+  //    会输出 `0 张表` 并在 schema 修复失效时通过 warn 暴露问题。
   let nameSym: symbol | undefined;
   for (const val of Object.values(schema)) {
     if (!val || typeof val !== 'object') continue;
+
+    let tableName: string | undefined;
+
+    // 2a. 优先用 Symbol
     if (!nameSym) {
       for (const sym of Object.getOwnPropertySymbols(val)) {
         if (sym.toString().includes('drizzle:Name')) { nameSym = sym; break; }
       }
     }
-    const tableName: string | undefined = nameSym ? String((val as any)[nameSym]) : undefined;
+    if (nameSym) {
+      const v = (val as any)[nameSym];
+      if (typeof v === 'string' && v.length > 0) tableName = v;
+    }
+
+    // 2b. fallback: dbName
+    if (!tableName) {
+      const dbName = (val as { dbName?: unknown }).dbName;
+      if (typeof dbName === 'string' && dbName.length > 0) tableName = dbName;
+    }
     if (!tableName) continue;
 
     // 列收集
@@ -122,6 +139,7 @@ function buildSchemaMaps(): { tables: Map<string, TableDef>; enums: Map<string, 
     if (columns.length > 0) tables.set(tableName, { name: tableName, columns });
   }
 
+  if (tables.size === 0) warn('⚠️ schema 内省未找到任何表 — 检查 schema.ts 导出或 Drizzle 版本');
   log(`✅ schema 映射完成：${tables.size} 张表，${enums.size} 个枚举`);
   return { tables, enums };
 }
@@ -200,6 +218,16 @@ async function objectMissingType(name: string): Promise<boolean> {
 }
 
 // ── schema 修复引擎 ────────────────────────────────────────────────────────
+//
+// 并发安全模型：
+//   1) runningFixes Map：同一目标（表/列/类型）同一时刻只执行一次修复
+//      多个并发请求看到同一张表缺失，只有第一个真正执行 DDL，
+//      其余 await 同一 Promise。
+//   2) 幂等 DDL：CREATE TABLE IF NOT EXISTS / ADD COLUMN IF NOT EXISTS 兜底
+//      （runningFixes 已保证序列化，幂等 DDL 是第二道防线）
+//   3) MAX_RECURSION = 8：防止 DDL 链无限递归
+//   4) DDL 执行走 innerClient（不被 Proxy 拦截），不会触发嵌套 schema 修复
+//
 // FixTarget 同时携带预生成的 DDL，避免在错误处理路径上再次计算
 type FixTarget =
   | { kind: 'table'; name: string; ddl: string }
@@ -210,7 +238,6 @@ function targetKey(t: FixTarget): string {
   return t.kind === 'type' ? `e:${t.name}` : t.kind === 'table' ? `t:${t.name}` : `c:${t.table}:${t.col}`;
 }
 
-// 并发去重 + 递归深度保护
 const runningFixes = new Map<string, Promise<boolean>>();
 const MAX_RECURSION = 8;
 
@@ -226,28 +253,31 @@ async function fixTarget(target: FixTarget, depth: number): Promise<boolean> {
 
   const fixPromise = (async (): Promise<boolean> => {
     try {
+      // 短路：对象已存在则直接返回
       const missing = target.kind === 'table' ? await objectMissingTable(target.name)
         : target.kind === 'type' ? await objectMissingType(target.name)
         : await objectMissingColumn(target.table, target.col);
-
       if (!missing) {
         log(`✅ 对象已存在: ${key}`);
         return true;
       }
 
+      // 循环执行 DDL — 可能依赖 N 个缺失对象，每次修复一个后重试
+      // 例如：CREATE TABLE 需要 enum_A 和 enum_B，第一次失败报 42704，
+      // 修复 enum_A → 第二次失败报 42704，修复 enum_B → 第三次成功
       log(`📦 执行 DDL (depth=${depth}): ${target.ddl}`);
-
-      try {
-        await innerClient.unsafe(target.ddl);
-      } catch (ddlErr) {
-        // DDL 自身遇到 schema 错误 → 解析依赖 → 递归修复 → 重试本 DDL
-        if (!isSchemaError(ddlErr)) throw ddlErr;
-        const dep = targetFromError(ddlErr);
-        if (!dep) throw ddlErr;
-        log(`🔗 DDL 依赖其他 schema 对象，先递归修复: ${targetKey(dep)}`);
-        const depFixed = await fixTarget(dep, depth + 1);
-        if (!depFixed) throw ddlErr;
-        await innerClient.unsafe(target.ddl);
+      while (true) {
+        try {
+          await innerClient.unsafe(target.ddl);
+          break;
+        } catch (ddlErr) {
+          if (!isSchemaError(ddlErr)) throw ddlErr;
+          const dep = targetFromError(ddlErr);
+          if (!dep) throw ddlErr;
+          log(`🔗 DDL 依赖其他 schema 对象，先递归修复: ${targetKey(dep)}`);
+          const depFixed = await fixTarget(dep, depth + 1);
+          if (!depFixed) throw ddlErr;
+        }
       }
 
       log(`✅ schema 已修复: ${key}`);
@@ -311,62 +341,62 @@ function targetFromError(err: unknown): FixTarget | null {
   return null;
 }
 
-// ── Promise schema 错误捕获与自动修复重试 ─────────────────────────
-function wrapPromise<T>(promise: Promise<T>, execute: () => Promise<T>): Promise<T> {
-  return promise.catch(async (err) => {
-    if (!isSchemaError(err)) throw err;
-    const target = targetFromError(err);
-    if (!target) throw err;
-    const fixed = await fixTarget(target, 0);
-    if (!fixed) throw err;
-    log(`🔁 重试查询（schema 已修复: ${targetKey(target)}）`);
-    return await execute();
-  });
+// ── schema 错误 → 修复 → 重试（统一入口，所有路径都走这里） ─────
+//
+// recoverAndRetry：给定 err + execute，返回 Promise（可能是重试结果）
+//   是唯一包含「isSchemaError → targetFromError → fixTarget → execute」逻辑的地方。
+//
+// withSchemaRecovery：给一个 Promise 套上 recoverAndRetry 作为 .catch 处理。
+//
+// wrapQuery：Query 对象包装（覆盖 .then / .values / .execute）。
+//   - .then：drizzle-orm 用 await 调用时走这个路径
+//   - .values() / .execute()：返回新 Promise，走 withSchemaRecovery
+//   - 非 Query 且非 thenable：直接 return（防御性 guard）
+async function recoverAndRetry<T>(err: unknown, execute: () => Promise<T>): Promise<T> {
+  if (!isSchemaError(err)) throw err;
+  const target = targetFromError(err);
+  if (!target) throw err;
+  const fixed = await fixTarget(target, 0);
+  if (!fixed) throw err;
+  log(`🔁 重试查询（schema 已修复: ${targetKey(target)}）`);
+  return execute();
 }
 
-// ── Query 对象包装：覆盖 .then / .values / .execute ───────────────
+function withSchemaRecovery<T>(promise: Promise<T>, execute: () => Promise<T>): Promise<T> {
+  return promise.catch((err) => recoverAndRetry(err, execute));
+}
+
 function wrapQuery<T>(result: any, execute: () => Promise<T>): any {
-  // postgres.js Query 对象：保留 .values() / .execute()，同时替换 .then
+  // Query 对象：保留原方法引用，替换 .then 的错误分支与 .values/.execute
   if (result && typeof result.values === 'function') {
     const origValues = result.values.bind(result);
     const origExecute = result.execute?.bind(result);
-
-    // .then 被 await 调用
     const origThen = result.then.bind(result);
+
     result.then = function (onFulfilled: any, onRejected: any): any {
-      return origThen(
-        onFulfilled,
-        async (err: unknown) => {
-          if (!isSchemaError(err)) throw err;
-          const target = targetFromError(err);
-          if (!target) throw err;
-          const fixed = await fixTarget(target, 0);
-          if (!fixed) throw err;
-          log(`🔁 重试查询（schema 已修复: ${targetKey(target)}）`);
-          return await execute();
-        },
-      );
+      return origThen(onFulfilled, (err: unknown) => recoverAndRetry(err, execute));
     };
 
-    // .values() — drizzle 主要用此
     if (origValues) {
       result.values = function (): any {
-        return wrapPromise(origValues(), () => execute() as any);
+        return withSchemaRecovery(origValues(), () => execute() as any);
       };
     }
 
-    // .execute()
     if (origExecute) {
       result.execute = function (): any {
-        return wrapPromise(origExecute(), () => execute() as any);
+        return withSchemaRecovery(origExecute(), () => execute() as any);
       };
     }
 
     return result;
   }
 
-  // 普通 Promise / thenable
-  return wrapPromise(result as any, execute);
+  // fallback：非 Query 路径（普通 Promise / thenable）
+  if (result && typeof result.then === 'function') {
+    return withSchemaRecovery(result as Promise<T>, execute);
+  }
+  return result;
 }
 
 // ── client：Proxy 包装 innerClient ───────────────────────────────
