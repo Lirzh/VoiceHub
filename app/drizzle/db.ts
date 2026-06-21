@@ -528,6 +528,10 @@ function summarizeArgs(args: any[]): string {
  * - 当方法返回另一 thenable 时，递归再次包装
  * - 仅在实际 await（.then）或 .catch / .finally 时，才注入错误修复逻辑
  * - 修复后重放「原始 PendingQuery 的创建调用」（重新调用同一 unsafe / 模板标签）
+ *
+ * 注意：postgres PendingQuery 的 .values / .raw / .execute 等方法是通过 Object.defineProperty
+ * 动态挂到实例上的（不在 prototype 上），因此必须显式声明为"转发方法"，否则 Reflect.get
+ * 无法触发 trap 导致方法丢失。
  */
 function wrapPendingQuery(
   rawClient: PostgresSql,
@@ -535,36 +539,25 @@ function wrapPendingQuery(
   replay: () => any,
   _depth = 0,
 ): any {
-  // 如果已经是 Promise 或不是对象，直接附加 catch 修复
   if (!pendingQuery || typeof pendingQuery !== 'object') return pendingQuery;
-  if (pendingQuery instanceof Promise) {
-    return pendingQuery.catch(async (err: any) => {
-      devLog('pq:promise:catch', `捕获错误: ${(err as any)?.message || err}`);
-      const parsed = parsePgError(err);
-      if (parsed.kind === 'unknown') throw err;
-      const repaired = await tryRepair(rawClient, parsed);
-      if (!repaired) throw err;
-      devLog('pq:promise:retry', `Promise 修复成功，重放原始调用`);
-      return replay();
-    });
-  }
 
-  // 如果不是 thenable，直接返回原始
-  if (typeof pendingQuery.then !== 'function') {
-    return pendingQuery;
-  }
+  devLog('pq:wrap', `包装 PendingQuery (depth=${_depth})`);
 
-  devLog('pq:wrap', `包装 PendingQuery (depth=${_depth})，proto methods:`, Object.getOwnPropertyNames(Object.getPrototypeOf(pendingQuery)));
+  // postgres PendingQuery 实例的已知链式方法（Object.defineProperty 实例属性，非 prototype）
+  const CHAIN_METHODS = new Set([
+    'values', 'raw', 'cursor', 'forEach', 'stream', 'describe',
+    'execute', 'handle', 'simple', 'readable', 'writable', 'origin',
+    'cancel', 'named', 'reduce', 'next', 'return', 'throw',
+  ]);
 
   const handler: ProxyHandler<any> = {
-    get(target: any, prop: string | symbol, receiver: any) {
-      const original = Reflect.get(target, prop, target);
+    get(target: any, prop: string | symbol, receiver: any): any {
+      const key = String(prop);
 
       // Promise 协议方法：.then / .catch / .finally — 注入错误修复
-      if (prop === 'then' || prop === 'catch' || prop === 'finally') {
-        devLog('pq:then', `访问 ${String(prop)}，触发 then 包装`);
+      if (key === 'then' || key === 'catch' || key === 'finally') {
+        devLog('pq:then', `触发 Promise 协议: ${key}`);
         return function (...args: any[]) {
-          // 先正常执行 then，若失败则尝试修复并重放
           return new Promise((resolve, reject) => {
             Promise.resolve(target).then(
               (val: any) => {
@@ -585,26 +578,22 @@ function wrapPendingQuery(
                 }
                 devLog('pq:then:retry', `Schema 修复成功，重放原始查询`);
                 try {
-                  // 重放原始调用（返回新的 PendingQuery），将修复后的结果替换
                   const newResult = replay();
-                  // 新结果也需要包装，使其可直接 then 但保留修复后的查询值
                   Promise.resolve(newResult).then(resolve, reject);
                 } catch (replayErr) {
                   reject(replayErr);
                 }
-              }
+              },
             );
           }).then(...args);
         };
       }
 
-      // 普通方法（.values / .raw / .cursor / .stream / .forEach / .describe / .cancel / .execute / .handle / .simple / .readable / .writable / .origin）
-      // —— 这些方法返回另一个 thenable（新 PendingQuery）或原始值
-      if (typeof original === 'function') {
-        return function (this: any, ...args: any[]) {
-          devLog('pq:method', `调用 ${String(prop)}(${summarizeArgs(args)})`);
-          const methodResult = original.apply(target, args);
-          // 若返回也是 thenable（.values 返回另一个 PendingQuery），递归包装
+      // 链式方法：直接转发到原始 PendingQuery，方法返回值如果是 thenable 则再包装
+      if (CHAIN_METHODS.has(key)) {
+        devLog('pq:chain', `转发链式方法 .${key}()`);
+        return function (...args: any[]) {
+          const methodResult = (target as any)[key]?.apply(target, args);
           if (methodResult && typeof methodResult === 'object' && typeof methodResult.then === 'function') {
             return wrapPendingQuery(rawClient, methodResult, replay, _depth + 1);
           }
@@ -612,13 +601,8 @@ function wrapPendingQuery(
         };
       }
 
-      return original;
-    },
-    set(target: any, prop: string | symbol, value: any) {
-      return Reflect.set(target, prop, value);
-    },
-    has(target: any, prop: string | symbol) {
-      return Reflect.has(target, prop);
+      // 其他属性直接穿透
+      return (target as any)[prop];
     },
   };
 
@@ -626,23 +610,36 @@ function wrapPendingQuery(
 }
 
 function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
+  // postgres client 上返回 PendingQuery 的方法（这些需要被包装）
+  const PQ_METHODS = new Set([
+    'unsafe', 'begin', 'savepoint', 'end',
+    'file', 'load', 'queue', 'listen', 'notify', 'unlisten',
+    'copyFrom', 'copyTo', 'copyToFile', 'copyFromStdin',
+  ]);
+
   const handler: ProxyHandler<PostgresSql> = {
     get(target: any, prop: string | symbol, receiver: any) {
-      devLog('proxy:get', `访问属性 "${String(prop)}"`);
-      const original = Reflect.get(target, prop, receiver);
+      const key = String(prop);
+      devLog('proxy:get', `访问属性 "${key}"`);
+      const original: any = Reflect.get(target, prop, receiver);
       if (typeof original !== 'function') return original;
 
-      return function (this: any, ...args: any[]) {
-        devLog('proxy:call', `调用 ${String(prop)}(${summarizeArgs(args)})`);
-        const boundThis = this === receiver ? target : this;
-        const replay = () => original.apply(boundThis, args);
-        const result = replay();
-        // postgres 的 unsafe / begin / transaction 等返回 PendingQuery（thenable + 链式方法）
-        if (result && typeof result === 'object' && typeof result.then === 'function') {
-          return wrapPendingQuery(rawClient, result, replay, 0);
-        }
-        return result;
-      };
+      // 返回 PendingQuery 的方法 → 包装
+      if (PQ_METHODS.has(key)) {
+        return function (this: any, ...args: any[]) {
+          devLog('proxy:call:pq', `调用 ${key}(${summarizeArgs(args)})`);
+          const boundThis = this === receiver ? target : this;
+          const replay = () => original.apply(boundThis, args);
+          const result = replay();
+          if (result && typeof result === 'object' && typeof result.then === 'function') {
+            return wrapPendingQuery(rawClient, result, replay, 0);
+          }
+          return result;
+        };
+      }
+
+      // 其他方法原样返回
+      return original;
     },
     apply(target: any, thisArg: any, args: any[]) {
       devLog('proxy:apply', `模板标签调用`);
@@ -655,7 +652,6 @@ function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
     },
   };
 
-  // postgres 的返回值本身就是一个函数（模板标签），可直接被 Proxy 代理
   return new Proxy(rawClient, handler) as PostgresSql;
 }
 
