@@ -396,121 +396,94 @@ async function tryRepair(
 // Client 包装（显式对象，不用 Proxy，Nitro 不会内联优化）
 // ============================================================
 
-type AnyPQ = PendingQuery<any> & {
-  [k: string]: any;
-};
+// 关键：rollup 会内联局部常量函数引用。
+// 为了避免内联，所有对 raw 方法的获取都通过动态属性访问 `raw['unsafe']`，
+// 并且把 wrap 逻辑直接内联到每个方法里（不通过外部 wrapPQ 函数）。
 
-// 链式方法：每个都返回新的 PQ，需要递归包装
-function wrapPQ(
-  runSQL: (sql: string) => Promise<any>,
-  raw: AnyPQ,
-  replayRaw: () => AnyPQ,
-  depth: number,
-): AnyPQ {
-  if (depth > MAX_RETRIES) return raw;
-
-  // 创建一个真实的 thenable 对象，不是 Proxy
-  const wrapped: any = {
-    // .then（await 会走这里）：注入错误修复
-    then(onFulfilled?: any, onRejected?: any) {
-      return Promise.resolve(raw).then(
-        onFulfilled,
-        async (err: any) => {
-          const parsed = parsePgError(err);
-          if (parsed.kind === 'unknown') {
-            if (onRejected) return onRejected(err);
-            throw err;
-          }
-          const ok = await tryRepair(runSQL, parsed);
-          if (!ok) {
-            if (onRejected) return onRejected(err);
-            throw err;
-          }
-          // 重放原始查询 — 返回新的 wrapped PQ，由外层 Promise.resolve 再次消费
-          const newRaw = replayRaw();
-          const newWrapped = wrapPQ(runSQL, newRaw, replayRaw, depth + 1);
-          return Promise.resolve(newWrapped).then(
-            (val: any) => {
-              if (onFulfilled) return onFulfilled(val);
-              return val;
-            },
-            (err2: any) => {
-              if (onRejected) return onRejected(err2);
-              throw err2;
-            },
-          );
-        },
-      );
-    },
-    // .catch / .finally（为了与原生 Promise 行为一致）
-    catch(onRejected: any) { return this.then(undefined, onRejected); },
-    finally(onFinally: any) {
-      return this.then(
-        (v: any) => { onFinally && onFinally(); return v; },
-        (e: any) => { onFinally && onFinally(); throw e; },
-      );
-    },
-  };
-
-  // 其他方法直接转发；方法返回的若是 thenable，再包一层
-  for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(raw))) {
-    const val = (raw as any)[key];
-    if (typeof val === 'function' && key !== 'then' && key !== 'constructor') {
-      wrapped[key] = function (...args: any[]) {
-        const r = val.apply(raw, args);
-        if (r && typeof r === 'object' && typeof r.then === 'function') {
-          // 新的 raw: 重放时需要用同样的参数再次调用原函数
-          const newReplay = () => val.apply(replayRaw(), args);
-          return wrapPQ(runSQL, r, newReplay, depth + 1);
-        }
-        return r;
-      };
-    }
-  }
-
-  return wrapped;
-}
-
-// 显式构造一个 "看起来像 postgres client" 的对象
-// 不用 Proxy，避免 Nitro 的 optimizeDeps/rollup 做内联优化
 function buildWrappedClient(raw: PostgresSql): PostgresSql {
-  // runSQL：执行原始 DDL（使用 raw client.unsafe，不走错误修复）
-  const runSQL = (sql: string): Promise<any> => (raw as any).unsafe(sql);
-
-  // 先把 raw 强转为可扩展对象，以便我们能获取它的全部方法
   const rawAny = raw as any;
 
-  // client`` 模板标签（即函数形式的调用）
+  // runSQL：执行原始 DDL（不走错误修复）
+  const runSQL = (sql: string): Promise<any> => rawAny['unsafe'](sql);
+
+  // 内联 wrap 逻辑：把 raw PQ 包装成带错误修复的 thenable
+  const makeWrapped = (rawPq: any, replayFn: () => any, depth: number): any => {
+    if (depth > MAX_RETRIES || !rawPq || typeof rawPq !== 'object' || typeof rawPq.then !== 'function') {
+      return rawPq;
+    }
+
+    const wrapped: any = {
+      then(onF?: any, onR?: any) {
+        return Promise.resolve(rawPq).then(
+          onF,
+          async (err: any) => {
+            const parsed = parsePgError(err);
+            if (parsed.kind === 'unknown') {
+              if (onR) return onR(err);
+              throw err;
+            }
+            const ok = await tryRepair(runSQL, parsed);
+            if (!ok) {
+              if (onR) return onR(err);
+              throw err;
+            }
+            const newRaw = replayFn();
+            const newWrapped = makeWrapped(newRaw, replayFn, depth + 1);
+            return Promise.resolve(newWrapped).then(
+              (v: any) => (onF ? onF(v) : v),
+              (e: any) => { if (onR) return onR(e); throw e; },
+            );
+          },
+        );
+      },
+      catch(onR: any) { return this.then(undefined, onR); },
+      finally(onF: any) {
+        return this.then(
+          (v: any) => { onF && onF(); return v; },
+          (e: any) => { onF && onF(); throw e; },
+        );
+      },
+    };
+
+    // 转发所有原型方法；返回 thenable 时递归包装
+    for (const key of Object.getOwnPropertyNames(Object.getPrototypeOf(rawPq))) {
+      const fn = rawPq[key];
+      if (typeof fn === 'function' && key !== 'then' && key !== 'constructor') {
+        wrapped[key] = function (...args: any[]) {
+          const r = fn.apply(rawPq, args);
+          if (r && typeof r === 'object' && typeof r.then === 'function') {
+            const newReplay = () => fn.apply(replayFn(), args);
+            return makeWrapped(r, newReplay, depth + 1);
+          }
+          return r;
+        };
+      }
+    }
+
+    return wrapped;
+  };
+
+  // 模板标签调用：client`SELECT ...`
   function taggedTemplateFn(...args: any[]): any {
     const replay = () => rawAny.apply(raw, args);
     const pq = replay();
-    if (pq && typeof pq === 'object' && typeof pq.then === 'function') {
-      return wrapPQ(runSQL, pq, replay, 0);
-    }
-    return pq;
+    return makeWrapped(pq, replay, 0);
   }
 
-  // 让 taggedTemplateFn 拥有 client 的全部方法
-  // .unsafe / .begin / .file / 其他 — 都包一层
-  const unsafeOrig = rawAny.unsafe;
-  const beginOrig = rawAny.begin;
-
-  // unsafe
-  taggedTemplateFn.unsafe = function (...args: any[]) {
-    const replay = () => unsafeOrig.apply(raw, args);
+  // unsafe：通过动态属性访问获取，阻止 rollup 内联
+  taggedTemplateFn['unsafe'] = function (...args: any[]) {
+    const fn = rawAny['unsafe'];
+    const replay = () => fn.apply(raw, args);
     const pq = replay();
-    if (pq && typeof pq === 'object' && typeof pq.then === 'function') {
-      return wrapPQ(runSQL, pq, replay, 0);
-    }
-    return pq;
+    return makeWrapped(pq, replay, 0);
   };
 
   // begin
-  taggedTemplateFn.begin = function (...args: any[]) {
-    return beginOrig.apply(raw, args);
+  taggedTemplateFn['begin'] = function (...args: any[]) {
+    return rawAny['begin'].apply(raw, args);
   };
 
-  // 其他属性：直接从 raw 透传（options / transform / 等）
+  // 透传所有自有属性（options / transform / 等）
   for (const key of Object.getOwnPropertyNames(rawAny)) {
     if (key === 'unsafe' || key === 'begin') continue;
     const val = rawAny[key];
@@ -525,7 +498,7 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
     }
   }
 
-  // 也从 prototype 透传所有方法（postgres 的实例方法挂在 prototype 上）
+  // 透传原型方法
   const proto = Object.getPrototypeOf(rawAny);
   if (proto && proto !== Object.prototype) {
     for (const key of Object.getOwnPropertyNames(proto)) {
