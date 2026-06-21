@@ -287,26 +287,19 @@ function addColumnDDL(table: PgTable, columnName: string): string | null {
   }
 
   // 2) 补 DEFAULT（列已存在但缺 DEFAULT 时补上）
-  //    用 DO $$ 包裹：先查当前 default，不同才 SET
+  //    直接 SET DEFAULT（幂等操作，不需要条件判断）
   if (defClause) {
     const defVal = defClause.replace(/^ DEFAULT /, '');
-    ddl.push(
-      `DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_attribute
-    WHERE attrelid = ${tblIdent}::regclass
-      AND attname = ${colIdent}
-      AND (attgenerated = '' OR attgenerated IS NULL)
-      AND pg_get_expr(adbin, adrelid) = ${defVal}
-  ) THEN
-    ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET DEFAULT ${defVal};
-  END IF;
-END $$;`,
-    );
+    ddl.push(`ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET DEFAULT ${defVal};`);
   }
 
   // 3) 补 NOT NULL（列已存在但缺 NOT NULL 时补上）
+  //    先回填 NULL 值（用 DEFAULT），再 SET NOT NULL
   if (wantsNotNull) {
+    if (defClause) {
+      const defVal = defClause.replace(/^ DEFAULT /, '');
+      ddl.push(`UPDATE ${tblIdent} SET ${colIdent} = ${defVal} WHERE ${colIdent} IS NULL;`);
+    }
     ddl.push(
       `DO $$ BEGIN
   IF NOT EXISTS (
@@ -477,10 +470,7 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
             }
             const newRaw = replayFn();
             const newWrapped = makeWrapped(newRaw, replayFn, depth + 1);
-            return Promise.resolve(newWrapped).then(
-              (v: any) => (onF ? onF(v) : v),
-              (e: any) => { if (onR) return onR(e); throw e; },
-            );
+            return Promise.resolve(newWrapped).then(onF, onR);
           },
         );
       },
