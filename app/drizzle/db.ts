@@ -485,7 +485,7 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
 
   // 透传所有自有属性（options / transform / 等）
   for (const key of Object.getOwnPropertyNames(rawAny)) {
-    if (key === 'unsafe' || key === 'begin') continue;
+    if (key === 'unsafe' || key === 'begin' || key === 'prototype') continue;
     const val = rawAny[key];
     if (typeof val === 'function') {
       taggedTemplateFn[key] = function (...args: any[]) { return val.apply(raw, args); };
@@ -503,8 +503,9 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
   if (proto && proto !== Object.prototype) {
     for (const key of Object.getOwnPropertyNames(proto)) {
       if ((taggedTemplateFn as any)[key] !== undefined) continue;
+      if (key === 'constructor' || key === 'prototype') continue;
       const desc = Object.getOwnPropertyDescriptor(proto, key);
-      if (!desc || key === 'constructor') continue;
+      if (!desc) continue;
       if (typeof desc.value === 'function') {
         (taggedTemplateFn as any)[key] = function (...args: any[]) { return desc.value.apply(raw, args); };
       } else if (desc.get || desc.set) {
