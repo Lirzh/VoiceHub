@@ -76,11 +76,31 @@ const getDatabaseConfig = () => {
 // 5. 重新执行原始查询
 // ============================================================
 
+const IS_DEV = process.env.NODE_ENV === 'development';
+
+// ---------- 开发环境日志工具 ----------
+function devLog(prefix: string, ...parts: unknown[]) {
+  if (!IS_DEV) return;
+  const ts = new Date().toISOString().slice(11, 23);
+  console.debug(`[lazy-schema][${ts}][${prefix}]`, ...parts);
+}
+
+function devGroup(label: string, fn: () => unknown): unknown {
+  if (!IS_DEV) return fn();
+  console.group(`[lazy-schema] ${label}`);
+  try {
+    return fn();
+  } finally {
+    console.groupEnd();
+  }
+}
+
 // 表名（SQL 中的）到 PgTable 的反向映射
 const tablesByName: Record<string, PgTable> = {};
 // 枚举名（SQL 中的）到 PgEnum 的反向映射
 const enumsByName: Record<string, PgEnum<any>> = {};
 
+devLog('init', '开始扫描 schema.ts，构建表/枚举映射…');
 for (const key of Object.keys(schema)) {
   const value = (schema as any)[key];
   if (!value) continue;
@@ -95,10 +115,11 @@ for (const key of Object.keys(schema)) {
       const cfg = getTableConfig(value as PgTable);
       if (cfg && (cfg as any).name) {
         tablesByName[(cfg as any).name] = value as PgTable;
+        devLog('init:table', `识别表 "${(cfg as any).name}" (key=${key})`);
         continue;
       }
     }
-  } catch {}
+  } catch (e) { devLog('init:table:err', key, e); }
 
   // PgEnum 判断：有 enumName 和 values
   if (
@@ -107,11 +128,13 @@ for (const key of Object.keys(schema)) {
     Array.isArray((value as any).values)
   ) {
     enumsByName[(value as any).enumName] = value as PgEnum<any>;
+    devLog('init:enum', `识别枚举 "${(value as any).enumName}" (key=${key}), values=`, (value as any).values);
   }
 }
 
 // 再做一次兜底扫描：遍历 schema 的值，用 getTableConfig 能成功的认为是表
 (function () {
+  devLog('init', '开始兜底扫描（getTableConfig 探测）…');
   for (const key of Object.keys(schema)) {
     const value = (schema as any)[key];
     if (!value || typeof value !== 'object') continue;
@@ -119,8 +142,14 @@ for (const key of Object.keys(schema)) {
       const cfg: any = getTableConfig(value);
       if (cfg && typeof cfg.name === 'string' && !tablesByName[cfg.name]) {
         tablesByName[cfg.name] = value as PgTable;
+        devLog('init:fallback:table', `兜底识别表 "${cfg.name}" (key=${key}), 列数=${cfg.columns?.length ?? 0}`);
       }
-    } catch {}
+    } catch (e) { /* ignore */ }
+  }
+  devLog('init:done', `扫描完成，共 ${Object.keys(tablesByName).length} 张表，${Object.keys(enumsByName).length} 个枚举`);
+  if (IS_DEV) {
+    console.debug('[lazy-schema][init:done] tables =', Object.keys(tablesByName).sort());
+    console.debug('[lazy-schema][init:done] enums  =', Object.keys(enumsByName).sort());
   }
 })();
 
@@ -161,6 +190,7 @@ function pgTypeOfColumn(col: PgColumn): string {
 
 function buildEnumDDL(enumName: string, values: string[]): string {
   const quoted = values.map((v) => `'${v.replace(/'/g, "''")}'`).join(', ');
+  devLog('ddl:enum', `生成枚举 DDL "${enumName}", values=`, values);
   return `DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '${enumName.replace(/'/g, "''")}') THEN
@@ -173,6 +203,7 @@ function buildTableDDL(table: PgTable): string {
   const cfg: any = getTableConfig(table);
   const tableName: string = cfg.name;
   const columns: any[] = cfg.columns;
+  devLog('ddl:table', `生成建表 DDL "${tableName}", 列数=${columns.length}`);
   // 先确保枚举类型存在（用于列类型依赖）
   const enumPrelude: string[] = [];
   const colClauses: string[] = [];
@@ -181,6 +212,7 @@ function buildTableDDL(table: PgTable): string {
   for (const col of columns) {
     const colName: string = col.name;
     let typeName = pgTypeOfColumn(col);
+    devLog('ddl:table:col', `  列 "${colName}" → PG type="${typeName}"`);
 
     // 如果列是 enum 类型，先补全枚举 DDL
     const enumRef: string | undefined = (col as any)._?.enumName || (col as any)._?.type;
@@ -188,6 +220,7 @@ function buildTableDDL(table: PgTable): string {
       const e = enumsByName[enumRef];
       enumPrelude.push(buildEnumDDL((e as any).enumName, (e as any).values));
       typeName = `"${enumRef}"`;
+      devLog('ddl:table:col:enum', `  列 "${colName}" 依赖枚举 "${enumRef}"，已排队先建`);
     }
     if (enumRef && typeof enumRef === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(enumRef) && enumsByName[enumRef]) {
       // 已处理
@@ -211,11 +244,13 @@ function buildTableDDL(table: PgTable): string {
       } else if (typeof def === 'number' || typeof def === 'boolean') {
         defaultClause = ` DEFAULT ${String(def)}`;
       }
+      devLog('ddl:table:col:default', `  列 "${colName}" default=`, defaultClause || '(无)');
     }
 
     let clause = `"${colName}" ${typeName}${notNull ? ' NOT NULL' : ''}${defaultClause}`;
     if ((col as any).primary === true) {
       clause += ' PRIMARY KEY';
+      devLog('ddl:table:col:pk', `  列 "${colName}" 标记为主键`);
     }
     colClauses.push(clause);
   }
@@ -230,6 +265,7 @@ function buildTableDDL(table: PgTable): string {
           : [];
         if (names.length) {
           constraints.push(`UNIQUE (${names.join(', ')})`);
+          devLog('ddl:table:constraint', `  生成唯一约束 UNIQUE(${names.join(', ')})`);
         }
       }
     }
@@ -237,6 +273,8 @@ function buildTableDDL(table: PgTable): string {
 
   const body = [...colClauses, ...constraints].join(',\n  ');
   const createTable = `CREATE TABLE IF NOT EXISTS "${tableName}" (\n  ${body}\n);`;
+  devLog('ddl:table:done', `DDL 生成完毕 "${tableName}"，输出长度=${createTable.length} 字符`);
+  devLog('ddl:table:sql', createTable);
 
   return [...enumPrelude, createTable].join('\n');
 }
@@ -244,13 +282,18 @@ function buildTableDDL(table: PgTable): string {
 function buildAddColumnDDL(table: PgTable, columnName: string): string {
   const cfg: any = getTableConfig(table);
   const columns: any[] = cfg.columns;
+  devLog('ddl:column', `生成 ADD COLUMN DDL "${cfg.name}"."${columnName}"`);
   const col = columns.find((c: any) => c.name === columnName);
-  if (!col) return '';
+  if (!col) {
+    devLog('ddl:column:miss', `列 "${columnName}" 在 schema.ts 中未找到，无法生成 DDL`);
+    return '';
+  }
 
   let typeName = pgTypeOfColumn(col);
   const enumRef: string | undefined = (col as any)._?.enumName;
   if (enumRef && typeof enumRef === 'string' && enumsByName[enumRef]) {
     typeName = `"${enumRef}"`;
+    devLog('ddl:column:enum', `列 "${columnName}" 依赖枚举 "${enumRef}"`);
   }
 
   const notNull: boolean = (col as any).notNull === true;
@@ -266,38 +309,52 @@ function buildAddColumnDDL(table: PgTable, columnName: string): string {
     }
   }
   const nullClause = notNull ? ' NOT NULL' : '';
-  return `ALTER TABLE IF EXISTS "${cfg.name}" ADD COLUMN IF NOT EXISTS "${columnName}" ${typeName}${defaultClause}${nullClause};`;
+  const ddl = `ALTER TABLE IF EXISTS "${cfg.name}" ADD COLUMN IF NOT EXISTS "${columnName}" ${typeName}${defaultClause}${nullClause};`;
+  devLog('ddl:column:done', ddl);
+  return ddl;
 }
 
 // ---------- 元数据检查 ----------
 
 async function relationExists(sql: PostgresSql, name: string): Promise<boolean> {
+  devLog('meta:table', `查询 information_schema.tables: table_name="${name}"`);
   try {
     const r = await sql`SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = ${name}) AS exists_`;
-    return (r as any)[0]?.exists_ === true;
-  } catch {
+    const exists = (r as any)[0]?.exists_ === true;
+    devLog('meta:table', `  → ${exists ? '存在 ✓' : '不存在 ✗'} "${name}"`);
+    return exists;
+  } catch (e) {
+    devLog('meta:table:err', `查询表是否存在失败 "${name}":`, e);
     return false;
   }
 }
 
 async function columnExists(sql: PostgresSql, tableName: string, columnName: string): Promise<boolean> {
+  devLog('meta:column', `查询 information_schema.columns: table="${tableName}", column="${columnName}"`);
   try {
     const r = await sql`
       SELECT EXISTS(
         SELECT 1 FROM information_schema.columns
         WHERE table_name = ${tableName} AND column_name = ${columnName}
       ) AS exists_`;
-    return (r as any)[0]?.exists_ === true;
-  } catch {
+    const exists = (r as any)[0]?.exists_ === true;
+    devLog('meta:column', `  → ${exists ? '存在 ✓' : '不存在 ✗'} "${tableName}"."${columnName}"`);
+    return exists;
+  } catch (e) {
+    devLog('meta:column:err', `查询列是否存在失败 "${tableName}"."${columnName}":`, e);
     return false;
   }
 }
 
 async function enumTypeExists(sql: PostgresSql, typeName: string): Promise<boolean> {
+  devLog('meta:enum', `查询 pg_type: typname="${typeName}"`);
   try {
     const r = await sql`SELECT EXISTS(SELECT 1 FROM pg_type WHERE typname = ${typeName}) AS exists_`;
-    return (r as any)[0]?.exists_ === true;
-  } catch {
+    const exists = (r as any)[0]?.exists_ === true;
+    devLog('meta:enum', `  → ${exists ? '存在 ✓' : '不存在 ✗'} "${typeName}"`);
+    return exists;
+  } catch (e) {
+    devLog('meta:enum:err', `查询枚举是否存在失败 "${typeName}":`, e);
     return false;
   }
 }
@@ -313,19 +370,33 @@ type ParsedError =
 function parsePgError(err: any): ParsedError {
   const code: string | undefined = err?.code ?? err?.sqlstate;
   const msg: string = (err?.message || err?.msg || '').toString();
+  devLog('error:parse', `收到 PG 错误: code=${code}, msg="${msg.slice(0, 200)}"`);
 
   if (code === '42P01' || /relation .+ does not exist/i.test(msg)) {
     const m = msg.match(/relation\s+"([^"]+)"\s+does not exist/i);
-    if (m) return { kind: 'relation', name: m[1] };
+    if (m) {
+      const result = { kind: 'relation' as const, name: m[1] };
+      devLog('error:parse', `  → 解析为 relation "${m[1]}" (PG 42P01)`);
+      return result;
+    }
   }
   if (code === '42703' || /column .+ of relation .+ does not exist/i.test(msg)) {
     const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"\s+does not exist/i);
-    if (m) return { kind: 'column', column: m[1], relation: m[2] };
+    if (m) {
+      const result = { kind: 'column' as const, column: m[1], relation: m[2] };
+      devLog('error:parse', `  → 解析为 column "${m[2]}"."${m[1]}" (PG 42703)`);
+      return result;
+    }
   }
   if (code === '42704' || /type .+ does not exist/i.test(msg)) {
     const m = msg.match(/type\s+"([^"]+)"\s+does not exist/i);
-    if (m) return { kind: 'type', name: m[1] };
+    if (m) {
+      const result = { kind: 'type' as const, name: m[1] };
+      devLog('error:parse', `  → 解析为 type "${m[1]}" (PG 42704)`);
+      return result;
+    }
   }
+  devLog('error:parse', '  → 无法识别，未知错误类型');
   return { kind: 'unknown' };
 }
 
@@ -336,18 +407,31 @@ async function tryRepair(rawClient: PostgresSql, parsed: ParsedError): Promise<b
 
   // 1) 修复缺失枚举类型
   if (parsed.kind === 'type') {
+    devLog('repair:start:type', `尝试修复枚举类型 "${parsed.name}"`);
     const e = enumsByName[parsed.name];
-    if (!e) return false;
+    if (!e) {
+      devLog('repair:skip:type', `枚举 "${parsed.name}" 在 schema.ts 中未注册，跳过`);
+      return false;
+    }
     const key = `type:${parsed.name}`;
-    if (repairInProgress.has(key)) return false;
+    if (repairInProgress.has(key)) {
+      devLog('repair:skip:type:concurrent', `枚举 "${parsed.name}" 正在被其他修复任务处理，跳过`);
+      return false;
+    }
     repairInProgress.add(key);
     try {
-      if (await enumTypeExists(rawClient, parsed.name)) return true;
+      const exists = await enumTypeExists(rawClient, parsed.name);
+      if (exists) {
+        devLog('repair:skip:type:exists', `枚举 "${parsed.name}" 数据库中已存在，无需修复`);
+        return true;
+      }
       const ddl = buildEnumDDL((e as any).enumName, (e as any).values);
+      devLog('repair:exec:type', `执行枚举 DDL "${parsed.name}"`);
       await rawClient.unsafe(ddl);
+      devLog('repair:ok:type', `枚举 "${parsed.name}" 创建成功 ✓`);
       return true;
     } catch (err) {
-      console.warn(`[lazy-schema] 修复枚举 "${parsed.name}" 失败:`, (err as any)?.message || err);
+      devLog('repair:fail:type', `修复枚举 "${parsed.name}" 失败 ✗:`, (err as any)?.message || err);
       return false;
     } finally {
       repairInProgress.delete(key);
@@ -356,18 +440,31 @@ async function tryRepair(rawClient: PostgresSql, parsed: ParsedError): Promise<b
 
   // 2) 修复缺失表
   if (parsed.kind === 'relation') {
+    devLog('repair:start:table', `尝试修复表 "${parsed.name}"`);
     const table = tablesByName[parsed.name];
-    if (!table) return false;
+    if (!table) {
+      devLog('repair:skip:table', `表 "${parsed.name}" 在 schema.ts 中未注册，跳过`);
+      return false;
+    }
     const key = `table:${parsed.name}`;
-    if (repairInProgress.has(key)) return false;
+    if (repairInProgress.has(key)) {
+      devLog('repair:skip:table:concurrent', `表 "${parsed.name}" 正在被其他修复任务处理，跳过`);
+      return false;
+    }
     repairInProgress.add(key);
     try {
-      if (await relationExists(rawClient, parsed.name)) return true;
+      const exists = await relationExists(rawClient, parsed.name);
+      if (exists) {
+        devLog('repair:skip:table:exists', `表 "${parsed.name}" 数据库中已存在，无需修复`);
+        return true;
+      }
       const ddl = buildTableDDL(table);
+      devLog('repair:exec:table', `执行建表 DDL "${parsed.name}"（${ddl.length} 字符）`);
       await rawClient.unsafe(ddl);
+      devLog('repair:ok:table', `表 "${parsed.name}" 创建成功 ✓`);
       return true;
     } catch (err) {
-      console.warn(`[lazy-schema] 修复表 "${parsed.name}" 失败:`, (err as any)?.message || err);
+      devLog('repair:fail:table', `修复表 "${parsed.name}" 失败 ✗:`, (err as any)?.message || err);
       return false;
     } finally {
       repairInProgress.delete(key);
@@ -376,19 +473,35 @@ async function tryRepair(rawClient: PostgresSql, parsed: ParsedError): Promise<b
 
   // 3) 修复缺失列
   if (parsed.kind === 'column') {
+    devLog('repair:start:column', `尝试修复列 "${parsed.relation}"."${parsed.column}"`);
     const table = tablesByName[parsed.relation];
-    if (!table) return false;
+    if (!table) {
+      devLog('repair:skip:column', `表 "${parsed.relation}" 在 schema.ts 中未注册，跳过`);
+      return false;
+    }
     const key = `col:${parsed.relation}.${parsed.column}`;
-    if (repairInProgress.has(key)) return false;
+    if (repairInProgress.has(key)) {
+      devLog('repair:skip:column:concurrent', `列 "${parsed.relation}"."${parsed.column}" 正在被其他修复任务处理，跳过`);
+      return false;
+    }
     repairInProgress.add(key);
     try {
-      if (await columnExists(rawClient, parsed.relation, parsed.column)) return true;
+      const exists = await columnExists(rawClient, parsed.relation, parsed.column);
+      if (exists) {
+        devLog('repair:skip:column:exists', `列 "${parsed.relation}"."${parsed.column}" 数据库中已存在，无需修复`);
+        return true;
+      }
       const ddl = buildAddColumnDDL(table, parsed.column);
-      if (!ddl) return false;
+      if (!ddl) {
+        devLog('repair:skip:column:ddl', `无法生成列 "${parsed.relation}"."${parsed.column}" 的 DDL，跳过`);
+        return false;
+      }
+      devLog('repair:exec:column', `执行 ADD COLUMN DDL "${parsed.relation}"."${parsed.column}"`);
       await rawClient.unsafe(ddl);
+      devLog('repair:ok:column', `列 "${parsed.relation}"."${parsed.column}" 添加成功 ✓`);
       return true;
     } catch (err) {
-      console.warn(`[lazy-schema] 修复列 "${parsed.relation}.${parsed.column}" 失败:`, (err as any)?.message || err);
+      devLog('repair:fail:column', `修复列 "${parsed.relation}"."${parsed.column}" 失败 ✗:`, (err as any)?.message || err);
       return false;
     } finally {
       repairInProgress.delete(key);
@@ -400,27 +513,46 @@ async function tryRepair(rawClient: PostgresSql, parsed: ParsedError): Promise<b
 
 // ---------- 包装 client ----------
 
+function summarizeArgs(args: any[]): string {
+  const summary = args.map(a => {
+    if (typeof a === 'string') return a.length > 80 ? a.slice(0, 80) + '…' : a;
+    if (Buffer.isBuffer(a)) return `<Buffer ${a.length}b>`;
+    return String(a).slice(0, 80);
+  });
+  return summary.length > 2 ? summary.slice(0, 2).join(', ') + ', …' : summary.join(', ');
+}
+
 function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
   // 拦截以模板字符串形式调用的 `client\`...\``
   const handler: ProxyHandler<PostgresSql> = {
     get(target: any, prop: string | symbol, receiver: any) {
+      devLog('proxy:get', `访问属性 "${String(prop)}"`);
       const original = Reflect.get(target, prop, receiver);
       if (typeof original !== 'function') return original;
 
       // 这些方法返回实际结果/承诺，我们拦截它们的返回值以处理错误
       return function (this: any, ...args: any[]) {
+        devLog('proxy:call', `调用 ${String(prop)}(${summarizeArgs(args)})`);
         const result = original.apply(this === receiver ? target : this, args);
 
         // 主要拦截异步方法：unsafe / file / begin / transaction 等
         if (result && typeof result.then === 'function') {
           return result.catch(async (err: any) => {
+            devLog('proxy:catch', `${String(prop)} 抛出错误，尝试自动修复…`);
             const parsed = parsePgError(err);
-            if (parsed.kind === 'unknown') throw err;
+            if (parsed.kind === 'unknown') {
+              devLog('proxy:throw', `无法识别错误类型，直接抛出`);
+              throw err;
+            }
 
             const repaired = await tryRepair(rawClient, parsed);
-            if (!repaired) throw err;
+            if (!repaired) {
+              devLog('proxy:throw', `修复失败，直接抛出原始错误`);
+              throw err;
+            }
 
             // 再次尝试
+            devLog('proxy:retry', `修复成功，重试 ${String(prop)}(…)`);
             return original.apply(this === receiver ? target : this, args);
           });
         }
@@ -430,14 +562,16 @@ function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
       };
     },
     apply(target: any, thisArg: any, args: any[]) {
-      // 模板标签形式：client\`SELECT ...\`
+      devLog('proxy:apply', `模板标签调用 args=`, args);
       const result = target.apply(thisArg, args);
       if (result && typeof result.then === 'function') {
         return result.catch(async (err: any) => {
+          devLog('proxy:apply:catch', `模板标签查询抛出错误，尝试自动修复…`);
           const parsed = parsePgError(err);
           if (parsed.kind === 'unknown') throw err;
           const repaired = await tryRepair(rawClient, parsed);
           if (!repaired) throw err;
+          devLog('proxy:apply:retry', `修复成功，重试模板标签查询`);
           return target.apply(thisArg, args);
         });
       }
