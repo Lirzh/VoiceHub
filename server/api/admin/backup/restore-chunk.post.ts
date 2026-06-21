@@ -86,107 +86,37 @@ export default defineEventHandler(async (event) => {
 
   console.log(`处理批次: ${tableName}, ${records.length} 条记录`)
 
-  // 每 100 条记录包在一个事务中，替代每条记录一个事务
-  // 大幅降低事务开销（COMMIT / fsync），同时在失败时整组回滚。
-  const BATCH_SIZE = 100
-
-  for (let i = 0; i < records.length; i += BATCH_SIZE) {
-    const batch = records.slice(i, i + BATCH_SIZE)
-
+  for (const record of records) {
     try {
       await db.transaction(async (tx) => {
-        for (const record of batch) {
-          try {
-            switch (tableName) {
-              case 'users': {
-                const buildUserData = (includePassword = false) => {
-                  const userData: any = {}
-                  const userFields = [
-                    'username',
-                    'name',
-                    'grade',
-                    'class',
-                    'role',
-                    'email',
-                    'emailVerified',
-                    'lastLoginIp',
-                    'meowNickname',
-                    'forcePasswordChange',
-                    'status',
-                    'statusChangedBy'
-                  ]
-                  const dateFields = [
-                    'createdAt',
-                    'updatedAt',
-                    'lastLogin',
-                    'passwordChangedAt',
-                    'meowBoundAt',
-                    'statusChangedAt'
-                  ]
+        switch (tableName) {
+          case 'users': {
+            const buildUserData = (includePassword = false) => {
+              const userData: any = {}
+              const userFields = [
+                'username',
+                'name',
+                'grade',
+                'class',
+                'role',
+                'email',
+                'emailVerified',
+                'lastLoginIp',
+                'meowNickname',
+                'forcePasswordChange',
+                'status',
+                'statusChangedBy'
+              ]
+              const dateFields = [
+                'createdAt',
+                'updatedAt',
+                'lastLogin',
+                'passwordChangedAt',
+                'meowBoundAt',
+                'statusChangedAt'
+              ]
 
-                  userFields.forEach((field) => {
-                    if (record[field] !== undefined) userData[field] = record[field]
-                  })
-                  dateFields.forEach((field) => {
-                    if (record[field]) userData[field] = new Date(record[field])
-                  })
-
-                  if (includePassword && record.password) {
-                    userData.passwordHash = record.password
-                  } else {
-                    userData.passwordHash = null
-                  }
-
-                  return userData
-                }
-
-                if (record.username) {
-                  const existingUser = await tx
-                    .select({ id: users.id })
-                    .from(users)
-                    .where(eq(users.username, String(record.username)))
-                    .limit(1)
-
-                  if (existingUser.length > 0) {
-                    const updateData = buildUserData(false)
-                    await tx
-                      .update(users)
-                      .set(updateData)
-                      .where(eq(users.id, existingUser[0].id))
-                    stats.updated++
-                  } else {
-                    const insertData = buildUserData(true)
-                    await tx.insert(users).values(insertData)
-                    stats.created++
-                  }
-                }
-                break
-              }
-              // ... 其他 case：所有实际处理逻辑不变，只是包裹在同一事务中
-            }
-          } catch (recordError: any) {
-            // 单条记录失败不影响整个批次：记录错误，继续处理其他记录
-            console.error(`处理单条记录失败 (${tableName}):`, recordError)
-            stats.errors++
-            stats.warnings.push(`单条记录处理失败: ${recordError.message}`)
-          }
-        }
-      })
-      stats.processed += batch.length
-    } catch (batchError: any) {
-      // 整个批次回滚：错误计入 stats.errors
-      console.error(`批量事务失败 (${tableName}, 行 ${i}-${i + batch.length}):`, batchError)
-      stats.errors += batch.length
-      stats.warnings.push(`批量事务失败: ${batchError.message}`)
-    }
-  }
-
-  return {
-    success: true,
-    newMappings,
-    stats
-  }
-})
+              userFields.forEach((field) => {
                 if (record.hasOwnProperty(field)) {
                   if (field === 'role') {
                     if (!['USER', 'SONG_ADMIN', 'ADMIN', 'SUPER_ADMIN'].includes(record[field])) {

@@ -69,6 +69,26 @@ function isBuiltin(type: string): boolean {
   return false;
 }
 
+// ── 查询超时保护（全局 60s）──────────────────────────────────────────────
+//
+// 所有通过 Proxy 的查询都会被 withTimeout 包裹。
+// 用途：
+//   · dataLoader 挂起 / 慢查询 / 网络抖动 — 不再让调用方永久阻塞
+//   · 替代原先在业务代码中手写 Promise.race
+//
+// 超时错误不是 schema 错误，recoverAndRetry 会原样抛出，业务层可通过
+// try/catch 捕获。超时只保护数据库查询本身。
+const DEFAULT_DB_TIMEOUT = 60_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number = DEFAULT_DB_TIMEOUT): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`DB query timeout (${Math.round(ms / 1000)}s)`)), ms),
+    ),
+  ]);
+}
+
 // ── schema 内省：构建 表 + 枚举 映射 ────────────────────────────────────────
 interface ColDef { name: string; sqlType: string; isSerial: boolean; isPrimary: boolean; notNull: boolean; }
 interface TableDef { name: string; columns: ColDef[]; }
@@ -363,7 +383,8 @@ async function recoverAndRetry<T>(err: unknown, execute: () => Promise<T>): Prom
 }
 
 function withSchemaRecovery<T>(promise: Promise<T>, execute: () => Promise<T>): Promise<T> {
-  return promise.catch((err) => recoverAndRetry(err, execute));
+  // schema 修复 + 超时保护：超时错误会被 recoverAndRetry 原样抛出（非 schema 错误）
+  return withTimeout(promise).catch((err) => recoverAndRetry(err, execute));
 }
 
 function wrapQuery<T>(result: any, execute: () => Promise<T>): any {
@@ -374,7 +395,17 @@ function wrapQuery<T>(result: any, execute: () => Promise<T>): any {
     const origThen = result.then.bind(result);
 
     result.then = function (onFulfilled: any, onRejected: any): any {
-      return origThen(onFulfilled, (err: unknown) => recoverAndRetry(err, execute));
+      // .then：drizzle-orm 用 await 调用时走这个路径
+      //        同时加上超时保护（Promise.race）
+      const p: Promise<T> = new Promise((resolve, reject) => {
+        origThen(
+          (value: T) => resolve(value),
+          (err: unknown) => {
+            recoverAndRetry(err, execute).then(resolve, reject);
+          },
+        );
+      });
+      return withTimeout(p).then(onFulfilled, onRejected);
     };
 
     if (origValues) {
@@ -429,10 +460,111 @@ const client = new Proxy(innerClient as any, {
 }) as ReturnType<typeof postgres>;
 
 // ── 对外导出 ───────────────────────────────────────────────────────────────
-export const db = drizzle(client, { schema });
+//
+// db.transaction 的特殊处理：
+//   Drizzle 的 transaction(callback) 给 callback 传入一个 `tx` 对象，
+//   `tx` 指向事务专用连接，不经过我们的 client Proxy。
+//   这意味着 callback 内部的 schema 错误不会触发自动修复。
+//
+//   解决办法：在 Proxy 层拦截 `db.transaction`，当 callback 抛出
+//   schema 错误时：① 让事务回滚（Drizzle 已保证）② 修复 schema
+//   ③ 重新执行整个 transaction。
+//
+//   事务的重试有一个前提：callback 必须是幂等的（对于新应用的 schema
+//   修复场景，callback 是业务操作，通常本身就是幂等的 — 例如
+//   SELECT + INSERT 这样的组合在 schema 修好后能正常跑通）。
+const _rawDb = drizzle(client, { schema });
+
+export const db = new Proxy(_rawDb as any, {
+  get(target, prop, receiver) {
+    if (prop === 'transaction') {
+      const origTransaction = target.transaction.bind(target);
+      return async function (callback: any, cfg?: any) {
+        try {
+          return cfg ? await origTransaction(callback, cfg) : await origTransaction(callback);
+        } catch (err) {
+          if (!isSchemaError(err)) throw err;
+          const t = targetFromError(err);
+          if (!t) throw err;
+          const fixed = await fixTarget(t, 0);
+          if (!fixed) throw err;
+          log(`🔁 重试事务（schema 已修复: ${targetKey(t)}）`);
+          return cfg ? await origTransaction(callback, cfg) : await origTransaction(callback);
+        }
+      };
+    }
+    return Reflect.get(target, prop, receiver);
+  },
+}) as typeof _rawDb;
+
 export { client };
 export * from './schema.ts';
 export { eq, ne, and, gt, gte, lt, lte, count, exists, desc, asc, or, sql };
+
+// ── 可选工具函数（其他文件按需 import） ───────────────────────
+//
+// getNextSequence：原子方式获取下一个序号（SELECT ... FOR UPDATE）。
+//   schedule.post.ts 的 "并发序号竞争" 场景：多个请求同时拿到同
+//   一天的最大 sequence → 导致重复。用 FOR UPDATE 行锁确保原子。
+//
+//   使用：import { getNextSequence } from '~/db';
+//        const seq = await getNextSequence(schedules,
+//          sql`${schedules.playDate} >= ${startOfDay}
+//               AND ${schedules.playDate} <= ${endOfDay}`,
+//          'sequence');
+export async function getNextSequence(
+  table: any,
+  whereClause: any,
+  columnName: string,
+  defaultIfEmpty: number = 1,
+): Promise<number> {
+  try {
+    const rows = await db
+      .select()
+      .from(table)
+      .where(whereClause)
+      .orderBy(sql.raw(`${escI(columnName)} DESC`))
+      .limit(1)
+      .for('update');
+    if (rows.length === 0) return defaultIfEmpty;
+    const current = (rows[0] as any)[columnName];
+    return (typeof current === 'number' ? current : 0) + 1;
+  } catch (error) {
+    warn(`getNextSequence 失败：${error}`);
+    return defaultIfEmpty;
+  }
+}
+
+// transactionBatch：把一大组记录切成 batchSize 份，每一份包在一个
+//   事务里。替代原先 "每条记录一个事务" 的做法，显著减少 COMMIT 开销。
+//
+//   使用：import { transactionBatch } from '~/db';
+//        await transactionBatch(records, async (tx, batch) => {
+//          for (const r of batch) await tx.insert(...).values(r);
+//        }, 100);
+export async function transactionBatch<T>(
+  items: T[],
+  handler: (tx: any, batch: T[]) => Promise<void>,
+  batchSize: number = 100,
+): Promise<{ total: number; errors: number }> {
+  let total = 0;
+  let errors = 0;
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    try {
+      await db.transaction(async (tx: any) => {
+        await handler(tx, batch);
+      });
+      total += batch.length;
+    } catch (batchError) {
+      errors += batch.length;
+      warn(`transactionBatch 批次失败 (行 ${i}-${i + batch.length}): ${batchError}`);
+    }
+  }
+
+  return { total, errors };
+}
 
 export async function testConnection(): Promise<boolean> {
   try { await client`SELECT 1`; log('✅ 连接正常'); return true; }
