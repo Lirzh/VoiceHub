@@ -155,6 +155,14 @@ function qIdent(name: string): string {
 function defaultClauseFor(col: any): string {
   const def = col.default;
   if (def === undefined || def === null) return '';
+  // drizzle 的 defaultNow() / defaultRandom() / sql`` 返回 SQL 对象
+  if (def.constructor?.name === 'SQL' && Array.isArray(def.queryChunks)) {
+    const val = def.queryChunks[0]?.value;
+    if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'string') {
+      return ` DEFAULT ${val[0]}`;
+    }
+    return '';
+  }
   if (typeof def === 'function') {
     const hint = String(((def as any).sql || def.name) || '').toLowerCase();
     if (hint.includes('now')) return ' DEFAULT now()';
@@ -169,6 +177,7 @@ function defaultClauseFor(col: any): string {
 function hasUsableDefault(col: any): boolean {
   const def = col.default;
   if (def === undefined || def === null) return false;
+  if (def.constructor?.name === 'SQL' && Array.isArray(def.queryChunks)) return true;
   if (typeof def === 'function') {
     const hint = String(((def as any).sql || def.name) || '').toLowerCase();
     return hint.includes('now') || hint.includes('gen_random');
