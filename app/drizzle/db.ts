@@ -1,10 +1,27 @@
+// ============================================================================
+// VoiceHub · PostgreSQL + Drizzle 连接层
+//
+// 设计：lazy schema 自动修复（mkdir -p 风格）
+//   任意查询失败 → 如 PG 返回 42P01 / 42703 / 42704
+//   → 从错误消息解析缺失对象 → 查元数据确认缺失 → 执行 DDL
+//   → 如 DDL 自身还缺其他依赖（如 enum 类型），递归修复后重试
+//   → 失败的用户查询自动重试
+//
+// 默认值策略：DDL 中不带 DEFAULT。默认值由 drizzle 应用层在 INSERT
+// 时提供（schema.ts 中的 .default/.defaultNow() 会被 drizzle 编译
+// 为 INSERT 值或函数调用）。这样 DDL 生成无需解析 default 对象，
+// 零复杂度，零隐患。
+// ============================================================================
+
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { and, asc, count, desc, eq, exists, gt, gte, lt, lte, ne, or, sql } from 'drizzle-orm';
 import postgres from 'postgres';
+import {
+  and, asc, count, desc, eq, exists, gt, gte,
+  lt, lte, ne, or, sql,
+} from 'drizzle-orm';
 import * as schema from './schema.ts';
 import { config } from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
 
 config({ path: path.resolve(process.cwd(), '.env') });
 
@@ -12,287 +29,401 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-const connectionString = process.env.DATABASE_URL;
+const DEV = process.env.NODE_ENV === 'development';
+const log = (...args: unknown[]) => { if (DEV) console.log('[db]', ...args); };
+const warn = (...args: unknown[]) => { console.warn('[db]', ...args); };
 
-const isNeonDatabase =
-  connectionString.includes('neon.tech') || connectionString.includes('neon.database.com');
+// ── innerClient：schema 检查 & DDL 专用（不被 Proxy 拦截） ──
+const innerClient = postgres(process.env.DATABASE_URL, {
+  max: process.env.NODE_ENV === 'production' ? 10 : 5,
+  idle_timeout: 20,
+  connect_timeout: 30,
+  prepare: false,
+  transform: { undefined: null },
+  connection: { application_name: 'voicehub-app' },
+  onnotice: DEV ? console.log : undefined,
+});
 
-const getDatabaseConfig = () => {
-  if (isNeonDatabase) {
-    return {
-      max: 1,
-      idle_timeout: 0,
-      connect_timeout: 10,
-      max_lifetime: 3600,
-      ssl: 'require',
-      prepare: false,
-      transform: { undefined: null },
-      connection: { application_name: 'voicehub-app' },
-      onnotice: process.env.NODE_ENV === 'development' ? console.log : undefined,
-      debug: process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true'
-    };
+// ── SQL 转义辅助 ────────────────────────────────────────────────────────────
+const escS = (s: string): string => s.replace(/'/g, "''");
+const escI = (s: string): string => `"${s.replace(/"/g, '""')}"`;
+
+// ── PG 内置类型识别 ─────────────────────────────────────────────────────────
+// 带修饰的类型（如 timestamp with time zone / varchar(100)）也应识别为内置
+const BUILTIN_PREFIXES: string[] = [
+  'serial', 'integer', 'bigint', 'smallint', 'boolean', 'text', 'uuid',
+  'timestamp', 'timestamptz', 'date', 'time', 'json', 'jsonb',
+  'numeric', 'decimal', 'real', 'double precision', 'inet', 'bytea',
+  'character varying', 'varchar', 'character', 'char',
+];
+
+function isBuiltin(type: string): boolean {
+  if (BUILTIN_PREFIXES.includes(type)) return true;
+  const lower = type.toLowerCase();
+  for (const prefix of BUILTIN_PREFIXES) {
+    if (lower.startsWith(prefix)) {
+      const rest = lower.slice(prefix.length);
+      if (rest.length === 0 || rest.startsWith(' ') || rest.startsWith('(')) return true;
+    }
   }
-  return {
-    max: process.env.NODE_ENV === 'production' ? 10 : 5,
-    idle_timeout: 20,
-    connect_timeout: 30,
-    max_lifetime: 3600,
-    ssl:
-      connectionString.includes('sslmode=require') || connectionString.includes('ssl=true')
-        ? 'require'
-        : false,
-    prepare: false,
-    transform: { undefined: null },
-    connection: { application_name: 'voicehub-app' },
-    onnotice: process.env.NODE_ENV === 'development' ? console.log : undefined,
-    debug: process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true'
-  };
-};
+  return false;
+}
 
-const client = postgres(connectionString, getDatabaseConfig());
+// ── schema 内省：构建 表 + 枚举 映射 ────────────────────────────────────────
+interface ColDef { name: string; sqlType: string; isSerial: boolean; isPrimary: boolean; notNull: boolean; }
+interface TableDef { name: string; columns: ColDef[]; }
+interface EnumDef { name: string; values: string[]; }
 
+const { tables: schemaTables, enums: schemaEnums } = buildSchemaMaps();
+
+function buildSchemaMaps(): { tables: Map<string, TableDef>; enums: Map<string, EnumDef> } {
+  const tables = new Map<string, TableDef>();
+  const enums = new Map<string, EnumDef>();
+
+  // 1. 枚举识别（pgEnum 返回的 function，挂 .enumName / .enumValues）
+  for (const val of Object.values(schema)) {
+    if (val && typeof val === 'function') {
+      const f = val as { enumName?: unknown; enumValues?: unknown };
+      if (typeof f.enumName === 'string' && Array.isArray(f.enumValues)) {
+        enums.set(f.enumName, { name: f.enumName, values: (f.enumValues as unknown[]).map((x) => String(x)) });
+      }
+    }
+  }
+
+  // 2. 表识别（Symbol(drizzle:Name) 存真实表名）
+  let nameSym: symbol | undefined;
+  for (const val of Object.values(schema)) {
+    if (!val || typeof val !== 'object') continue;
+    if (!nameSym) {
+      for (const sym of Object.getOwnPropertySymbols(val)) {
+        if (sym.toString().includes('drizzle:Name')) { nameSym = sym; break; }
+      }
+    }
+    const tableName: string | undefined = nameSym ? String((val as any)[nameSym]) : undefined;
+    if (!tableName) continue;
+
+    // 列收集
+    const columns: ColDef[] = [];
+    for (const col of Object.values(val as object)) {
+      if (!col || typeof col !== 'object') continue;
+      const c = col as { name?: unknown; primary?: unknown; notNull?: unknown; getSQLType?: () => unknown };
+      if (typeof c.getSQLType !== 'function') continue;
+      const sqlType = (c.getSQLType() as string) || 'text';
+      const isSerial = sqlType === 'serial';
+      const isPrimary = !!c.primary;
+      columns.push({
+        name: typeof c.name === 'string' ? c.name : '?',
+        sqlType,
+        isSerial,
+        isPrimary,
+        notNull: !!c.notNull || isPrimary,
+      });
+    }
+    if (columns.length > 0) tables.set(tableName, { name: tableName, columns });
+  }
+
+  log(`✅ schema 映射完成：${tables.size} 张表，${enums.size} 个枚举`);
+  return { tables, enums };
+}
+
+// ── 大小写不敏感查找 ───────────────────────────────────────────────────────
+function findTableCI(name: string): TableDef | undefined {
+  const exact = schemaTables.get(name);
+  if (exact) return exact;
+  const lower = name.toLowerCase();
+  for (const [key, info] of schemaTables) if (key.toLowerCase() === lower) return info;
+  return undefined;
+}
+function findEnumCI(name: string): EnumDef | undefined {
+  const exact = schemaEnums.get(name);
+  if (exact) return exact;
+  const lower = name.toLowerCase();
+  for (const [key, info] of schemaEnums) if (key.toLowerCase() === lower) return info;
+  return undefined;
+}
+
+// ── DDL 生成 ───────────────────────────────────────────────────────────────
+// 策略：不带 DEFAULT（让 drizzle 应用层在 INSERT 提供值）。
+// serial / uuid 列不需要显式 DEFAULT —— serial 自带序列，uuid 列如果有
+// defaultRandom()，会被 drizzle 在 INSERT 时自动生成 gen_random_uuid()。
+
+function buildCreateTableSql(tbl: TableDef): string {
+  const colParts = tbl.columns.map((col) => {
+    const type = isBuiltin(col.sqlType) ? col.sqlType : escI(col.sqlType);
+    const parts = [escI(col.name), type];
+    if (col.notNull && !col.isSerial) parts.push('NOT NULL');
+    return parts.join(' ');
+  });
+  const pk = tbl.columns.find((c) => c.isPrimary);
+  if (pk) colParts.push(`PRIMARY KEY (${escI(pk.name)})`);
+  return `CREATE TABLE IF NOT EXISTS ${escI(tbl.name)} (${colParts.join(', ')})`;
+}
+
+function buildAlterTableSql(tbl: TableDef, col: ColDef): string {
+  const type = isBuiltin(col.sqlType) ? col.sqlType : escI(col.sqlType);
+  const parts = [
+    `ALTER TABLE ${escI(tbl.name)} ADD COLUMN IF NOT EXISTS ${escI(col.name)} ${type}`,
+  ];
+  if (col.notNull) parts.push('NOT NULL');
+  return parts.join(' ');
+}
+
+function buildCreateTypeSql(en: EnumDef): string {
+  // objectMissingType 已确认不存在，无需 IF NOT EXISTS（PG < 11 不支持）
+  const vals = en.values.map((v) => `'${escS(v)}'`).join(', ');
+  return `CREATE TYPE ${escI(en.name)} AS ENUM (${vals})`;
+}
+
+// ── 对象存在性检查（参数化查询 = 安全 + 清晰） ────────────────────────
+async function objectMissingTable(name: string): Promise<boolean> {
+  const rows = await innerClient.unsafe(
+    'SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER($1)',
+    [name],
+  ) as unknown[];
+  return rows.length === 0;
+}
+
+async function objectMissingColumn(table: string, col: string): Promise<boolean> {
+  const rows = await innerClient.unsafe(
+    'SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND LOWER(table_name) = LOWER($1) AND LOWER(column_name) = LOWER($2)',
+    [table, col],
+  ) as unknown[];
+  return rows.length === 0;
+}
+
+async function objectMissingType(name: string): Promise<boolean> {
+  const rows = await innerClient.unsafe(
+    'SELECT 1 FROM pg_type t JOIN pg_namespace n ON t.typnamespace = n.oid WHERE LOWER(t.typname) = LOWER($1) AND n.nspname = current_schema()',
+    [name],
+  ) as unknown[];
+  return rows.length === 0;
+}
+
+// ── schema 修复引擎 ────────────────────────────────────────────────────────
+// FixTarget 同时携带预生成的 DDL，避免在错误处理路径上再次计算
+type FixTarget =
+  | { kind: 'table'; name: string; ddl: string }
+  | { kind: 'column'; table: string; col: string; ddl: string }
+  | { kind: 'type'; name: string; ddl: string };
+
+function targetKey(t: FixTarget): string {
+  return t.kind === 'type' ? `e:${t.name}` : t.kind === 'table' ? `t:${t.name}` : `c:${t.table}:${t.col}`;
+}
+
+// 并发去重 + 递归深度保护
+const runningFixes = new Map<string, Promise<boolean>>();
+const MAX_RECURSION = 8;
+
+async function fixTarget(target: FixTarget, depth: number): Promise<boolean> {
+  if (depth >= MAX_RECURSION) {
+    warn(`⚠️ 递归修复达到上限（${MAX_RECURSION}），放弃: ${targetKey(target)}`);
+    return false;
+  }
+
+  const key = targetKey(target);
+  const pending = runningFixes.get(key);
+  if (pending) return await pending;
+
+  const fixPromise = (async (): Promise<boolean> => {
+    try {
+      const missing = target.kind === 'table' ? await objectMissingTable(target.name)
+        : target.kind === 'type' ? await objectMissingType(target.name)
+        : await objectMissingColumn(target.table, target.col);
+
+      if (!missing) {
+        log(`✅ 对象已存在: ${key}`);
+        return true;
+      }
+
+      log(`📦 执行 DDL (depth=${depth}): ${target.ddl}`);
+
+      try {
+        await innerClient.unsafe(target.ddl);
+      } catch (ddlErr) {
+        // DDL 自身遇到 schema 错误 → 解析依赖 → 递归修复 → 重试本 DDL
+        if (!isSchemaError(ddlErr)) throw ddlErr;
+        const dep = targetFromError(ddlErr);
+        if (!dep) throw ddlErr;
+        log(`🔗 DDL 依赖其他 schema 对象，先递归修复: ${targetKey(dep)}`);
+        const depFixed = await fixTarget(dep, depth + 1);
+        if (!depFixed) throw ddlErr;
+        await innerClient.unsafe(target.ddl);
+      }
+
+      log(`✅ schema 已修复: ${key}`);
+      return true;
+    } catch (e) {
+      const msg = (e as { message?: string })?.message ?? String(e);
+      warn(`⚠️ schema 修复失败（${key}）: ${msg}`);
+      return false;
+    } finally {
+      runningFixes.delete(key);
+    }
+  })();
+
+  runningFixes.set(key, fixPromise);
+  return await fixPromise;
+}
+
+// ── 错误解析：从 PG 错误消息 → 要修复的目标对象 ───────────────────
+const SCHEMA_ERROR_CODES = new Set(['42P01', '42703', '42704']);
+function isSchemaError(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  return !!code && SCHEMA_ERROR_CODES.has(code);
+}
+
+function targetFromError(err: unknown): FixTarget | null {
+  const e = err as { code?: string; message?: string };
+  const code = e.code ?? '';
+  const msg = e.message ?? '';
+
+  // relation "X" does not exist
+  if (code === '42P01') {
+    const m = msg.match(/relation\s+"([^"]+)"/i);
+    if (m) {
+      const info = findTableCI(m[1]);
+      if (info) return { kind: 'table', name: info.name, ddl: buildCreateTableSql(info) };
+    }
+  }
+
+  // column "X" of relation "Y" does not exist
+  if (code === '42703') {
+    const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"/i);
+    if (m) {
+      const tbl = findTableCI(m[2]);
+      if (tbl) {
+        const colDef = tbl.columns.find((c) => c.name.toLowerCase() === m[1].toLowerCase()) ||
+          tbl.columns.find((c) => c.name === m[1]);
+        if (colDef) return { kind: 'column', table: tbl.name, col: colDef.name, ddl: buildAlterTableSql(tbl, colDef) };
+      }
+    }
+  }
+
+  // type "X" does not exist
+  if (code === '42704') {
+    const m = msg.match(/type\s+"([^"]+)"/i);
+    if (m) {
+      const info = findEnumCI(m[1]);
+      if (info) return { kind: 'type', name: info.name, ddl: buildCreateTypeSql(info) };
+    }
+  }
+
+  return null;
+}
+
+// ── Promise schema 错误捕获与自动修复重试 ─────────────────────────
+function wrapPromise<T>(promise: Promise<T>, execute: () => Promise<T>): Promise<T> {
+  return promise.catch(async (err) => {
+    if (!isSchemaError(err)) throw err;
+    const target = targetFromError(err);
+    if (!target) throw err;
+    const fixed = await fixTarget(target, 0);
+    if (!fixed) throw err;
+    log(`🔁 重试查询（schema 已修复: ${targetKey(target)}）`);
+    return await execute();
+  });
+}
+
+// ── Query 对象包装：覆盖 .then / .values / .execute ───────────────
+function wrapQuery<T>(result: any, execute: () => Promise<T>): any {
+  // postgres.js Query 对象：保留 .values() / .execute()，同时替换 .then
+  if (result && typeof result.values === 'function') {
+    const origValues = result.values.bind(result);
+    const origExecute = result.execute?.bind(result);
+
+    // .then 被 await 调用
+    const origThen = result.then.bind(result);
+    result.then = function (onFulfilled: any, onRejected: any): any {
+      return origThen(
+        onFulfilled,
+        async (err: unknown) => {
+          if (!isSchemaError(err)) throw err;
+          const target = targetFromError(err);
+          if (!target) throw err;
+          const fixed = await fixTarget(target, 0);
+          if (!fixed) throw err;
+          log(`🔁 重试查询（schema 已修复: ${targetKey(target)}）`);
+          return await execute();
+        },
+      );
+    };
+
+    // .values() — drizzle 主要用此
+    if (origValues) {
+      result.values = function (): any {
+        return wrapPromise(origValues(), () => execute() as any);
+      };
+    }
+
+    // .execute()
+    if (origExecute) {
+      result.execute = function (): any {
+        return wrapPromise(origExecute(), () => execute() as any);
+      };
+    }
+
+    return result;
+  }
+
+  // 普通 Promise / thenable
+  return wrapPromise(result as any, execute);
+}
+
+// ── client：Proxy 包装 innerClient ───────────────────────────────
+// 仅拦截查询方法；生命周期方法（end/destroy/close/cancel）直接透传
+const client = new Proxy(innerClient as any, {
+  // client`SELECT 1` —— Tagged Template 调用 apply
+  apply(_t, _this, args) {
+    const result = innerClient(...(args as any));
+    return wrapQuery(result, () => innerClient(...(args as any)));
+  },
+
+  get(target, prop, _receiver) {
+    const value = Reflect.get(target, prop);
+    if (typeof value !== 'function') return value;
+
+    const boundFn = (value as Function).bind(target);
+    const propStr = String(prop);
+
+    // 生命周期方法：直接透传（不参与 schema 修复）
+    if (propStr === 'end' || propStr === 'destroy' || propStr === 'close' || propStr === 'cancel') {
+      return boundFn;
+    }
+
+    // 查询方法（client.unsafe(sql), client.sql(...), client.query(...)）
+    return function (this: unknown, ...args: unknown[]): any {
+      const result = boundFn(...args);
+      return wrapQuery(result, () => boundFn(...args) as any);
+    };
+  },
+}) as ReturnType<typeof postgres>;
+
+// ── 对外导出 ───────────────────────────────────────────────────────────────
 export const db = drizzle(client, { schema });
 export { client };
 export * from './schema.ts';
 export { eq, ne, and, gt, gte, lt, lte, count, exists, desc, asc, or, sql };
 
-export async function testConnection() {
+export async function testConnection(): Promise<boolean> {
+  try { await client`SELECT 1`; log('✅ 连接正常'); return true; }
+  catch (error) { warn(`❌ 连接失败: ${error}`); return false; }
+}
+
+export function getConnectionStatus(): { connected: boolean; status: string } {
+  return { connected: !(innerClient as any).ended, status: (innerClient as any).ended ? 'disconnected' : 'connected' };
+}
+
+export async function closeConnection(): Promise<void> {
   try {
-    await client`SELECT 1`;
-    console.log('✅ Database connection successful');
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:', error);
-    return false;
-  }
-}
-
-export function getConnectionStatus() {
-  const isConnected = !client.ended;
-  return {
-    isConnected,
-    connected: isConnected,
-    status: isConnected ? 'connected' : 'disconnected',
-    maxConnections: client.options.max,
-    idleTimeout: client.options.idle_timeout,
-    connectTimeout: client.options.connect_timeout
-  };
-}
-
-let idleTimer: NodeJS.Timeout | null = null;
-const IDLE_TIMEOUT = isNeonDatabase ? 5 * 60 * 1000 : 10 * 60 * 1000;
-
-function resetIdleTimer() {
-  if (idleTimer) clearTimeout(idleTimer);
-  if (process.env.NODE_ENV === 'production') {
-    idleTimer = setTimeout(async () => {
-      try {
-        if (!client.ended) {
-          const dbType = isNeonDatabase ? 'Neon' : 'PostgreSQL';
-          console.log(
-            `🔄 Auto-closing idle ${dbType} database connections${
-              isNeonDatabase ? ' for Serverless optimization' : ''
-            }`
-          );
-          await client.end({ timeout: isNeonDatabase ? 5 : 10 });
-        }
-      } catch (error) {
-        console.error('❌ Error during auto-close:', error);
-      }
-    }, IDLE_TIMEOUT);
-  }
-}
-
-export function withAutoReconnect<T extends any[], R>(operation: (...args: T) => Promise<R>) {
-  return async (...args: T): Promise<R> => {
-    resetIdleTimer();
-    try {
-      return await operation(...args);
-    } catch (error: any) {
-      if (error?.code === 'CONNECTION_ENDED' || client.ended) {
-        const dbType = isNeonDatabase ? 'Neon' : 'PostgreSQL';
-        console.log(
-          `🔄 ${dbType} database connection ended${
-            isNeonDatabase ? ', Neon will auto-reconnect on next query' : ', will reconnect on next query'
-          }`
-        );
-      }
-      throw error;
+    if (!(innerClient as any).ended) {
+      await (innerClient as any).end({ timeout: 10 });
+      log('✅ 连接已优雅关闭');
     }
-  };
-}
-
-export async function closeConnection() {
-  try {
-    if (idleTimer) {
-      clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-    if (!client.ended) {
-      await client.end({ timeout: 10 });
-      console.log('✅ Database connection closed gracefully');
-    }
-  } catch (error) {
-    console.error('❌ Error closing database connection:', error);
-  }
+  } catch (error) { warn(`❌ 关闭连接失败: ${error}`); }
 }
 
 if (typeof process !== 'undefined') {
-  const gracefulShutdown = async () => {
-    console.log('🔄 Shutting down database connections...');
-    await closeConnection();
-  };
-  process.on('SIGINT', gracefulShutdown);
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('beforeExit', gracefulShutdown);
+  process.on('SIGINT', closeConnection);
+  process.on('SIGTERM', closeConnection);
+  process.on('beforeExit', closeConnection);
 }
-
-// ──────────────────────────────────────────────────────────────────────────
-//  运行时 schema 初始化（mkdir -p 风格）
-//  应用首次启动时自动建表，后续启动什么也不做。
-// ──────────────────────────────────────────────────────────────────────────
-
-async function tablesInDb(): Promise<Set<string>> {
-  const rows = await client<{ table_name: string }[]>`
-    SELECT table_name FROM information_schema.tables
-    WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-  `;
-  return new Set(rows.map((r: any) => r.table_name));
-}
-
-async function columnsInDb(tableName: string): Promise<Set<string>> {
-  const rows = await client<{ column_name: string }[]>`
-    SELECT column_name FROM information_schema.columns
-    WHERE table_schema = 'public' AND table_name = ${tableName}
-  `;
-  return new Set(rows.map((r: any) => r.column_name));
-}
-
-async function typeExists(typeName: string): Promise<boolean> {
-  const rows = await client`
-    SELECT 1 FROM pg_type t
-    JOIN pg_namespace n ON n.oid = t.typnamespace
-    WHERE n.nspname = 'public' AND t.typname = ${typeName.toLowerCase()}
-  `;
-  return rows.length > 0;
-}
-
-// 从 schema.ts 导出的对象中识别出所有表
-function getTablesFromSchema() {
-  const result: { name: string; obj: any }[] = [];
-  for (const [key, value] of Object.entries(schema)) {
-    if (value && typeof value === 'object' && (value as any).dbName && (value as any)[Symbol.toStringTag] !== 'PgEnum') {
-      result.push({ name: (value as any).dbName, obj: value });
-    }
-  }
-  return result;
-}
-
-// 从 schema.ts 导出的对象中识别出所有枚举
-function getEnumsFromSchema() {
-  const result: { name: string; values: string[] }[] = [];
-  for (const value of Object.values(schema)) {
-    if (
-      value &&
-      typeof value === 'object' &&
-      (value as any).enumName &&
-      Array.isArray((value as any).values)
-    ) {
-      result.push({ name: (value as any).enumName, values: (value as any).values });
-    }
-  }
-  return result;
-}
-
-// 识别某列的 SQL 类型 —— 只用于 "列缺失时 ALTER TABLE ADD COLUMN IF NOT EXISTS"
-// 不需要精确，够用就行（CREATE TABLE 我们不在这里执行）
-function columnToSqlType(column: any): string {
-  const colType = column.getSQLType?.() ?? column.dataType ?? 'TEXT';
-  if (!colType) return 'TEXT';
-  // 枚举类型会返回 enum 名字，普通类型返回 postgres 类型名
-  return colType;
-}
-
-// 主函数：确保数据库 schema 与代码一致（mkdir -p 风格）
-// 1. 空库 → 用 drizzle-kit push 完整建表
-// 2. 非空库 → 尝试 push 以补齐差异；如果 CLI 不可用，跳过
-async function ensureSchema(): Promise<void> {
-  try {
-    await client`SELECT 1`; // 确保连接可用
-  } catch (e: any) {
-    console.warn('⚠️ 数据库暂不可用，跳过 schema 初始化：', e.message);
-    return;
-  }
-
-  // 通过 child_process 调用 drizzle-kit push —— push 是幂等的，
-  // schema 已对齐时什么都不做；有缺失时自动补表、补列、补约束、补索引。
-  try {
-    const { execFileSync } = await import('node:child_process');
-    const configPath = path.resolve(process.cwd(), 'drizzle.config.ts');
-
-    console.log('🔄 检查数据库 schema 是否需要同步...');
-    execFileSync(
-      process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-      ['exec', 'drizzle-kit', 'push', '--config', configPath],
-      {
-        stdio: ['ignore', process.stdout, process.stderr],
-        env: {
-          ...process.env,
-          CI: 'true',
-          DRIZZLE_KIT_FORCE: 'true',
-          DRIZZLE_KIT_NON_INTERACTIVE: 'true'
-        },
-        timeout: 120_000
-      }
-    );
-    console.log('✅ schema 同步完成');
-    return;
-  } catch (e: any) {
-    console.warn(
-      '⚠️ drizzle-kit push 不可用或失败（可能是生产环境没有 devDependencies）。尝试兜底逻辑...'
-    );
-  }
-
-  // 兜底：手动补齐——确保枚举存在 + 枚举值完整
-  // 注意：手动兜底只补枚举/表/列的"存在性"，不负责精确对齐类型、默认值、外键、索引等
-  try {
-    const enums = getEnumsFromSchema();
-    for (const { name, values } of enums) {
-      if (!(await typeExists(name))) {
-        try {
-          await client.unsafe(
-            `CREATE TYPE "${name}" AS ENUM (${values.map((v) => `'${v}'`).join(', ')})`
-          );
-          console.log(`✅ 创建枚举类型: ${name}`);
-        } catch (e: any) {
-          console.warn(`⚠️ 创建枚举 ${name} 失败: ${e.message}`);
-        }
-      }
-    }
-
-    const existingTables = await tablesInDb();
-    const tables = getTablesFromSchema();
-    for (const { name } of tables) {
-      if (existingTables.has(name.toLowerCase())) continue;
-      try {
-        // 先尝试空表占位（真实结构仍然依赖 Drizzle；这里只是避免 "relation does not exist"）
-        // 如果 drizzle-kit 不可用，我们至少尝试一个最小占位表，让应用可以启动
-        await client.unsafe(
-          `CREATE TABLE IF NOT EXISTS "${name}" (id SERIAL PRIMARY KEY)`
-        );
-        console.log(`✅ 创建占位表: ${name}（缺少完整 schema，建议手动执行 pnpm db:push）`);
-      } catch (e: any) {
-        console.warn(`⚠️ 创建表 ${name} 失败: ${e.message}`);
-      }
-    }
-  } catch (e: any) {
-    console.warn('⚠️ 兜底 schema 同步失败：', e.message);
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────
-//  dbReady: 应用启动时自动执行一次 schema 检查
-//  其他模块可以 `import { db, dbReady } from '~/drizzle/db'` 然后 `await dbReady`
-// ──────────────────────────────────────────────────────────────────────────
-
-export const dbReady: Promise<void> = ensureSchema();
