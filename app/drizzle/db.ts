@@ -1,872 +1,699 @@
 import {drizzle, type PostgresJsDatabase} from 'drizzle-orm/postgres-js';
-import {and, asc, count, desc, eq, exists, gt, gte, lt, lte, ne, or, sql} from 'drizzle-orm';
 import {type PgEnum, type PgTable, getTableConfig} from 'drizzle-orm/pg-core';
 import type {PgColumn} from 'drizzle-orm/pg-core';
 import postgres, {type Sql as PostgresSql} from 'postgres';
 import * as schema from './schema';
 import {config} from 'dotenv';
-import path from 'path';
 import {fileURLToPath} from 'url';
+import {dirname, resolve} from 'path';
 
-// 加载环境变量（优先使用工作目录的 .env，确保构建后运行时能正确加载）
-config({ path: path.resolve(process.cwd(), '.env') });
+// ============================================================
+// 环境 & 路径
+// ============================================================
 
-// 检查环境变量
+// 优先级：项目根 .env > process.env
+// 使用 import.meta.url 解析 db.ts 同目录向上两级定位项目根
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({path: resolve(__dirname, '../../.env')});
+config(); // 再尝试默认查找
+
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// 创建PostgreSQL连接
+const IS_DEV = process.env.NODE_ENV !== 'production';
 const connectionString = process.env.DATABASE_URL;
-
-// 检测数据库类型
-const isNeonDatabase = connectionString.includes('neon.tech') || connectionString.includes('neon.database.com');
-
-// 根据数据库类型选择配置
-const getDatabaseConfig = () => {
-  if (isNeonDatabase) {
-    // Neon Database Serverless 优化配置
-    return {
-      max: 1, // Serverless 环境下每个实例保持最小连接数，利用 Neon 自身的连接池
-      idle_timeout: 0, // 立即释放空闲连接，适应 Serverless 的快速冻结特性
-      connect_timeout: 10, // Neon 连接速度快，减少超时时间
-      max_lifetime: 3600, // 连接最大生命周期（1小时）
-      ssl: 'require' as const, // Neon 默认需要 SSL
-      prepare: false, // 禁用预处理语句以提高兼容性
-      transform: {
-        undefined: null, // 将undefined转换为null
-      },
-      connection: {
-        application_name: 'voicehub-app'
-      },
-      onnotice: process.env.NODE_ENV === 'development' ? console.log : undefined,
-      debug: process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true'
-    } as const;
-  } else {
-    // 标准 PostgreSQL 数据库配置
-    const needSsl = connectionString.includes('sslmode=require') || connectionString.includes('ssl=true');
-    return {
-      max: process.env.NODE_ENV === 'production' ? 10 : 5, // 普通PostgreSQL可以支持更多连接
-      idle_timeout: 20, // 增加空闲超时时间
-      connect_timeout: 30, // 增加连接超时时间以适应网络延迟
-      max_lifetime: 3600, // 连接最大生命周期（1小时）
-      ssl: needSsl ? ('require' as const) : false,
-      prepare: false, // 禁用预处理语句以提高兼容性
-      transform: {
-        undefined: null, // 将undefined转换为null
-      },
-      connection: {
-        application_name: 'voicehub-app'
-      },
-      onnotice: process.env.NODE_ENV === 'development' ? console.log : undefined,
-      debug: process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true'
-    } as const;
-  }
-};
+const isNeonDatabase =
+  connectionString.includes('neon.tech') || connectionString.includes('neon.database.com');
 
 // ============================================================
-// Lazy Schema 修复层（Issue #318）
-//
-// 核心思路：
-// 1. 先尝试执行原始查询
-// 2. 如果 PG 返回 42P01（relation不存在）/ 42703（column不存在）
-//    / 42704（enum type不存在），解析错误信息
-// 3. 查询 information_schema/pg_type 确认对象确实不存在
-// 4. 根据 schema.ts 生成幂等 DDL 并执行
-// 5. 重新执行原始查询
+// 日志（dev 模式详细；生产模式仅输出关键 DIAG）
 // ============================================================
 
-diag('module:load', 'db.ts 开始加载, cwd=', process.cwd());
-
-const IS_DEV = process.env.NODE_ENV === 'development';
-
-// ---------- 日志工具（总是写到 stderr，方便区分 stdout） ----------
-function devLog(prefix: string, ...parts: unknown[]) {
-  if (!IS_DEV) return;
+type Level = 'debug' | 'info' | 'warn';
+function log(level: Level, tag: string, ...parts: unknown[]) {
+  if (level === 'debug' && !IS_DEV) return;
   const ts = new Date().toISOString().slice(11, 23);
+  const line = `[lazy-schema][${ts}][${tag}] ${parts
+    .map(p => (typeof p === 'string' ? p : JSON.stringify(p)))
+    .join(' ')}`;
+  // stderr：避免和 stdout 上的 SQL 输出混在一起
   // eslint-disable-next-line no-console
-  console.error(`[lazy-schema][${ts}][${prefix}]`, ...parts);
+  console.error(line);
 }
+const dlog = (tag: string, ...p: unknown[]) => log('debug', tag, ...p);
+const ilog = (tag: string, ...p: unknown[]) => log('info', tag, ...p);
+const wlog = (tag: string, ...p: unknown[]) => log('warn', tag, ...p);
 
-// ---------- 强制诊断日志（NODE_ENV=production 也输出，方便调试） ----------
-function diag(prefix: string, ...parts: unknown[]) {
-  // eslint-disable-next-line no-console
-  console.error(`[DIAG][${prefix}]`, ...parts);
-}
+// ============================================================
+// Schema 索引（建立 SQL 名称 → schema 对象 的反向映射）
+// ============================================================
 
-// 模块加载时立即输出，确认 tsx 加载的是正确文件
-diag('diag:boot', `db.ts loaded at ${new Date().toISOString()}, pid=${process.pid}`);
+const tablesByName = new Map<string, PgTable>();
+const enumsByName = new Map<string, PgEnum<any>>();
 
-function devGroup(label: string, fn: () => unknown): unknown {
-  if (!IS_DEV) return fn();
-  console.group(`[lazy-schema] ${label}`);
-  try {
-    return fn();
-  } finally {
-    console.groupEnd();
-  }
-}
-
-// 表名（SQL 中的）到 PgTable 的反向映射
-const tablesByName: Record<string, PgTable> = {};
-// 枚举名（SQL 中的）到 PgEnum 的反向映射
-const enumsByName: Record<string, PgEnum<any>> = {};
-
-devLog('init', '开始扫描 schema.ts，构建表/枚举映射…');
-for (const key of Object.keys(schema)) {
-  const value = (schema as any)[key];
-  if (!value) continue;
-  try {
-    // 通过是否存在 Symbol 字段来判断是否是一张表
-    if (
-      typeof value === 'object' &&
-      typeof getTableConfig === 'function' &&
-      (value as any)[Symbol.toStringTag] === undefined &&
-      value.constructor?.name?.includes('PgTable')
-    ) {
-      const cfg = getTableConfig(value as PgTable);
-      if (cfg && (cfg as any).name) {
-        tablesByName[(cfg as any).name] = value as PgTable;
-        devLog('init:table', `识别表 "${(cfg as any).name}" (key=${key})`);
-        continue;
-      }
-    }
-  } catch (e) { devLog('init:table:err', key, e); }
-
-  // PgEnum 判断：有 enumName 和 values
-  if (
-    typeof value === 'object' &&
-    typeof (value as any).enumName === 'string' &&
-    Array.isArray((value as any).values)
-  ) {
-    enumsByName[(value as any).enumName] = value as PgEnum<any>;
-    devLog('init:enum', `识别枚举 "${(value as any).enumName}" (key=${key}), values=`, (value as any).values);
-  }
-}
-
-// 再做一次兜底扫描：遍历 schema 的值，用 getTableConfig 能成功的认为是表
-(function () {
-  devLog('init', '开始兜底扫描（getTableConfig 探测）…');
-  for (const key of Object.keys(schema)) {
-    const value = (schema as any)[key];
+function indexSchema() {
+  for (const [key, value] of Object.entries(schema)) {
     if (!value || typeof value !== 'object') continue;
     try {
-      const cfg: any = getTableConfig(value);
-      if (cfg && typeof cfg.name === 'string' && !tablesByName[cfg.name]) {
-        tablesByName[cfg.name] = value as PgTable;
-        devLog('init:fallback:table', `兜底识别表 "${cfg.name}" (key=${key}), 列数=${cfg.columns?.length ?? 0}`);
+      // PgTable：有 getTableConfig 能力
+      const cfg = getTableConfig(value as PgTable);
+      if (cfg?.name && !tablesByName.has(cfg.name)) {
+        tablesByName.set(cfg.name, value as PgTable);
+        dlog('scan:table', `${key} -> ${cfg.name} (${cfg.columns.length} cols)`);
+        continue;
       }
-    } catch (e) { /* ignore */ }
+    } catch {
+      // 不是 table，尝试 enum
+    }
+    const ev = value as any;
+    if (typeof ev.enumName === 'string' && Array.isArray(ev.values)) {
+      if (!enumsByName.has(ev.enumName)) {
+        enumsByName.set(ev.enumName, ev as PgEnum<any>);
+        dlog('scan:enum', `${key} -> ${ev.enumName} (${ev.values.length} values)`);
+      }
+    }
   }
-  devLog('init:done', `扫描完成，共 ${Object.keys(tablesByName).length} 张表，${Object.keys(enumsByName).length} 个枚举`);
-  if (IS_DEV) {
-    console.debug('[lazy-schema][init:done] tables =', Object.keys(tablesByName).sort());
-    console.debug('[lazy-schema][init:done] enums  =', Object.keys(enumsByName).sort());
-  }
-})();
+  ilog('scan:done', `${tablesByName.size} tables, ${enumsByName.size} enums`);
+}
+indexSchema();
 
-// ---------- DDL 生成器 ----------
+// ============================================================
+// DDL 生成
+// ============================================================
+
+// drizzle 内部类型 / 构造名 -> PG 类型
+const TYPE_MAP: Record<string, string> = {
+  pgserial: 'SERIAL',
+  pgbigserial: 'BIGSERIAL',
+  pguuid: 'UUID',
+  pgjsonb: 'JSONB',
+  pgjson: 'JSON',
+  pgboolean: 'BOOLEAN',
+  pginteger: 'INTEGER',
+  pgsmallint: 'SMALLINT',
+  pgbigint: 'BIGINT',
+  pgtext: 'TEXT',
+  pgvarchar: 'VARCHAR',
+  pgchar: 'CHAR',
+  pgtimestamp: 'TIMESTAMP',
+  pgdate: 'DATE',
+  pgtime: 'TIME',
+  pginterval: 'INTERVAL',
+  pgnumeric: 'NUMERIC',
+  pgreal: 'REAL',
+  pgdoubleprecision: 'DOUBLE PRECISION',
+  pgbytea: 'BYTEA',
+  pginet: 'INET',
+  pgcidr: 'CIDR',
+  pgmacaddr: 'MACADDR',
+  pgmoney: 'MONEY',
+  pgbit: 'BIT',
+  pgvarbit: 'VARBIT',
+};
 
 function pgTypeOfColumn(col: PgColumn): string {
-  diag('ddl:type', `推断列类型: name="${col.name}", ctor="${col?.constructor?.name}", dataType="${(col as any)?.dataType}"`);
-  // drizzle-orm 内部类型名映射到标准 PG 类型
-  const DRIZZLE_TYPE_MAP: Record<string, string> = {
-    pgserial: 'SERIAL',
-    pgbigserial: 'BIGSERIAL',
-    pguuid: 'UUID',
-    pgjson: 'JSON',
-    pgjsonb: 'JSONB',
-    pgboolean: 'BOOLEAN',
-    pginteger: 'INTEGER',
-    pgsmallint: 'SMALLINT',
-    pgbigint: 'BIGINT',
-    pgtext: 'TEXT',
-    pgvarchar: 'VARCHAR',
-    pgchar: 'CHAR',
-    pgtimestamp: 'TIMESTAMP',
-    pgdate: 'DATE',
-    pgtime: 'TIME',
-    pginterval: 'INTERVAL',
-    pgnumeric: 'NUMERIC',
-    pgreal: 'REAL',
-    pgdoubleprecision: 'DOUBLE PRECISION',
-    pgbytea: 'BYTEA',
-    pginet: 'INET',
-    pgcidr: 'CIDR',
-    pgmacaddr: 'MACADDR',
-    pgmoney: 'MONEY',
-    pgbit: 'BIT',
-    pgvarbit: 'VARBIT',
-  };
-
-  try {
-    const b: any = (col as any)._;
-    if (b?.sqlType) {
-      const raw = String(b.sqlType).toLowerCase();
-      if (DRIZZLE_TYPE_MAP[raw]) return DRIZZLE_TYPE_MAP[raw];
-      // 兜底：strip 'pg' 前缀 + 多关键字还原
-      const stripped = raw.replace(/^pg/, '');
-      if (DRIZZLE_TYPE_MAP[stripped]) return DRIZZLE_TYPE_MAP[stripped];
-      // 已知需空格还原的（pgdouble precision 之类）
-      if (stripped === 'doubleprecision') return 'DOUBLE PRECISION';
-      return String(b.sqlType).toUpperCase();
-    }
-  } catch {}
-  // 通过 column 的底层 builder 推断
-  const raw: any = col;
-  const sqlType: string | undefined = raw.sqlType || raw.columnType;
-  if (sqlType) {
-    const lower = String(sqlType).toLowerCase();
-    if (DRIZZLE_TYPE_MAP[lower]) return DRIZZLE_TYPE_MAP[lower];
-    const stripped = lower.replace(/^pg/, '');
-    if (DRIZZLE_TYPE_MAP[stripped]) return DRIZZLE_TYPE_MAP[stripped];
+  const b: any = (col as any)._;
+  const raw: any = b?.sqlType ?? (col as any).sqlType ?? (col as any).columnType;
+  if (raw) {
+    const key = String(raw).toLowerCase();
+    if (TYPE_MAP[key]) return TYPE_MAP[key];
+    const stripped = key.replace(/^pg/, '');
+    if (TYPE_MAP[stripped]) return TYPE_MAP[stripped];
     if (stripped === 'doubleprecision') return 'DOUBLE PRECISION';
-    return String(sqlType).toUpperCase();
   }
-
-  // 兜底：先看构造函数名（drizzle 的列类名：PgSerial / PgInteger / ...）
-  const ctorName = (raw.constructor?.name || '').toLowerCase();
-  if (ctorName.includes('serial')) {
-    if (ctorName.includes('big')) return 'BIGSERIAL';
-    return 'SERIAL';
-  }
-  if (ctorName.includes('uuid')) return 'UUID';
-  if (ctorName.includes('jsonb')) return 'JSONB';
-  if (ctorName.includes('json')) return 'JSON';
-  if (ctorName.includes('boolean')) return 'BOOLEAN';
-  if (ctorName.includes('timestamp')) return 'TIMESTAMP';
-  if (ctorName.includes('integer')) return 'INTEGER';
-  if (ctorName.includes('smallint')) return 'SMALLINT';
-  if (ctorName.includes('bigint')) return 'BIGINT';
-  if (ctorName.includes('varchar')) return 'VARCHAR';
-  if (ctorName.includes('text')) return 'TEXT';
-  if (ctorName.includes('numeric') || ctorName.includes('decimal')) return 'NUMERIC';
-  if (ctorName.includes('real') || ctorName.includes('float')) return 'REAL';
-  if (ctorName.includes('double')) return 'DOUBLE PRECISION';
-  if (ctorName.includes('date')) return 'DATE';
-  if (ctorName.includes('time')) return 'TIME';
-  if (ctorName.includes('bytea')) return 'BYTEA';
-  if (ctorName.includes('inet')) return 'INET';
-  if (ctorName.includes('cidr')) return 'CIDR';
-
-  // 兜底：根据列的 JS 类型做粗略推断
-  const dataType: string = (raw.dataType || '').toLowerCase();
-  switch (dataType) {
-    case 'string':
-      return 'TEXT';
-    case 'number':
-      return 'INTEGER';
-    case 'boolean':
-      return 'BOOLEAN';
-    case 'date':
-      return 'TIMESTAMP';
-    case 'json':
-      return 'JSONB';
-    case 'bigint':
-      return 'BIGINT';
-    default:
-      return 'TEXT';
-  }
+  // 兜底：列类名探测
+  const ctor = (col.constructor?.name || '').toLowerCase();
+  if (ctor.includes('bigserial')) return 'BIGSERIAL';
+  if (ctor.includes('serial')) return 'SERIAL';
+  if (ctor.includes('uuid')) return 'UUID';
+  if (ctor.includes('jsonb')) return 'JSONB';
+  if (ctor.includes('json')) return 'JSON';
+  if (ctor.includes('boolean')) return 'BOOLEAN';
+  if (ctor.includes('timestamp')) return 'TIMESTAMP';
+  if (ctor.includes('smallint')) return 'SMALLINT';
+  if (ctor.includes('bigint')) return 'BIGINT';
+  if (ctor.includes('integer')) return 'INTEGER';
+  if (ctor.includes('varchar')) return 'VARCHAR';
+  if (ctor.includes('text')) return 'TEXT';
+  if (ctor.includes('numeric') || ctor.includes('decimal')) return 'NUMERIC';
+  if (ctor.includes('real') || ctor.includes('float')) return 'REAL';
+  if (ctor.includes('double')) return 'DOUBLE PRECISION';
+  if (ctor.includes('date')) return 'DATE';
+  if (ctor.includes('time')) return 'TIME';
+  if (ctor.includes('bytea')) return 'BYTEA';
+  if (ctor.includes('inet')) return 'INET';
+  if (ctor.includes('cidr')) return 'CIDR';
+  // 最后一档：dataType 推断
+  const dt = ((col as any).dataType || '').toLowerCase();
+  if (dt === 'string') return 'TEXT';
+  if (dt === 'boolean') return 'BOOLEAN';
+  if (dt === 'date') return 'TIMESTAMP';
+  if (dt === 'json') return 'JSONB';
+  if (dt === 'bigint') return 'BIGINT';
+  if (dt === 'number') return 'INTEGER';
+  return 'TEXT';
 }
 
-function buildEnumDDL(enumName: string, values: string[]): string {
-  const quoted = values.map((v) => `'${v.replace(/'/g, "''")}'`).join(', ');
-  devLog('ddl:enum', `生成枚举 DDL "${enumName}", values=`, values);
-  return `DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '${enumName.replace(/'/g, "''")}') THEN
-    CREATE TYPE "${enumName}" AS ENUM (${quoted});
+function quoteIdent(name: string): string {
+  // 仅允许标识符字符，否则转义
+  if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return `"${name}"`;
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+function defaultClauseFor(col: any): string {
+  const def = col.default;
+  if (def === undefined || def === null) return '';
+  if (typeof def === 'function') {
+    const fx: any = def;
+    const hint = String(fx.sql ?? fx.name ?? '').toLowerCase();
+    if (hint.includes('now')) return ' DEFAULT now()';
+    if (hint.includes('gen_random') || hint.includes('random'))
+      return ' DEFAULT gen_random_uuid()';
+    return '';
+  }
+  if (typeof def === 'string') return ` DEFAULT '${def.replace(/'/g, "''")}'`;
+  if (typeof def === 'number' || typeof def === 'boolean') return ` DEFAULT ${def}`;
+  return '';
+}
+
+function hasUsableDefault(col: any): boolean {
+  const def = col.default;
+  if (def === undefined || def === null) return false;
+  if (typeof def === 'function') {
+    const fx: any = def;
+    const hint = String(fx.sql ?? fx.name ?? '').toLowerCase();
+    return hint.includes('now') || hint.includes('gen_random');
+  }
+  return true;
+}
+
+function columnDDL(col: any): string {
+  const enumRef: string | undefined = col._?.enumName;
+  const type = enumRef && enumsByName.has(enumRef)
+    ? quoteIdent(enumRef)
+    : pgTypeOfColumn(col);
+  const isPrimary = col.primary === true;
+  const notNull = col.notNull === true || isPrimary;
+  let clause = `${quoteIdent(col.name)} ${type}`;
+  if (notNull) clause += ' NOT NULL';
+  clause += defaultClauseFor(col);
+  if (isPrimary) clause += ' PRIMARY KEY';
+  return clause;
+}
+
+function enumDDL(name: string, values: readonly string[]): string {
+  const list = values.map(v => `'${v.replace(/'/g, "''")}'`).join(', ');
+  return `DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '${name.replace(/'/g, "''")}') THEN
+    CREATE TYPE ${quoteIdent(name)} AS ENUM (${list});
   END IF;
 END $$;`;
 }
 
-function buildTableDDL(table: PgTable): string {
+function uniqueConstraintDDL(table: PgTable): string[] {
   const cfg: any = getTableConfig(table);
-  const tableName: string = cfg.name;
-  const columns: any[] = cfg.columns;
-  devLog('ddl:table', `生成建表 DDL "${tableName}", 列数=${columns.length}`);
-  // 先确保枚举类型存在（用于列类型依赖）
-  const enumPrelude: string[] = [];
-  const colClauses: string[] = [];
-  const constraints: string[] = [];
-
-  for (const col of columns) {
-    const colName: string = col.name;
-    let typeName = pgTypeOfColumn(col);
-    diag('ddl:table:col', `  列 "${colName}" → PG type="${typeName}" (ctor=${col?.constructor?.name})`);
-
-    // 如果列是 enum 类型，先补全枚举 DDL
-    const enumRef: string | undefined = (col as any)._?.enumName || (col as any)._?.type;
-    if (enumRef && typeof enumRef === 'string' && enumsByName[enumRef]) {
-      const e = enumsByName[enumRef];
-      enumPrelude.push(buildEnumDDL((e as any).enumName, (e as any).values));
-      typeName = `"${enumRef}"`;
-      devLog('ddl:table:col:enum', `  列 "${colName}" 依赖枚举 "${enumRef}"，已排队先建`);
-    }
-    if (enumRef && typeof enumRef === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(enumRef) && enumsByName[enumRef]) {
-      // 已处理
-    }
-
-    const notNull: boolean = (col as any).notNull === true;
-    // default 处理：常用的 now() / random 文本
-    let defaultClause = '';
-    const def: any = (col as any).default;
-    if (def !== undefined && def !== null) {
-      if (typeof def === 'function') {
-        // 常见 drizzle defaultNow() 等返回一个 SQL 片段
-        const fx = (def as any).name;
-        if (fx?.includes('Now') || /now/i.test(String((def as any)?.sql || fx || ''))) {
-          defaultClause = ' DEFAULT now()';
-        } else {
-          defaultClause = '';
-        }
-      } else if (typeof def === 'string') {
-        defaultClause = ` DEFAULT '${def.replace(/'/g, "''")}'`;
-      } else if (typeof def === 'number' || typeof def === 'boolean') {
-        defaultClause = ` DEFAULT ${String(def)}`;
-      }
-      devLog('ddl:table:col:default', `  列 "${colName}" default=`, defaultClause || '(无)');
-    }
-
-    let clause = `"${colName}" ${typeName}${notNull ? ' NOT NULL' : ''}${defaultClause}`;
-    if ((col as any).primary === true) {
-      clause += ' PRIMARY KEY';
-      devLog('ddl:table:col:pk', `  列 "${colName}" 标记为主键`);
-    }
-    colClauses.push(clause);
-  }
-
-  // 复合唯一约束
-  if (Array.isArray(cfg.indexes) || Array.isArray(cfg.constraints)) {
-    const constraintsList: any[] = cfg.constraints || [];
-    for (const c of constraintsList) {
-      if (c?.constructor?.name?.includes('UniqueConstraint') || (c as any)?.name?.includes('unique')) {
-        const names: string[] = Array.isArray((c as any).columns)
-          ? (c as any).columns.map((cx: any) => `"${cx.name || cx}"`)
-          : [];
-        if (names.length) {
-          constraints.push(`UNIQUE (${names.join(', ')})`);
-          devLog('ddl:table:constraint', `  生成唯一约束 UNIQUE(${names.join(', ')})`);
-        }
-      }
+  const out: string[] = [];
+  for (const c of cfg.constraints || []) {
+    const name = c?.constructor?.name || '';
+    if (name.includes('UniqueConstraint') || (c as any)?.name?.includes('unique')) {
+      const cols = (c.columns || []).map((cx: any) => quoteIdent(cx.name || cx));
+      if (cols.length) out.push(`UNIQUE (${cols.join(', ')})`);
     }
   }
-
-  const body = [...colClauses, ...constraints].join(',\n  ');
-  const createTable = `CREATE TABLE IF NOT EXISTS "${tableName}" (\n  ${body}\n);`;
-  devLog('ddl:table:done', `DDL 生成完毕 "${tableName}"，输出长度=${createTable.length} 字符`);
-  devLog('ddl:table:sql', createTable);
-
-  return [...enumPrelude, createTable].join('\n');
+  return out;
 }
 
-function buildAddColumnDDL(table: PgTable, columnName: string): string {
+function indexDDL(table: PgTable): string[] {
   const cfg: any = getTableConfig(table);
-  const columns: any[] = cfg.columns;
-  devLog('ddl:column', `生成 ADD COLUMN DDL "${cfg.name}"."${columnName}"`);
-  const col = columns.find((c: any) => c.name === columnName);
-  if (!col) {
-    devLog('ddl:column:miss', `列 "${columnName}" 在 schema.ts 中未找到，无法生成 DDL`);
-    return '';
+  const out: string[] = [];
+  for (const idx of cfg.indexes || []) {
+    const cols = (idx.columns || [])
+      .map((cx: any) => quoteIdent(cx.name || cx))
+      .join(', ');
+    if (!cols) continue;
+    out.push(`CREATE INDEX IF NOT EXISTS ${quoteIdent(idx.name)} ON ${quoteIdent(cfg.name)} (${cols});`);
   }
-
-  let typeName = pgTypeOfColumn(col);
-  const enumRef: string | undefined = (col as any)._?.enumName;
-  if (enumRef && typeof enumRef === 'string' && enumsByName[enumRef]) {
-    typeName = `"${enumRef}"`;
-    devLog('ddl:column:enum', `列 "${columnName}" 依赖枚举 "${enumRef}"`);
-  }
-
-  const notNull: boolean = (col as any).notNull === true;
-  let defaultClause = '';
-  const def: any = (col as any).default;
-  if (def !== undefined && def !== null) {
-    if (typeof def === 'function') {
-      defaultClause = ' DEFAULT now()';
-    } else if (typeof def === 'string') {
-      defaultClause = ` DEFAULT '${def.replace(/'/g, "''")}'`;
-    } else if (typeof def === 'number' || typeof def === 'boolean') {
-      defaultClause = ` DEFAULT ${String(def)}`;
-    }
-  }
-  const nullClause = notNull ? ' NOT NULL' : '';
-  const ddl = `ALTER TABLE IF EXISTS "${cfg.name}" ADD COLUMN IF NOT EXISTS "${columnName}" ${typeName}${defaultClause}${nullClause};`;
-  devLog('ddl:column:done', ddl);
-  return ddl;
+  return out;
 }
 
-// ---------- 元数据检查 ----------
-
-async function relationExists(sql: PostgresSql, name: string): Promise<boolean> {
-  devLog('meta:table', `查询 information_schema.tables: table_name="${name}"`);
-  try {
-    const r = await sql`SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name = ${name}) AS exists_`;
-    const exists = (r as any)[0]?.exists_ === true;
-    devLog('meta:table', `  → ${exists ? '存在 ✓' : '不存在 ✗'} "${name}"`);
-    return exists;
-  } catch (e) {
-    devLog('meta:table:err', `查询表是否存在失败 "${name}":`, e);
-    return false;
+function tableDDL(table: PgTable): string {
+  const cfg: any = getTableConfig(table);
+  // 1. 先建依赖的枚举类型
+  const neededEnums = new Set<string>();
+  for (const col of cfg.columns) {
+    const er: string | undefined = col._?.enumName;
+    if (er && enumsByName.has(er)) neededEnums.add(er);
   }
+  const prelude: string[] = [];
+  for (const en of neededEnums) {
+    const e = enumsByName.get(en)! as any;
+    prelude.push(enumDDL(e.enumName, e.values));
+  }
+  // 2. 列 + 唯一约束
+  const colClauses = cfg.columns.map((c: any) => columnDDL(c));
+  const uq = uniqueConstraintDDL(table);
+  const body = [...colClauses, ...uq].join(',\n  ');
+  const create = `CREATE TABLE IF NOT EXISTS ${quoteIdent(cfg.name)} (\n  ${body}\n);`;
+  // 3. 索引
+  return [...prelude, create, ...indexDDL(table)].join('\n');
 }
 
-async function columnExists(sql: PostgresSql, tableName: string, columnName: string): Promise<boolean> {
-  devLog('meta:column', `查询 information_schema.columns: table="${tableName}", column="${columnName}"`);
-  try {
-    const r = await sql`
-      SELECT EXISTS(
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = ${tableName} AND column_name = ${columnName}
-      ) AS exists_`;
-    const exists = (r as any)[0]?.exists_ === true;
-    devLog('meta:column', `  → ${exists ? '存在 ✓' : '不存在 ✗'} "${tableName}"."${columnName}"`);
-    return exists;
-  } catch (e) {
-    devLog('meta:column:err', `查询列是否存在失败 "${tableName}"."${columnName}":`, e);
-    return false;
+function addColumnDDL(table: PgTable, columnName: string): string | null {
+  const cfg: any = getTableConfig(table);
+  const col = cfg.columns.find((c: any) => c.name === columnName);
+  if (!col) return null;
+
+  // 枚举依赖：先建枚举
+  const enumRef: string | undefined = col._?.enumName;
+  const prelude: string[] = [];
+  let type: string;
+  if (enumRef && enumsByName.has(enumRef)) {
+    const e = enumsByName.get(enumRef) as any;
+    prelude.push(enumDDL(e.enumName, e.values));
+    type = quoteIdent(enumRef);
+  } else {
+    type = pgTypeOfColumn(col);
   }
+
+  // 加列策略：
+  //  - 可空 + 无 default：直接加
+  //  - 不可空 + 有 default：一次加（PG 会把 default 应用到现有行）
+  //  - 不可空 + 无 default + 非主键：先 nullable，backfill default，再 SET NOT NULL
+  //  - 不可空 + 无 default + 是主键：直接 NOT NULL（但实际应当避免这种情况）
+  const isPrimary = col.primary === true;
+  const wantsNotNull = col.notNull === true || isPrimary;
+  const colIdent = quoteIdent(col.name);
+  const tblIdent = quoteIdent(cfg.name);
+  const ddl: string[] = [];
+  if (!wantsNotNull) {
+    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type}${defaultClauseFor(col)};`);
+  } else if (hasUsableDefault(col) || isPrimary) {
+    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type}${defaultClauseFor(col)} NOT NULL;`);
+  } else {
+    // 不可空 + 无 default：分两步
+    ddl.push(`ALTER TABLE ${tblIdent} ADD COLUMN IF NOT EXISTS ${colIdent} ${type};`);
+    ddl.push(`ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET NOT NULL;`);
+  }
+  if (isPrimary) {
+    ddl.push(
+      `DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = ${quoteIdent(`${cfg.name}_pkey`)}
+      AND conrelid = ${quoteIdent(cfg.name)}::regclass
+  ) THEN
+    ALTER TABLE ${tblIdent} ADD PRIMARY KEY (${colIdent});
+  END IF;
+END $$;`,
+    );
+  }
+  return [...prelude, ...ddl].join('\n');
 }
 
-async function enumTypeExists(sql: PostgresSql, typeName: string): Promise<boolean> {
-  devLog('meta:enum', `查询 pg_type: typname="${typeName}"`);
-  try {
-    const r = await sql`SELECT EXISTS(SELECT 1 FROM pg_type WHERE typname = ${typeName}) AS exists_`;
-    const exists = (r as any)[0]?.exists_ === true;
-    devLog('meta:enum', `  → ${exists ? '存在 ✓' : '不存在 ✗'} "${typeName}"`);
-    return exists;
-  } catch (e) {
-    devLog('meta:enum:err', `查询枚举是否存在失败 "${typeName}":`, e);
-    return false;
-  }
+// ============================================================
+// 元数据查询
+// ============================================================
+
+async function relationExists(c: PostgresSql, name: string): Promise<boolean> {
+  const r = await c`SELECT EXISTS(
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = current_schema() AND table_name = ${name}
+  ) AS e`;
+  return r[0]?.e === true;
 }
 
-// ---------- 错误解析与修复 ----------
+async function columnExists(c: PostgresSql, table: string, col: string): Promise<boolean> {
+  const r = await c`SELECT EXISTS(
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema() AND table_name = ${table} AND column_name = ${col}
+  ) AS e`;
+  return r[0]?.e === true;
+}
+
+async function enumTypeExists(c: PostgresSql, name: string): Promise<boolean> {
+  const r = await c`SELECT EXISTS(SELECT 1 FROM pg_type WHERE typname = ${name}) AS e`;
+  return r[0]?.e === true;
+}
+
+// ============================================================
+// 错误解析
+// ============================================================
 
 type ParsedError =
-  | { kind: 'relation'; name: string }
-  | { kind: 'column'; relation: string; column: string }
-  | { kind: 'type'; name: string }
-  | { kind: 'unknown' };
+  | {kind: 'relation'; name: string}
+  | {kind: 'column'; relation: string; column: string}
+  | {kind: 'type'; name: string}
+  | {kind: 'unknown'};
+
+// 从 `public.User` / `"public.User"` 提取纯表名
+function stripSchema(name: string): string {
+  const i = name.lastIndexOf('.');
+  return i >= 0 ? name.slice(i + 1) : name;
+}
 
 function parsePgError(err: any): ParsedError {
   const code: string | undefined = err?.code ?? err?.sqlstate;
-  const msg: string = (err?.message || err?.msg || '').toString();
-  diag('error:parse', `收到 PG 错误: code=${code}, msg="${msg.slice(0, 200)}"`);
+  const msg = String(err?.message ?? err?.msg ?? '');
 
-  if (code === '42P01' || /relation .+ does not exist/i.test(msg)) {
-    const m = msg.match(/relation\s+"([^"]+)"\s+does not exist/i);
-    if (m) {
-      const result = { kind: 'relation' as const, name: m[1] };
-      devLog('error:parse', `  → 解析为 relation "${m[1]}" (PG 42P01)`);
-      return result;
-    }
+  if (code === '42P01' || /relation\s+.+\s+does not exist/i.test(msg)) {
+    const m = msg.match(/relation\s+"?([^"\s.]+)"?\s+does not exist/i);
+    if (m) return {kind: 'relation', name: stripSchema(m[1])};
   }
-  if (code === '42703' || /column .+ of relation .+ does not exist/i.test(msg)) {
-    const m = msg.match(/column\s+"([^"]+)"\s+of\s+relation\s+"([^"]+)"\s+does not exist/i);
-    if (m) {
-      const result = { kind: 'column' as const, column: m[1], relation: m[2] };
-      devLog('error:parse', `  → 解析为 column "${m[2]}"."${m[1]}" (PG 42703)`);
-      return result;
-    }
+  if (code === '42703' || /column\s+.+\s+of\s+relation\s+.+\s+does not exist/i.test(msg)) {
+    const m = msg.match(/column\s+"?([^"\s]+)"?\s+of\s+relation\s+"?([^"\s.]+)"?/i);
+    if (m) return {kind: 'column', column: m[1], relation: stripSchema(m[2])};
   }
-  if (code === '42704' || /type .+ does not exist/i.test(msg)) {
-    const m = msg.match(/type\s+"([^"]+)"\s+does not exist/i);
-    if (m) {
-      const result = { kind: 'type' as const, name: m[1] };
-      devLog('error:parse', `  → 解析为 type "${m[1]}" (PG 42704)`);
-      return result;
-    }
+  if (code === '42704' || /type\s+.+\s+does not exist/i.test(msg)) {
+    const m = msg.match(/type\s+"?([^"\s]+)"?\s+does not exist/i);
+    if (m) return {kind: 'type', name: stripSchema(m[1])};
   }
-  devLog('error:parse', '  → 无法识别，未知错误类型');
-  return { kind: 'unknown' };
+  return {kind: 'unknown'};
 }
 
-const repairInProgress = new Set<string>();
+// ============================================================
+// 修复执行（带并发去重 + 重试上限）
+// ============================================================
 
-async function tryRepair(rawClient: PostgresSql, parsed: ParsedError): Promise<boolean> {
+const MAX_REPAIR_RETRIES = 3;
+
+// 关键修复：使用 Map<key, Promise> 而非 Set，去重的同时让等待者共享同一结果
+const inProgress = new Map<string, Promise<boolean>>();
+
+function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inProgress.get(key) as Promise<T> | undefined;
+  if (existing) {
+    dlog('lock:wait', key);
+    return existing;
+  }
+  const p = fn().finally(() => inProgress.delete(key));
+  inProgress.set(key, p as Promise<boolean>);
+  return p;
+}
+
+async function tryRepair(
+  client: PostgresSql,
+  parsed: ParsedError,
+  retriesLeft: number,
+): Promise<boolean> {
   if (parsed.kind === 'unknown') return false;
 
-  // 1) 修复缺失枚举类型
   if (parsed.kind === 'type') {
-    devLog('repair:start:type', `尝试修复枚举类型 "${parsed.name}"`);
-    const e = enumsByName[parsed.name];
-    if (!e) {
-      devLog('repair:skip:type', `枚举 "${parsed.name}" 在 schema.ts 中未注册，跳过`);
-      return false;
-    }
-    const key = `type:${parsed.name}`;
-    if (repairInProgress.has(key)) {
-      devLog('repair:skip:type:concurrent', `枚举 "${parsed.name}" 正在被其他修复任务处理，跳过`);
-      return false;
-    }
-    repairInProgress.add(key);
-    try {
-      const exists = await enumTypeExists(rawClient, parsed.name);
-      if (exists) {
-        devLog('repair:skip:type:exists', `枚举 "${parsed.name}" 数据库中已存在，无需修复`);
+    return withLock(`type:${parsed.name}`, async () => {
+      const e = enumsByName.get(parsed.name);
+      if (!e) return false;
+      if (await enumTypeExists(client, parsed.name)) return true;
+      try {
+        await client.unsafe(enumDDL((e as any).enumName, (e as any).values));
+        ilog('repair:type:ok', parsed.name);
         return true;
-      }
-      const ddl = buildEnumDDL((e as any).enumName, (e as any).values);
-      devLog('repair:exec:type', `执行枚举 DDL "${parsed.name}"`);
-      await rawClient.unsafe(ddl);
-      devLog('repair:ok:type', `枚举 "${parsed.name}" 创建成功 ✓`);
-      return true;
-    } catch (err) {
-      devLog('repair:fail:type', `修复枚举 "${parsed.name}" 失败 ✗:`, (err as any)?.message || err);
-      return false;
-    } finally {
-      repairInProgress.delete(key);
-    }
-  }
-
-  // 2) 修复缺失表
-  if (parsed.kind === 'relation') {
-    devLog('repair:start:table', `尝试修复表 "${parsed.name}"`);
-    const table = tablesByName[parsed.name];
-    if (!table) {
-      devLog('repair:skip:table', `表 "${parsed.name}" 在 schema.ts 中未注册，跳过`);
-      return false;
-    }
-    const key = `table:${parsed.name}`;
-    if (repairInProgress.has(key)) {
-      devLog('repair:skip:table:concurrent', `表 "${parsed.name}" 正在被其他修复任务处理，跳过`);
-      return false;
-    }
-    repairInProgress.add(key);
-    try {
-      const exists = await relationExists(rawClient, parsed.name);
-      if (exists) {
-        devLog('repair:skip:table:exists', `表 "${parsed.name}" 数据库中已存在，无需修复`);
-        return true;
-      }
-      const ddl = buildTableDDL(table);
-      devLog('repair:exec:table', `执行建表 DDL "${parsed.name}"（${ddl.length} 字符）`);
-      await rawClient.unsafe(ddl);
-      devLog('repair:ok:table', `表 "${parsed.name}" 创建成功 ✓`);
-      return true;
-    } catch (err) {
-      devLog('repair:fail:table', `修复表 "${parsed.name}" 失败 ✗:`, (err as any)?.message || err);
-      return false;
-    } finally {
-      repairInProgress.delete(key);
-    }
-  }
-
-  // 3) 修复缺失列
-  if (parsed.kind === 'column') {
-    devLog('repair:start:column', `尝试修复列 "${parsed.relation}"."${parsed.column}"`);
-    const table = tablesByName[parsed.relation];
-    if (!table) {
-      devLog('repair:skip:column', `表 "${parsed.relation}" 在 schema.ts 中未注册，跳过`);
-      return false;
-    }
-    const key = `col:${parsed.relation}.${parsed.column}`;
-    if (repairInProgress.has(key)) {
-      devLog('repair:skip:column:concurrent', `列 "${parsed.relation}"."${parsed.column}" 正在被其他修复任务处理，跳过`);
-      return false;
-    }
-    repairInProgress.add(key);
-    try {
-      const exists = await columnExists(rawClient, parsed.relation, parsed.column);
-      if (exists) {
-        devLog('repair:skip:column:exists', `列 "${parsed.relation}"."${parsed.column}" 数据库中已存在，无需修复`);
-        return true;
-      }
-      const ddl = buildAddColumnDDL(table, parsed.column);
-      if (!ddl) {
-        devLog('repair:skip:column:ddl', `无法生成列 "${parsed.relation}"."${parsed.column}" 的 DDL，跳过`);
+      } catch (err: any) {
+        wlog('repair:type:fail', parsed.name, err?.message || err);
         return false;
       }
-      devLog('repair:exec:column', `执行 ADD COLUMN DDL "${parsed.relation}"."${parsed.column}"`);
-      await rawClient.unsafe(ddl);
-      devLog('repair:ok:column', `列 "${parsed.relation}"."${parsed.column}" 添加成功 ✓`);
-      return true;
-    } catch (err) {
-      devLog('repair:fail:column', `修复列 "${parsed.relation}"."${parsed.column}" 失败 ✗:`, (err as any)?.message || err);
-      return false;
-    } finally {
-      repairInProgress.delete(key);
-    }
+    });
   }
 
-  return false;
-}
+  if (parsed.kind === 'relation') {
+    return withLock(`table:${parsed.name}`, async () => {
+      const t = tablesByName.get(parsed.name);
+      if (!t) return false;
+      if (await relationExists(client, parsed.name)) return true;
+      try {
+        await client.unsafe(tableDDL(t));
+        ilog('repair:table:ok', parsed.name);
+        return true;
+      } catch (err: any) {
+        wlog('repair:table:fail', parsed.name, err?.message || err);
+        return false;
+      }
+    });
+  }
 
-// ---------- 包装 client ----------
-
-function summarizeArgs(args: any[]): string {
-  const summary = args.map(a => {
-    if (typeof a === 'string') return a.length > 80 ? a.slice(0, 80) + '…' : a;
-    if (Buffer.isBuffer(a)) return `<Buffer ${a.length}b>`;
-    return String(a).slice(0, 80);
+  // column
+  return withLock(`col:${parsed.relation}.${parsed.column}`, async () => {
+    const t = tablesByName.get(parsed.relation);
+    if (!t) return false;
+    if (await columnExists(client, parsed.relation, parsed.column)) return true;
+    const ddl = addColumnDDL(t, parsed.column);
+    if (!ddl) return false;
+    try {
+      await client.unsafe(ddl);
+      ilog('repair:col:ok', `${parsed.relation}.${parsed.column}`);
+      return true;
+    } catch (err: any) {
+      wlog('repair:col:fail', `${parsed.relation}.${parsed.column}`, err?.message || err);
+      return false;
+    }
   });
-  return summary.length > 2 ? summary.slice(0, 2).join(', ') + ', …' : summary.join(', ');
 }
 
-/**
- * 包装 postgres 的 PendingQuery 对象：
- * - 保留所有链式方法（.values / .raw / .cursor / .forEach / .stream / .describe / .execute 等）
- * - 当方法返回另一 thenable 时，递归再次包装
- * - 仅在实际 await（.then）或 .catch / .finally 时，才注入错误修复逻辑
- * - 修复后重放「原始 PendingQuery 的创建调用」（重新调用同一 unsafe / 模板标签）
- *
- * 注意：postgres PendingQuery 的 .values / .raw / .execute 等方法是通过 Object.defineProperty
- * 动态挂到实例上的（不在 prototype 上），因此必须显式声明为"转发方法"，否则 Reflect.get
- * 无法触发 trap 导致方法丢失。
- */
+// ============================================================
+// Proxy：包装 postgres client 与 PendingQuery
+// ============================================================
+
+// postgres PendingQuery 的链式方法（动态挂到实例属性上）
+const PQ_CHAIN_METHODS = new Set([
+  'values', 'raw', 'cursor', 'forEach', 'stream', 'describe',
+  'execute', 'handle', 'simple', 'readable', 'writable', 'origin',
+  'cancel', 'named', 'reduce', 'next', 'return', 'throw',
+]);
+
+// postgres client 上返回 PendingQuery 的方法
+const CLIENT_PQ_METHODS = new Set([
+  'unsafe', 'begin', 'savepoint',
+  'file', 'load', 'queue', 'listen', 'notify', 'unlisten',
+  'copyFrom', 'copyTo', 'copyToFile', 'copyFromStdin',
+]);
+
+type Replay = () => any;
+
 function wrapPendingQuery(
-  rawClient: PostgresSql,
-  pendingQuery: any,
-  replay: () => any,
-  _depth = 0,
+  innerClient: PostgresSql,
+  pq: any,
+  replay: Replay,
+  retriesLeft = MAX_REPAIR_RETRIES,
 ): any {
-  if (!pendingQuery || typeof pendingQuery !== 'object') return pendingQuery;
+  if (!pq || typeof pq !== 'object' || typeof pq.then !== 'function') return pq;
 
-  diag('pq:wrap', `包装 PendingQuery (depth=${_depth})`);
-
-  // postgres PendingQuery 实例的已知链式方法（Object.defineProperty 实例属性，非 prototype）
-  const CHAIN_METHODS = new Set([
-    'values', 'raw', 'cursor', 'forEach', 'stream', 'describe',
-    'execute', 'handle', 'simple', 'readable', 'writable', 'origin',
-    'cancel', 'named', 'reduce', 'next', 'return', 'throw',
-  ]);
-
-  const handler: ProxyHandler<any> = {
-    get(target: any, prop: string | symbol, receiver: any): any {
+  return new Proxy(pq, {
+    get(target, prop, receiver) {
       const key = String(prop);
 
-      // Promise 协议方法：.then / .catch / .finally — 注入错误修复
+      // Promise 协议：注入错误修复 + 重试上限
       if (key === 'then' || key === 'catch' || key === 'finally') {
-        devLog('pq:then', `触发 Promise 协议: ${key}`);
-        return function (...args: any[]) {
+        return (onFulfilled?: any, onRejected?: any) => {
           return new Promise((resolve, reject) => {
-            Promise.resolve(target).then(
-              (val: any) => {
-                devLog('pq:then:ok', `查询成功`);
-                resolve(val);
-              },
-              async (err: any) => {
-                devLog('pq:then:err', `查询失败: ${(err as any)?.message || err}`);
-                const parsed = parsePgError(err);
-                if (parsed.kind === 'unknown') {
-                  reject(err);
-                  return;
-                }
-                const repaired = await tryRepair(rawClient, parsed);
-                if (!repaired) {
-                  reject(err);
-                  return;
-                }
-                devLog('pq:then:retry', `Schema 修复成功，重放原始查询`);
+            const handleResult = (val: any) => {
+              if (key === 'then') {
                 try {
-                  const newResult = replay();
-                  Promise.resolve(newResult).then(resolve, reject);
-                } catch (replayErr) {
-                  reject(replayErr);
+                  resolve(onFulfilled ? onFulfilled(val) : val);
+                } catch (e) {
+                  reject(e);
                 }
-              },
-            );
-          }).then(...args);
+              } else if (key === 'finally') {
+                try {
+                  resolve(onFulfilled ? onFulfilled() : undefined);
+                } catch (e) {
+                  reject(e);
+                }
+              } else {
+                // catch 不消费 val
+                resolve(undefined);
+              }
+            };
+            const handleError = async (err: any) => {
+              const parsed = parsePgError(err);
+              const canRepair = parsed.kind !== 'unknown' && retriesLeft > 0;
+              if (!canRepair) {
+                if (key === 'then') {
+                  try {
+                    resolve(onRejected ? onRejected(err) : err);
+                  } catch (e) {
+                    reject(e);
+                  }
+                } else if (key === 'catch') {
+                  try {
+                    resolve(onRejected ? onRejected(err) : undefined);
+                  } catch (e) {
+                    reject(e);
+                  }
+                } else {
+                  // finally 不消费 error
+                  resolve(undefined);
+                }
+                return;
+              }
+              const ok = await tryRepair(innerClient, parsed, retriesLeft - 1);
+              if (!ok) {
+                if (key === 'then') {
+                  try {
+                    resolve(onRejected ? onRejected(err) : err);
+                  } catch (e) {
+                    reject(e);
+                  }
+                } else if (key === 'catch') {
+                  try {
+                    resolve(onRejected ? onRejected(err) : undefined);
+                  } catch (e) {
+                    reject(e);
+                  }
+                } else {
+                  resolve(undefined);
+                }
+                return;
+              }
+              // 重放原查询：返回新 wrapped PQ（递归走同样的修复路径）
+              const newPq = replay();
+              Promise.resolve(newPq).then(handleResult, handleError);
+            };
+            Promise.resolve(target).then(handleResult, handleError);
+          });
         };
       }
 
-      // 链式方法：直接转发到原始 PendingQuery，方法返回值如果是 thenable 则再包装
-      if (CHAIN_METHODS.has(key)) {
-        diag('pq:chain', `转发链式方法 .${key}()，原始方法类型:`, typeof target[key]);
-        return function (...args: any[]) {
-          const methodResult = (target as any)[key]?.apply(target, args);
-          if (methodResult && typeof methodResult === 'object' && typeof methodResult.then === 'function') {
-            return wrapPendingQuery(rawClient, methodResult, replay, _depth + 1);
+      // 链式方法：转发到 inner PQ；方法返回若是 thenable 则再包一层
+      if (PQ_CHAIN_METHODS.has(key)) {
+        return (...args: any[]) => {
+          const fn = target[key];
+          if (typeof fn !== 'function') return fn;
+          const r = fn.apply(target, args);
+          if (r && typeof r === 'object' && typeof r.then === 'function') {
+            return wrapPendingQuery(innerClient, r, replay, retriesLeft);
           }
-          return methodResult;
+          return r;
         };
       }
-
-      // 其他属性直接穿透
+      // 其他属性穿透
       return (target as any)[prop];
     },
-  };
-
-  return new Proxy(pendingQuery, handler);
+  });
 }
 
-function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
-  diag('wrap:enter', 'wrapClientWithLazySchema 被调用');
-  // postgres client 上返回 PendingQuery 的方法（这些需要被包装）
-  const PQ_METHODS = new Set([
-    'unsafe', 'begin', 'savepoint', 'end',
-    'file', 'load', 'queue', 'listen', 'notify', 'unlisten',
-    'copyFrom', 'copyTo', 'copyToFile', 'copyFromStdin',
-  ]);
-
+function wrapClientWithLazySchema(inner: PostgresSql): PostgresSql {
   const handler: ProxyHandler<PostgresSql> = {
-    get(target: any, prop: string | symbol, receiver: any) {
+    get(target, prop, receiver) {
       const key = String(prop);
-      devLog('proxy:get', `访问属性 "${key}"`);
       const original: any = Reflect.get(target, prop, receiver);
       if (typeof original !== 'function') return original;
-
-      // 返回 PendingQuery 的方法 → 包装
-      if (PQ_METHODS.has(key)) {
-        diag('wrap:method', `拦截方法 .${key}()，返回包装后的 PendingQuery`);
-        return function (this: any, ...args: any[]) {
-          devLog('proxy:call:pq', `调用 ${key}(${summarizeArgs(args)})`);
-          const boundThis = this === receiver ? target : this;
-          const replay = () => original.apply(boundThis, args);
-          const result = replay();
-          if (result && typeof result === 'object' && typeof result.then === 'function') {
-            return wrapPendingQuery(rawClient, result, replay, 0);
-          }
-          return result;
-        };
-      }
-
-      // 其他方法原样返回
-      return original;
+      if (!CLIENT_PQ_METHODS.has(key)) return original;
+      return function (this: any, ...args: any[]) {
+        const bound = this === receiver ? target : this;
+        const replay = () => original.apply(bound, args);
+        const pq = replay();
+        if (pq && typeof pq === 'object' && typeof pq.then === 'function') {
+          return wrapPendingQuery(inner, pq, replay);
+        }
+        return pq;
+      };
     },
-    apply(target: any, thisArg: any, args: any[]) {
-      devLog('proxy:apply', `模板标签调用`);
+    apply(target, thisArg, args) {
       const replay = () => target.apply(thisArg, args);
-      const result = replay();
-      if (result && typeof result === 'object' && typeof result.then === 'function') {
-        return wrapPendingQuery(rawClient, result, replay, 0);
+      const pq = replay();
+      if (pq && typeof pq === 'object' && typeof pq.then === 'function') {
+        return wrapPendingQuery(inner, pq, replay);
       }
-      return result;
+      return pq;
     },
   };
-
-  const proxied = new Proxy(rawClient, handler) as PostgresSql;
-  diag('wrap:exit', 'wrapClientWithLazySchema 完成，返回 proxied client');
-  return proxied;
+  return new Proxy(inner, handler) as PostgresSql;
 }
 
 // ============================================================
-// 主 client / db 实例
+// 连接配置
 // ============================================================
 
-diag('main:raw', 'rawClient 创建中...');
-const rawClient = postgres(connectionString, getDatabaseConfig());
-diag('main:raw', 'rawClient 创建完成，typeof rawClient.unsafe =', typeof rawClient.unsafe);
+function buildClientConfig() {
+  if (isNeonDatabase) {
+    return {
+      max: 1,
+      idle_timeout: 0,
+      connect_timeout: 10,
+      max_lifetime: 3600,
+      ssl: 'require' as const,
+      prepare: false,
+      transform: {undefined: null},
+      connection: {application_name: 'voicehub-app'},
+    };
+  }
+  const needSsl =
+    connectionString.includes('sslmode=require') ||
+    connectionString.includes('ssl=true');
+  return {
+    max: process.env.NODE_ENV === 'production' ? 10 : 5,
+    idle_timeout: 20,
+    connect_timeout: 30,
+    max_lifetime: 3600,
+    ssl: needSsl ? ('require' as const) : false,
+    prepare: false,
+    transform: {undefined: null},
+    connection: {application_name: 'voicehub-app'},
+  };
+}
 
-const client: PostgresSql = wrapClientWithLazySchema(rawClient);
-diag('main:wrap', 'wrapped client 创建完成，typeof client.unsafe =', typeof client.unsafe);
+// ============================================================
+// 实例化
+// ============================================================
 
-diag('main:drizzle', '调用 drizzle(client, {schema})...');
-// 创建Drizzle数据库实例
-export const db: PostgresJsDatabase<typeof schema> = drizzle(client, { schema });
-diag('main:drizzle', 'drizzle() 完成');
+export const rawClient = postgres(connectionString, buildClientConfig());
+export const client: PostgresSql = wrapClientWithLazySchema(rawClient);
+export const db: PostgresJsDatabase<typeof schema> = drizzle(client, {schema});
 
-// 导出连接客户端（用于手动查询或关闭连接）
-export { client };
+// ============================================================
+// 工具导出
+// ============================================================
 
-// 供调试：暴露 schema 映射
-export const __lazySchemaTables = tablesByName;
-export const __lazySchemaEnums = enumsByName;
-
-// 导出schema以便在其他地方使用
+export {eq, ne, and, gt, gte, lt, lte, count, exists, desc, asc, or, sql} from 'drizzle-orm';
 export * from './schema';
 
-// 导出drizzle-orm函数
-export {eq, ne, and, gt, gte, lt, lte, count, exists, desc, asc, or, sql};
-
-// 数据库连接测试函数
 export async function testConnection() {
   try {
     await client`SELECT 1`;
+    // eslint-disable-next-line no-console
     console.log('✅ Database connection successful');
     return true;
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('❌ Database connection failed:', error);
     return false;
   }
 }
 
-// 获取数据库连接状态
 export function getConnectionStatus() {
-  const isConnected = !(rawClient as any).ended;
-
+  const opts = (rawClient as any).options ?? {};
   return {
-    isConnected,
-    connected: isConnected,
-    status: isConnected ? 'connected' : 'disconnected',
-    maxConnections: (rawClient as any).options.max,
-    idleTimeout: (rawClient as any).options.idle_timeout,
-    connectTimeout: (rawClient as any).options.connect_timeout
+    isConnected: !(rawClient as any).ended,
+    status: (rawClient as any).ended ? 'disconnected' : 'connected',
+    maxConnections: opts.max,
+    idleTimeout: opts.idle_timeout,
+    connectTimeout: opts.connect_timeout,
   };
 }
 
-// 连接管理 - 根据数据库类型自适应
-let idleTimer: NodeJS.Timeout | null = null;
-// Neon 数据库使用更短的空闲时间以支持自动启停，普通 PostgreSQL 使用更长的空闲时间
-const IDLE_TIMEOUT = isNeonDatabase ? 5 * 60 * 1000 : 10 * 60 * 1000; // Neon: 5分钟，PostgreSQL: 10分钟
-
-// 重置空闲计时器
-function resetIdleTimer() {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
-  
-  // 只在生产环境启用自动断开
-  if (process.env.NODE_ENV === 'production') {
-    idleTimer = setTimeout(async () => {
-      try {
-        if (!(rawClient as any).ended) {
-          const dbType = isNeonDatabase ? 'Neon' : 'PostgreSQL';
-          console.log(`🔄 Auto-closing idle ${dbType} database connections${isNeonDatabase ? ' for Serverless optimization' : ''}`);
-          await (rawClient as any).end({ timeout: isNeonDatabase ? 5 : 10 });
-        }
-      } catch (error) {
-        console.error('❌ Error during auto-close:', error);
-      }
-    }, IDLE_TIMEOUT);
-  }
-}
-
-// 包装数据库操作以支持自动启停
-export function withAutoReconnect<T extends any[], R>(
-  operation: (...args: T) => Promise<R>
-) {
-  return async (...args: T): Promise<R> => {
-    resetIdleTimer();
-    
-    try {
-      return await operation(...args);
-    } catch (error: any) {
-      // 如果连接已关闭，记录信息
-      if (error?.code === 'CONNECTION_ENDED' || (rawClient as any).ended) {
-        const dbType = isNeonDatabase ? 'Neon' : 'PostgreSQL';
-        console.log(`🔄 ${dbType} database connection ended${isNeonDatabase ? ', Neon will auto-reconnect on next query' : ', will reconnect on next query'}`);
-      }
-      throw error;
-    }
-  };
-}
-
-// 优雅关闭数据库连接
 export async function closeConnection() {
   try {
-    if (idleTimer) {
-      clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-    
     if (!(rawClient as any).ended) {
-      await (rawClient as any).end({ timeout: 10 });
+      await (rawClient as any).end({timeout: 10});
+      // eslint-disable-next-line no-console
       console.log('✅ Database connection closed gracefully');
     }
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.error('❌ Error closing database connection:', error);
   }
 }
 
-// 设置优雅关闭处理
 if (typeof process !== 'undefined') {
-  const gracefulShutdown = async () => {
-    console.log('🔄 Shutting down database connections...');
+  const shutdown = async () => {
     await closeConnection();
   };
-  
-  process.on('SIGINT', gracefulShutdown);
-  process.on('SIGTERM', gracefulShutdown);
-  process.on('beforeExit', gracefulShutdown);
+  // once：避免 hot reload / 多 import 累积监听器
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
+  process.once('beforeExit', shutdown);
 }
+
+// 调试导出
+export const __lazySchemaTables = tablesByName;
+export const __lazySchemaEnums = enumsByName;
