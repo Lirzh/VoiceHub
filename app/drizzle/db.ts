@@ -369,7 +369,6 @@ function stripSchema(name: string): string {
 
 function parsePgError(err: any): Parsed {
   const msg = String(err?.message || err?.msg || '');
-  const code: string | undefined = err?.code ?? err?.sqlstate;
 
   // 1) relation "X" does not exist  (X 可能是 schema.table — 我们只取 table)
   let m = msg.match(/relation\s+"?([^"\s]+)"?\s+does not exist/i);
@@ -472,7 +471,8 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
   const rawAny = raw as any;
 
   // runSQL：执行原始 DDL（不走错误修复）
-  const runSQL = (sql: string): Promise<any> => rawAny['unsafe'](sql);
+  // BUG FIX: unsafe 返回 PendingQuery，必须 .then() 才会真正执行
+  const runSQL = (sql: string): Promise<any> => rawAny['unsafe'](sql).then((x: any) => x);
 
   // 内联 wrap 逻辑：把 raw PQ 包装成带错误修复的 thenable
   const makeWrapped = (rawPq: any, replayFn: () => any, depth: number): any => {
@@ -501,9 +501,9 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
           },
         );
       },
-      catch(onR: any) { return this.then(undefined, onR); },
+      catch(onR: any) { return wrapped.then(undefined, onR); },
       finally(onF: any) {
-        return this.then(
+        return wrapped.then(
           (v: any) => { onF && onF(); return v; },
           (e: any) => { onF && onF(); throw e; },
         );
@@ -543,23 +543,38 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
     return makeWrapped(pq, replay, 0);
   };
 
-  // begin
+  // begin - BUG FIX: 需要递归包装返回的 transaction client
   taggedTemplateFn['begin'] = function (...args: any[]) {
-    return rawAny['begin'].apply(raw, args);
+    const result = rawAny['begin'].apply(raw, args);
+    // begin 可能返回 Promise<client> 或接受回调
+    if (result && typeof result === 'object' && typeof result.then === 'function') {
+      return result.then((txClient: any) => {
+        if (!txClient) return txClient;
+        // 包装 transaction client，使其查询也支持自动修复
+        return buildWrappedClient(txClient);
+      });
+    }
+    return result;
   };
 
   // 透传所有自有属性（options / transform / 等）
+  // BUG FIX: 跳过函数不可配置的属性（length/name/prototype）
+  const FUNC_RESERVED = new Set(['length', 'name', 'prototype', 'caller', 'callee', 'arguments']);
   for (const key of Object.getOwnPropertyNames(rawAny)) {
-    if (key === 'unsafe' || key === 'begin' || key === 'prototype') continue;
+    if (key === 'unsafe' || key === 'begin' || FUNC_RESERVED.has(key)) continue;
     const val = rawAny[key];
     if (typeof val === 'function') {
       taggedTemplateFn[key] = function (...args: any[]) { return val.apply(raw, args); };
     } else {
-      Object.defineProperty(taggedTemplateFn, key, {
-        get() { return rawAny[key]; },
-        set(v: any) { rawAny[key] = v; },
-        configurable: true,
-      });
+      try {
+        Object.defineProperty(taggedTemplateFn, key, {
+          get() { return rawAny[key]; },
+          set(v: any) { rawAny[key] = v; },
+          configurable: true,
+        });
+      } catch {
+        // 忽略不可配置的属性
+      }
     }
   }
 
@@ -567,19 +582,22 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
   const proto = Object.getPrototypeOf(rawAny);
   if (proto && proto !== Object.prototype) {
     for (const key of Object.getOwnPropertyNames(proto)) {
-      if (key === 'constructor' || key === 'prototype' || key === 'caller' || key === 'callee' || key === 'arguments') continue;
-      // 用 Object.prototype.hasOwnProperty 判断，避免访问严格模式禁止的属性
+      if (key === 'constructor' || FUNC_RESERVED.has(key)) continue;
       if (Object.prototype.hasOwnProperty.call(taggedTemplateFn, key)) continue;
       const desc = Object.getOwnPropertyDescriptor(proto, key);
       if (!desc) continue;
       if (typeof desc.value === 'function') {
         (taggedTemplateFn as any)[key] = function (...args: any[]) { return desc.value.apply(raw, args); };
       } else if (desc.get || desc.set) {
-        Object.defineProperty(taggedTemplateFn, key, {
-          get: desc.get ? () => (desc.get as Function).call(raw) : undefined,
-          set: desc.set ? (v: any) => (desc.set as Function).call(raw, v) : undefined,
-          configurable: true,
-        });
+        try {
+          Object.defineProperty(taggedTemplateFn, key, {
+            get: desc.get ? () => (desc.get as Function).call(raw) : undefined,
+            set: desc.set ? (v: any) => (desc.set as Function).call(raw, v) : undefined,
+            configurable: true,
+          });
+        } catch {
+          // 忽略不可配置的属性
+        }
       }
     }
   }
