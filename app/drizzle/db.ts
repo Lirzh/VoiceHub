@@ -168,17 +168,50 @@ for (const key of Object.keys(schema)) {
 // ---------- DDL 生成器 ----------
 
 function pgTypeOfColumn(col: PgColumn): string {
-  // drizzle-orm 的 pg-column 上有 `sqlType`，但它是内部字段。
-  // 使用 toString() 得到如 "integer" / "text" / "timestamp" / "uuid" / "varchar(255)" 等
-  // 但更稳妥是调用 col.build() 并检查其 sqlType/列定义。这里使用已公开属性的兜底推断。
+  // drizzle-orm 内部类型名映射到标准 PG 类型
+  const DRIZZLE_TYPE_MAP: Record<string, string> = {
+    pgserial: 'SERIAL',
+    pgbigserial: 'BIGSERIAL',
+    pguuid: 'UUID',
+    pgjson: 'JSON',
+    pgjsonb: 'JSONB',
+    pgboolean: 'BOOLEAN',
+    pginteger: 'INTEGER',
+    pgsmallint: 'SMALLINT',
+    pgbigint: 'BIGINT',
+    pgtext: 'TEXT',
+    pgvarchar: 'VARCHAR',
+    pgchar: 'CHAR',
+    pgtimestamp: 'TIMESTAMP',
+    pgdate: 'DATE',
+    pgtime: 'TIME',
+    pginterval: 'INTERVAL',
+    pgnumeric: 'NUMERIC',
+    pgreal: 'REAL',
+    pgdouble precision: 'DOUBLE PRECISION',
+    pgbytea: 'BYTEA',
+    pginet: 'INET',
+    cidr: 'CIDR',
+    pgmacaddr: 'MACADDR',
+    pgmoney: 'MONEY',
+    pgbit: 'BIT',
+    pgvarbit: 'VARBIT',
+  };
+
   try {
     const b: any = (col as any)._;
-    if (b?.sqlType) return String(b.sqlType).toUpperCase();
+    if (b?.sqlType) {
+      const raw = String(b.sqlType).toLowerCase();
+      return DRIZZLE_TYPE_MAP[raw] ?? String(b.sqlType).toUpperCase();
+    }
   } catch {}
   // 通过 column 的底层 builder 推断
   const raw: any = col;
   const sqlType: string | undefined = raw.sqlType || raw.columnType;
-  if (sqlType) return sqlType.toUpperCase();
+  if (sqlType) {
+    const lower = String(sqlType).toLowerCase();
+    return DRIZZLE_TYPE_MAP[lower] ?? String(sqlType).toUpperCase();
+  }
 
   // 兜底：根据列的 JS 类型做粗略推断
   const dataType: string = (raw.dataType || '').toLowerCase();
