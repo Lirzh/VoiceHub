@@ -152,6 +152,27 @@ function qIdent(name: string): string {
   return `"${name.replace(/"/g, '""')}"`;
 }
 
+async function relationExists(c: PostgresSql, name: string): Promise<boolean> {
+  const r = await c`SELECT EXISTS(
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = current_schema() AND table_name = ${name.toLowerCase()}
+  ) AS e`;
+  return r[0]?.e === true;
+}
+
+async function columnExists(c: PostgresSql, table: string, col: string): Promise<boolean> {
+  const r = await c`SELECT EXISTS(
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema() AND table_name = ${table.toLowerCase()} AND column_name = ${col.toLowerCase()}
+  ) AS e`;
+  return r[0]?.e === true;
+}
+
+async function enumTypeExists(c: PostgresSql, name: string): Promise<boolean> {
+  const r = await c`SELECT EXISTS(SELECT 1 FROM pg_type WHERE typname = ${name.toLowerCase()}) AS e`;
+  return r[0]?.e === true;
+}
+
 function defaultClauseFor(col: any): string {
   const def = col.default;
   if (def === undefined || def === null) return '';
@@ -304,8 +325,8 @@ function addColumnDDL(table: PgTable, columnName: string): string | null {
       `DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_attribute
-    WHERE attrelid = ${tblIdent}::regclass
-      AND attname = ${colIdent}
+    WHERE attrelid = to_regclass(${JSON.stringify(cfg.name)})
+      AND attname = ${JSON.stringify(col.name)}
       AND attnotnull = true
   ) THEN
     ALTER TABLE ${tblIdent} ALTER COLUMN ${colIdent} SET NOT NULL;
@@ -321,7 +342,7 @@ END $$;`,
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint
     WHERE conname = ${qIdent(`${cfg.name}_pkey`)}
-      AND conrelid = ${qIdent(cfg.name)}::regclass
+      AND conrelid = to_regclass(${JSON.stringify(cfg.name)})
   ) THEN
     ALTER TABLE ${tblIdent} ADD PRIMARY KEY (${colIdent});
   END IF;
