@@ -498,12 +498,13 @@ function buildWrappedClient(raw: PostgresSql): PostgresSql {
     }
   }
 
-  // 透传原型方法
+  // 透传原型方法（跳过严格模式禁止访问的属性）
   const proto = Object.getPrototypeOf(rawAny);
   if (proto && proto !== Object.prototype) {
     for (const key of Object.getOwnPropertyNames(proto)) {
-      if ((taggedTemplateFn as any)[key] !== undefined) continue;
-      if (key === 'constructor' || key === 'prototype') continue;
+      if (key === 'constructor' || key === 'prototype' || key === 'caller' || key === 'callee' || key === 'arguments') continue;
+      // 用 Object.prototype.hasOwnProperty 判断，避免访问严格模式禁止的属性
+      if (Object.prototype.hasOwnProperty.call(taggedTemplateFn, key)) continue;
       const desc = Object.getOwnPropertyDescriptor(proto, key);
       if (!desc) continue;
       if (typeof desc.value === 'function') {
