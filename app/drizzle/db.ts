@@ -168,6 +168,7 @@ for (const key of Object.keys(schema)) {
 // ---------- DDL 生成器 ----------
 
 function pgTypeOfColumn(col: PgColumn): string {
+  diag('ddl:type', `推断列类型: name="${col.name}", ctor="${col?.constructor?.name}", dataType="${(col as any)?.dataType}"`);
   // drizzle-orm 内部类型名映射到标准 PG 类型
   const DRIZZLE_TYPE_MAP: Record<string, string> = {
     pgserial: 'SERIAL',
@@ -202,7 +203,13 @@ function pgTypeOfColumn(col: PgColumn): string {
     const b: any = (col as any)._;
     if (b?.sqlType) {
       const raw = String(b.sqlType).toLowerCase();
-      return DRIZZLE_TYPE_MAP[raw] ?? String(b.sqlType).toUpperCase();
+      if (DRIZZLE_TYPE_MAP[raw]) return DRIZZLE_TYPE_MAP[raw];
+      // 兜底：strip 'pg' 前缀 + 多关键字还原
+      const stripped = raw.replace(/^pg/, '');
+      if (DRIZZLE_TYPE_MAP[stripped]) return DRIZZLE_TYPE_MAP[stripped];
+      // 已知需空格还原的（pgdouble precision 之类）
+      if (stripped === 'doubleprecision') return 'DOUBLE PRECISION';
+      return String(b.sqlType).toUpperCase();
     }
   } catch {}
   // 通过 column 的底层 builder 推断
@@ -210,8 +217,37 @@ function pgTypeOfColumn(col: PgColumn): string {
   const sqlType: string | undefined = raw.sqlType || raw.columnType;
   if (sqlType) {
     const lower = String(sqlType).toLowerCase();
-    return DRIZZLE_TYPE_MAP[lower] ?? String(sqlType).toUpperCase();
+    if (DRIZZLE_TYPE_MAP[lower]) return DRIZZLE_TYPE_MAP[lower];
+    const stripped = lower.replace(/^pg/, '');
+    if (DRIZZLE_TYPE_MAP[stripped]) return DRIZZLE_TYPE_MAP[stripped];
+    if (stripped === 'doubleprecision') return 'DOUBLE PRECISION';
+    return String(sqlType).toUpperCase();
   }
+
+  // 兜底：先看构造函数名（drizzle 的列类名：PgSerial / PgInteger / ...）
+  const ctorName = (raw.constructor?.name || '').toLowerCase();
+  if (ctorName.includes('serial')) {
+    if (ctorName.includes('big')) return 'BIGSERIAL';
+    return 'SERIAL';
+  }
+  if (ctorName.includes('uuid')) return 'UUID';
+  if (ctorName.includes('jsonb')) return 'JSONB';
+  if (ctorName.includes('json')) return 'JSON';
+  if (ctorName.includes('boolean')) return 'BOOLEAN';
+  if (ctorName.includes('timestamp')) return 'TIMESTAMP';
+  if (ctorName.includes('integer')) return 'INTEGER';
+  if (ctorName.includes('smallint')) return 'SMALLINT';
+  if (ctorName.includes('bigint')) return 'BIGINT';
+  if (ctorName.includes('varchar')) return 'VARCHAR';
+  if (ctorName.includes('text')) return 'TEXT';
+  if (ctorName.includes('numeric') || ctorName.includes('decimal')) return 'NUMERIC';
+  if (ctorName.includes('real') || ctorName.includes('float')) return 'REAL';
+  if (ctorName.includes('double')) return 'DOUBLE PRECISION';
+  if (ctorName.includes('date')) return 'DATE';
+  if (ctorName.includes('time')) return 'TIME';
+  if (ctorName.includes('bytea')) return 'BYTEA';
+  if (ctorName.includes('inet')) return 'INET';
+  if (ctorName.includes('cidr')) return 'CIDR';
 
   // 兜底：根据列的 JS 类型做粗略推断
   const dataType: string = (raw.dataType || '').toLowerCase();
@@ -257,7 +293,7 @@ function buildTableDDL(table: PgTable): string {
   for (const col of columns) {
     const colName: string = col.name;
     let typeName = pgTypeOfColumn(col);
-    devLog('ddl:table:col', `  列 "${colName}" → PG type="${typeName}"`);
+    diag('ddl:table:col', `  列 "${colName}" → PG type="${typeName}" (ctor=${col?.constructor?.name})`);
 
     // 如果列是 enum 类型，先补全枚举 DDL
     const enumRef: string | undefined = (col as any)._?.enumName || (col as any)._?.type;
