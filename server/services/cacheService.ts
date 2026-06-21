@@ -929,9 +929,17 @@ class CacheService {
     // 检查是否有正在进行的刷新操作
     if (refreshLocks.has(lockKey)) {
       try {
-        return await refreshLocks.get(lockKey)!
+        // Promise.race：如果 dataLoader 挂起（数据库慢 / Redis 连接异常），
+        // 最多等待 30s，避免调用方永远阻塞。超时返回 null，让调用方走 fallback。
+        const result = await Promise.race([
+          refreshLocks.get(lockKey)!,
+          new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error('refresh lock timeout: 30s')), 30_000)
+          )
+        ])
+        return result
       } catch (error) {
-        console.error(`[Cache] 等待刷新锁失败: ${lockKey}`, error)
+        console.error(`[Cache] 等待刷新锁失败/超时: ${lockKey}`, error)
         return null
       }
     }
