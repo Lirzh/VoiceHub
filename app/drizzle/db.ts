@@ -572,6 +572,15 @@ function wrapPendingQuery(
 }
 
 function wrapClientWithLazySchema(inner: PostgresSql): PostgresSql {
+  // [PROD-DIAG] 写文件，确保即使 stderr 被吞也能看到
+  try {
+    // eslint-disable-next-line no-console
+    console.error('[DB-PROD] wrapClientWithLazySchema CALLED at', new Date().toISOString());
+    // eslint-disable-next-line no-console
+    console.error('[DB-PROD] inner.unsafe type =', typeof (inner as any)?.unsafe);
+    // eslint-disable-next-line no-console
+    console.error('[DB-PROD] CALL_STACK:', new Error('wrap call').stack?.split('\n').slice(0, 8).join(' | '));
+  } catch (e) { /* ignore */ }
   const handler: ProxyHandler<PostgresSql> = {
     get(target, prop, receiver) {
       const key = String(prop);
@@ -582,6 +591,11 @@ function wrapClientWithLazySchema(inner: PostgresSql): PostgresSql {
         const bound = this === receiver ? target : this;
         const replay = () => original.apply(bound, args);
         const pq = replay();
+        try {
+          // [PROD-DIAG]
+          // eslint-disable-next-line no-console
+          console.error('[DB-PROD] client.' + key + '() called, pq.type=', typeof pq, 'pq.then=', typeof pq?.then, 'pq.values=', typeof pq?.values);
+        } catch (e) { /* ignore */ }
         if (pq && typeof pq === 'object' && typeof pq.then === 'function') {
           return wrapPendingQuery(inner, pq, replay);
         }
@@ -591,6 +605,12 @@ function wrapClientWithLazySchema(inner: PostgresSql): PostgresSql {
     apply(target, thisArg, args) {
       const replay = () => target.apply(thisArg, args);
       const pq = replay();
+      try {
+        // eslint-disable-next-line no-console
+        const firstArg = (args[0] as any)?.raw?.[0] || '?';
+        // eslint-disable-next-line no-console
+        console.error('[DB-PROD] client(' + firstArg + ') called, pq.values=', typeof pq?.values);
+      } catch (e) { /* ignore */ }
       if (pq && typeof pq === 'object' && typeof pq.then === 'function') {
         return wrapPendingQuery(inner, pq, replay);
       }
