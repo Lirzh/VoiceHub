@@ -76,14 +76,26 @@ const getDatabaseConfig = () => {
 // 5. 重新执行原始查询
 // ============================================================
 
+diag('module:load', 'db.ts 开始加载, cwd=', process.cwd());
+
 const IS_DEV = process.env.NODE_ENV === 'development';
 
-// ---------- 开发环境日志工具 ----------
+// ---------- 日志工具（总是写到 stderr，方便区分 stdout） ----------
 function devLog(prefix: string, ...parts: unknown[]) {
   if (!IS_DEV) return;
   const ts = new Date().toISOString().slice(11, 23);
-  console.debug(`[lazy-schema][${ts}][${prefix}]`, ...parts);
+  // eslint-disable-next-line no-console
+  console.error(`[lazy-schema][${ts}][${prefix}]`, ...parts);
 }
+
+// ---------- 强制诊断日志（NODE_ENV=production 也输出，方便调试） ----------
+function diag(prefix: string, ...parts: unknown[]) {
+  // eslint-disable-next-line no-console
+  console.error(`[DIAG][${prefix}]`, ...parts);
+}
+
+// 模块加载时立即输出，确认 tsx 加载的是正确文件
+diag('diag:boot', `db.ts loaded at ${new Date().toISOString()}, pid=${process.pid}`);
 
 function devGroup(label: string, fn: () => unknown): unknown {
   if (!IS_DEV) return fn();
@@ -370,7 +382,7 @@ type ParsedError =
 function parsePgError(err: any): ParsedError {
   const code: string | undefined = err?.code ?? err?.sqlstate;
   const msg: string = (err?.message || err?.msg || '').toString();
-  devLog('error:parse', `收到 PG 错误: code=${code}, msg="${msg.slice(0, 200)}"`);
+  diag('error:parse', `收到 PG 错误: code=${code}, msg="${msg.slice(0, 200)}"`);
 
   if (code === '42P01' || /relation .+ does not exist/i.test(msg)) {
     const m = msg.match(/relation\s+"([^"]+)"\s+does not exist/i);
@@ -541,7 +553,7 @@ function wrapPendingQuery(
 ): any {
   if (!pendingQuery || typeof pendingQuery !== 'object') return pendingQuery;
 
-  devLog('pq:wrap', `包装 PendingQuery (depth=${_depth})`);
+  diag('pq:wrap', `包装 PendingQuery (depth=${_depth})`);
 
   // postgres PendingQuery 实例的已知链式方法（Object.defineProperty 实例属性，非 prototype）
   const CHAIN_METHODS = new Set([
@@ -591,7 +603,7 @@ function wrapPendingQuery(
 
       // 链式方法：直接转发到原始 PendingQuery，方法返回值如果是 thenable 则再包装
       if (CHAIN_METHODS.has(key)) {
-        devLog('pq:chain', `转发链式方法 .${key}()`);
+        diag('pq:chain', `转发链式方法 .${key}()，原始方法类型:`, typeof target[key]);
         return function (...args: any[]) {
           const methodResult = (target as any)[key]?.apply(target, args);
           if (methodResult && typeof methodResult === 'object' && typeof methodResult.then === 'function') {
@@ -610,6 +622,7 @@ function wrapPendingQuery(
 }
 
 function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
+  diag('wrap:enter', 'wrapClientWithLazySchema 被调用');
   // postgres client 上返回 PendingQuery 的方法（这些需要被包装）
   const PQ_METHODS = new Set([
     'unsafe', 'begin', 'savepoint', 'end',
@@ -626,6 +639,7 @@ function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
 
       // 返回 PendingQuery 的方法 → 包装
       if (PQ_METHODS.has(key)) {
+        diag('wrap:method', `拦截方法 .${key}()，返回包装后的 PendingQuery`);
         return function (this: any, ...args: any[]) {
           devLog('proxy:call:pq', `调用 ${key}(${summarizeArgs(args)})`);
           const boundThis = this === receiver ? target : this;
@@ -652,18 +666,26 @@ function wrapClientWithLazySchema(rawClient: PostgresSql): PostgresSql {
     },
   };
 
-  return new Proxy(rawClient, handler) as PostgresSql;
+  const proxied = new Proxy(rawClient, handler) as PostgresSql;
+  diag('wrap:exit', 'wrapClientWithLazySchema 完成，返回 proxied client');
+  return proxied;
 }
 
 // ============================================================
 // 主 client / db 实例
 // ============================================================
 
+diag('main:raw', 'rawClient 创建中...');
 const rawClient = postgres(connectionString, getDatabaseConfig());
-const client: PostgresSql = wrapClientWithLazySchema(rawClient);
+diag('main:raw', 'rawClient 创建完成，typeof rawClient.unsafe =', typeof rawClient.unsafe);
 
+const client: PostgresSql = wrapClientWithLazySchema(rawClient);
+diag('main:wrap', 'wrapped client 创建完成，typeof client.unsafe =', typeof client.unsafe);
+
+diag('main:drizzle', '调用 drizzle(client, {schema})...');
 // 创建Drizzle数据库实例
 export const db: PostgresJsDatabase<typeof schema> = drizzle(client, { schema });
+diag('main:drizzle', 'drizzle() 完成');
 
 // 导出连接客户端（用于手动查询或关闭连接）
 export { client };
