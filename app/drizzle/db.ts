@@ -369,6 +369,8 @@ function stripSchema(name: string): string {
 
 function parsePgError(err: any): Parsed {
   const msg = String(err?.message || err?.msg || '');
+  const code: string | undefined = err?.code ?? err?.sqlstate;
+
   // 1) relation "X" does not exist  (X 可能是 schema.table — 我们只取 table)
   let m = msg.match(/relation\s+"?([^"\s]+)"?\s+does not exist/i);
   if (m) return {kind: 'relation', name: stripSchema(m[1])};
@@ -378,6 +380,10 @@ function parsePgError(err: any): Parsed {
   // 3) type "X" does not exist
   m = msg.match(/type\s+"?([^"\s]+)"?\s+does not exist/i);
   if (m) return {kind: 'type', name: stripSchema(m[1])};
+  // 4) null value in column "X" of relation "Y" violates not-null constraint (23502)
+  //    这通常是因为列缺少 DEFAULT 值，可以通过 addColumnDDL 补 DEFAULT 修复
+  m = msg.match(/null value in column\s+"?([^"\s]+)"?\s+of\s+relation\s+"?([^"\s]+)"?\s+violates not-null constraint/i);
+  if (m) return {kind: 'column', column: m[1], relation: stripSchema(m[2])};
   return {kind: 'unknown'};
 }
 
