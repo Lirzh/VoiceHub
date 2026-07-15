@@ -1,0 +1,383 @@
+/* ═══════════════════════════════════════════════════════════════════
+ * VoiceHub Light Theme — 完整版
+ * 包含颜色变量 + body 级全局样式 + 响应式布局
+ * ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  /* ── 颜色变量 ── */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: rgba(59, 130, 246, 0.1);
+  --primary-border: rgba(59, 130, 246, 0.2);
+  --success: #10b981;
+  --success-hover: #059669;
+  --success-light: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.2);
+  --warning: #f59e0b;
+  --warning-hover: #d97706;
+  --warning-light: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.2);
+  --error: #ef4444;
+  --error-hover: #dc2626;
+  --error-light: rgba(239, 68, 68, 0.1);
+  --error-border: rgba(239, 68, 68, 0.2);
+  --info: #3b82f6;
+  --info-hover: #2563eb;
+  --info-light: rgba(59, 130, 246, 0.1);
+  --info-border: rgba(59, 130, 246, 0.2);
+
+  /* ── 背景色（浅色） ── */
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --bg-quaternary: #e5e7eb;
+  --bg-hover: #f3f4f6;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-overlay-light: rgba(0, 0, 0, 0.3);
+  --bg-glass: rgba(255, 255, 255, 0.85);
+
+  /* ── 文字色（深色） ── */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --text-quaternary: #d1d5db;
+  --text-disabled: #e5e7eb;
+  --text-inverse: #ffffff;
+
+  /* ── 边框色（浅色） ── */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-tertiary: #9ca3af;
+  --border-quaternary: #6b7280;
+
+  /* ── 特殊状态色 ── */
+  --status-pending: #fbbf24;
+  --status-pending-light: rgba(251, 191, 36, 0.15);
+  --status-approved: #10b981;
+  --status-approved-light: rgba(16, 185, 129, 0.15);
+  --status-played: #6b7280;
+  --status-played-light: rgba(107, 114, 128, 0.1);
+
+  /* ── 组件：按钮 ── */
+  --btn-primary-bg: var(--primary);
+  --btn-primary-hover: var(--primary-hover);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: var(--primary-border);
+  --btn-secondary-bg: #f3f4f6;
+  --btn-secondary-hover: #e5e7eb;
+  --btn-secondary-text: #111827;
+  --btn-secondary-border: #d1d5db;
+  --btn-success-bg: var(--success);
+  --btn-success-hover: var(--success-hover);
+  --btn-success-text: #ffffff;
+  --btn-success-border: var(--success-border);
+  --btn-warning-bg: var(--warning);
+  --btn-warning-hover: var(--warning-hover);
+  --btn-warning-text: #111827;
+  --btn-warning-border: var(--warning-border);
+  --btn-error-bg: var(--error);
+  --btn-error-hover: var(--error-hover);
+  --btn-error-text: #ffffff;
+  --btn-error-border: var(--error-border);
+  --btn-disabled-bg: #e5e7eb;
+  --btn-disabled-text: #9ca3af;
+
+  /* ── 组件：输入框 ── */
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --input-border-focus: var(--primary);
+  --input-text: #111827;
+  --input-placeholder: #9ca3af;
+  --input-shadow-focus: 0 0 0 3px var(--primary-light);
+
+  /* ── 组件：模态框 ── */
+  --modal-backdrop: rgba(0, 0, 0, 0.5);
+  --modal-bg: #ffffff;
+  --modal-border: #e5e7eb;
+  --modal-header-border: #e5e7eb;
+  --modal-footer-border: #e5e7eb;
+
+  /* ── 组件：通知 Toast ── */
+  --notification-success-bg: var(--success-light);
+  --notification-success-border: var(--success-border);
+  --notification-success-text: #065f46;
+  --notification-warning-bg: var(--warning-light);
+  --notification-warning-border: var(--warning-border);
+  --notification-warning-text: #92400e;
+  --notification-error-bg: var(--error-light);
+  --notification-error-border: var(--error-border);
+  --notification-error-text: #991b1b;
+  --notification-info-bg: var(--info-light);
+  --notification-info-border: var(--info-border);
+  --notification-info-text: #1e40af;
+
+  /* ── 组件：卡片 ── */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --card-hover-border: #d1d5db;
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+
+  /* ── 组件：表格 ── */
+  --table-header-bg: #f3f4f6;
+  --table-row-bg: #ffffff;
+  --table-row-hover: #f9fafb;
+  --table-border: #e5e7eb;
+  --table-selected: var(--primary-light);
+
+  /* ── 组件：徽章 ── */
+  --badge-default-bg: #f3f4f6;
+  --badge-default-text: #374151;
+  --badge-default-border: #d1d5db;
+  --badge-success-bg: rgba(16, 185, 129, 0.1);
+  --badge-success-text: #065f46;
+  --badge-warning-bg: rgba(245, 158, 11, 0.1);
+  --badge-warning-text: #92400e;
+  --badge-error-bg: rgba(239, 68, 68, 0.1);
+  --badge-error-text: #991b1b;
+
+  /* ── 组件：下拉菜单 ── */
+  --select-bg: #ffffff;
+  --select-hover: #f3f4f6;
+  --select-border: #d1d5db;
+  --select-text: #111827;
+  --select-placeholder: #9ca3af;
+
+  /* ── 组件：滚动条 ── */
+  --scrollbar-track: #f3f4f6;
+  --scrollbar-thumb: #d1d5db;
+  --scrollbar-thumb-hover: #9ca3af;
+
+  /* ── 组件：加载/骨架屏 ── */
+  --spinner-primary: var(--primary);
+  --spinner-secondary: #f3f4f6;
+  --skeleton-base: #f3f4f6;
+  --skeleton-highlight: #e5e7eb;
+
+  /* ── 组件：导航/侧栏 ── */
+  --nav-bg: #f9fafb;
+  --nav-item-bg: #ffffff;
+  --nav-item-hover: #f3f4f6;
+  --nav-item-active: #e5e7eb;
+  --nav-item-active-border: var(--primary);
+  --nav-text: #6b7280;
+  --nav-text-active: #111827;
+
+  /* ── 组件：投票 ── */
+  --vote-heart: #ef4444;
+  --vote-heart-hover: #dc2626;
+  --vote-count: #9ca3af;
+
+  /* ── 阴影 ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+
+  /* ── 圆角 / 间距 / 字体 / 动画 / z-index（与 dark 一致） ── */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  --z-app-loader: 9000;
+
+  /* ── body 级全局样式 ── */
+  color-scheme: light;
+
+  body {
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    font-size: var(--text-base);
+  }
+
+  body::before {
+    background:
+      radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.01) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.02) 0%, transparent 50%);
+  }
+
+  /* 全局滚动条样式 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--radius-md);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+  }
+
+  /* 全局选择文本样式 */
+  ::selection {
+    background: var(--primary-light);
+    color: var(--text-primary);
+  }
+
+  /* 全局焦点样式 */
+  *:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* 全局禁用状态样式 */
+  *:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* 全局链接样式 */
+  a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: color var(--transition-normal);
+  }
+
+  a:hover {
+    color: var(--primary-hover);
+  }
+
+  /* 全局按钮重置 */
+  button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    *:focus {
+      outline: none !important;
+    }
+    button,
+    a {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  }
+
+  /* 全局输入框重置 */
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  /* 全局图片样式 */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* 全局表格样式 */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  /* 全局代码样式 */
+  code,
+  pre {
+    font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+  }
+
+  code {
+    padding: 2px 4px;
+    font-size: 0.875em;
+  }
+
+  pre {
+    padding: var(--spacing-lg);
+    overflow-x: auto;
+  }
+
+  pre code {
+    padding: 0;
+    background: none;
+  }
+
+  /* 响应式 */
+  @media (max-width: 640px) {
+    *:focus {
+      outline: none !important;
+    }
+
+    .home {
+      padding: 0 !important;
+    }
+
+    .main-content {
+      grid-template-columns: 1fr !important;
+      gap: 2rem !important;
+    }
+
+    .action-card {
+      padding: 0.75rem !important;
+    }
+
+    .modal-content {
+      width: 95% !important;
+      max-width: none !important;
+    }
+  }
+}

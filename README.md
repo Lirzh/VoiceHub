@@ -732,8 +732,12 @@ VoiceHub/
 │   │       ├── print-fix.css      # 打印样式修复
 │   │       ├── sf-pro-icons.css   # SF Pro图标字体
 │   │       ├── theme-protection.css # 主题保护样式
+│   │       ├── themes/            # 主题系统目录
+│   │       │   ├── _index.css     # 主题集中入口
+│   │       │   ├── dark.css       # 深色主题
+│   │       │   └── light.css      # 浅色主题
 │   │       ├── transitions.css    # 过渡动画样式
-│   │       ├── variables.css      # CSS变量定义
+│   │       ├── variables.css      # 全局样式重置
 │   │       └── year-review.css    # 年度回顾样式
 │   ├── components/            # Vue组件目录
 │   │   ├── Admin/             # 管理员功能组件
@@ -2013,6 +2017,133 @@ const transformMusicApiResponse = (response: any): any[] => {
     .filter(Boolean)
 }
 ```
+
+---
+
+### 主题系统扩展指南
+
+VoiceHub 采用文件级主题架构，每个主题一个 CSS 文件，通过 `data-theme` 属性选择器实现切换。
+
+#### 主题文件结构
+
+```
+app/assets/css/themes/
+├── _index.css      # 主题集中入口（在此 @import 所有主题文件）
+├── dark.css        # 深色主题
+└── light.css       # 浅色主题
+```
+
+#### 步骤一：创建主题 CSS 文件
+
+在 `app/assets/css/themes/` 下新建文件，例如 `my-theme.css`。
+
+文件内容必须包裹在 `[data-theme="my-theme"]` 选择器下，包含两大部分：
+
+**① 颜色与语义变量**
+
+```css
+[data-theme="my-theme"] {
+  /* 主色系 */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: rgba(59, 130, 246, 0.1);
+  --primary-border: rgba(59, 130, 246, 0.2);
+
+  /* 语义色 */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* 背景色 */
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3f4f6;
+  --bg-hover: #f3f4f6;
+
+  /* 文字色 */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+
+  /* 边框色 */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+
+  /* 圆角 / 间距 / 字体 / 动画 / z-index */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  /* ... 更多变量参考 dark.css / light.css ... */
+}
+```
+
+**② body 级全局样式**
+
+在同一个 `[data-theme="my-theme"]` 内，写出所有使用 `var(--xxx)` 的全局样式规则（`body`、`*`、`::selection`、`*:focus`、`a`、`button`、`code`、`pre`、响应式断点等）。这些样式**必须**与变量定义在**同一个选择器块**内，以保证 CSS 变量正确解析。
+
+```css
+[data-theme="my-theme"] {
+  /* ... 变量 ... */
+
+  color-scheme: light; /* 或 dark */
+
+  body {
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    font-size: var(--text-base);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  ::selection {
+    background: var(--primary-light);
+    color: var(--text-primary);
+  }
+
+  /* ... 更多全局规则参考 dark.css / light.css ... */
+}
+```
+
+> **关键约束**：所有使用 `var(--xxx)` 的 CSS 规则必须与变量定义在**同一个 `[data-theme="..."]` 块内**。不得在全局（块外）使用 `var(--xxx)`，否则变量无法被正确解析。
+
+#### 步骤二：注册主题
+
+1. 在 `_index.css` 中引入新主题文件：
+   ```css
+   @import url('./my-theme.css');
+   ```
+
+2. 在 `app/composables/useTheme.ts` 中注册主题：
+   ```typescript
+   const THEMES = ['dark', 'light', 'my-theme']
+   const THEME_LABELS = { dark: '深色主题', light: '浅色主题', 'my-theme': '我的主题' }
+   const THEME_ICONS = { dark: 'moon', light: 'sun', 'my-theme': 'palette' }
+   ```
+
+3. 下拉菜单选项自动根据 `THEMES` 数组和 `THEME_LABELS` 映射动态生成，无需手动修改页面模板。
+
+#### 主题切换机制
+
+- 切换时调用 `theme.setTheme(name)`，将 `data-theme="name"` 写入 `<html>` 根元素
+- 主题名同时存入 `localStorage`（key: `voicehub-theme`），刷新后自动恢复
+- 无需数据库支持，纯前端行为
+
+#### 注意事项
+
+- **一个文件 = 一个主题**，所有样式和变量保持在同一文件内
+- 变量名应与现有主题保持一致（`--primary`、`--bg-primary` 等），否则组件样式会失效
+- 完整的变量/样式清单参考 `dark.css` 或 `light.css`
 
 ## 贡献说明
 

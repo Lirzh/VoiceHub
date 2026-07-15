@@ -45,6 +45,30 @@
                 </div>
               </div>
 
+              <!-- 主题切换按钮 -->
+              <button
+                ref="themeBtnRef"
+                class="theme-btn"
+                @click="toggleThemeActions"
+              >
+                主题
+              </button>
+
+              <!-- 主题下拉菜单 -->
+              <Transition name="dropdown-fade">
+                <div v-if="showThemeActions" ref="themeDropdownRef" class="user-actions-dropdown theme-actions-dropdown">
+                  <button
+                    v-for="t in theme.THEMES"
+                    :key="t"
+                    class="action-item"
+                    :class="{ active: theme.currentTheme === t }"
+                    @click="selectTheme(t)"
+                  >
+                    <span>{{ theme.THEME_LABELS[t] }}</span>
+                  </button>
+                </div>
+              </Transition>
+
               <Transition name="dropdown-fade">
                 <div v-if="showUserActions" class="user-actions-dropdown">
                   <NuxtLink class="action-item" to="/account">
@@ -653,6 +677,7 @@ import AppLoadingScreen from '~/components/UI/AppLoadingScreen.vue'
 
 import { useNotifications } from '~/composables/useNotifications'
 import { useSiteConfig } from '~/composables/useSiteConfig'
+import { useTheme } from '~/composables/useTheme'
 import CustomSelect from '~/components/UI/Common/CustomSelect.vue'
 
 // 获取运行时配置
@@ -708,6 +733,7 @@ const isRequestOpen = ref(true)
 const showRequestModal = ref(false)
 const showRules = ref(false)
 const showUserActions = ref(false)
+const showThemeActions = ref(false)
 const avatarError = ref(false)
 
 const BOOT_PROGRESS = {
@@ -779,6 +805,18 @@ const toggleUserActions = (event) => {
   showUserActions.value = !showUserActions.value
 }
 
+const toggleThemeActions = (event) => {
+  event.stopPropagation()
+  showThemeActions.value = !showThemeActions.value
+  // 关闭用户下拉菜单
+  showUserActions.value = false
+}
+
+const selectTheme = (themeName) => {
+  theme.setTheme(themeName)
+  showThemeActions.value = false
+}
+
 // 监听用户头像变化，重置错误状态
 watch(
   () => user.value?.avatar,
@@ -794,6 +832,11 @@ const handleClickOutside = (event) => {
     const avatar = document.querySelector('.user-avatar-wrapper')
     if (dropdown && !dropdown.contains(event.target) && !avatar.contains(event.target)) {
       showUserActions.value = false
+    }
+  }
+  if (showThemeActions.value) {
+    if (themeDropdownRef.value && !themeDropdownRef.value.contains(event.target) && themeBtnRef.value && !themeBtnRef.value.contains(event.target)) {
+      showThemeActions.value = false
     }
   }
 }
@@ -817,6 +860,8 @@ const activeIndex = computed(() => {
 
 // 通知按钮强制更新相关
 const notificationTabRef = ref(null)
+const themeDropdownRef = ref(null)
+const themeBtnRef = ref(null)
 const hasInitializedAuthData = ref(isClientAuthenticated.value)
 
 let refreshInterval = null
@@ -1485,6 +1530,9 @@ const updateNotificationCount = async () => {
 }
 
 // 处理登出
+// 主题切换
+const theme = useTheme()
+
 const handleLogout = () => {
   if (auth) {
     auth.logout()
@@ -3634,5 +3682,35 @@ if (
 .login-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 67, 248, 0.3);
+}
+
+/* 主题按钮 */
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-lg);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  transition: all var(--transition-normal);
+  margin-left: var(--spacing-sm);
+  white-space: nowrap;
+}
+
+.theme-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* 主题下拉菜单选中态 */
+.theme-actions-dropdown .action-item.active {
+  background: var(--primary-light);
+  color: var(--primary);
 }
 </style>

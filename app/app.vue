@@ -29,6 +29,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 // 导入通知容器组件和音频播放器
 import { useAudioPlayer } from '~/composables/useAudioPlayer'
 import { useAuth } from '~/composables/useAuth'
+import { useTheme } from '~/composables/useTheme'
 import { useRoute } from 'vue-router'
 
 // 获取运行时配置
@@ -192,6 +193,9 @@ const setupHarmonyOSListeners = () => {
   window.addEventListener('harmonyos-previous', handleHarmonyOSPrevious)
 }
 
+// 主题管理
+const theme = useTheme()
+
 // 在组件挂载后初始化认证（只会在客户端执行）
 onMounted(async () => {
   auth = useAuth()
@@ -199,6 +203,9 @@ onMounted(async () => {
 
   // 初始化鸿蒙系统控制事件监听
   setupHarmonyOSListeners()
+
+  // 初始化主题（从 localStorage 恢复）
+  theme.initTheme()
 })
 
 // 使用计算属性确保安全地访问auth对象
