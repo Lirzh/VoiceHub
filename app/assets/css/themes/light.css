@@ -2070,6 +2070,26 @@
     outline-offset: 2px;
   }
 
+
+  /* 全局输入框样式 */
+  input,
+  textarea,
+  select {
+    background-color: var(--components_Auth_ChangePasswordForm_bg-input);
+    color: var(--components_Auth_ChangePasswordForm_text-input);
+    border-color: var(--components_Auth_ChangePasswordForm_border);
+  }
+
+  /* 输入框 autofill 样式 */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px var(--components_Auth_ChangePasswordForm_bg-input) inset;
+    -webkit-text-fill-color: var(--components_Auth_ChangePasswordForm_text-input);
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
   *:focus:not(:focus-visible) {
     outline: none;
   }

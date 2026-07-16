@@ -214,7 +214,7 @@ const loading = ref(false)
 
 // 样式类
 const inputClass =
-  'w-full bg-[var(--components_Auth_ChangePasswordForm_bg-input)] border rounded-xl pl-11 pr-11 py-3 text-sm text-[var(--components_Auth_ChangePasswordForm_text-input)] placeholder:text-[var(--components_Auth_ChangePasswordForm_text-placeholder)] focus:outline-none transition-all'
+  'w-full bg-[var(--components_Auth_ChangePasswordForm_bg-input,#27272a)] border rounded-xl pl-11 pr-11 py-3 text-sm text-[var(--components_Auth_ChangePasswordForm_text-input)] placeholder:text-[var(--components_Auth_ChangePasswordForm_text-placeholder)] focus:outline-none transition-all'
 
 // 密码显示状态
 const showCurrentPassword = ref(false)
