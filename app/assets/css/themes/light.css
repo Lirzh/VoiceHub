@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════
- * VoiceHub Dark Theme — 完整版
+ * VoiceHub Light Theme — 完整版
  * 包含颜色变量 + body 级全局样式 + 响应式布局
  * ═══════════════════════════════════════════════════════════════════ */
 
@@ -25,20 +25,20 @@
   --info-hover: #2563eb;
   --info-light: rgba(59, 130, 246, 0.1);
   --info-border: rgba(59, 130, 246, 0.2);
-  --bg-primary: #111111;
-  --bg-secondary: #1a1a1a;
-  --bg-tertiary: #2a2a2a;
-  --bg-quaternary: #3a3a3a;
-  --bg-hover: #1f1f1f;
-  --text-primary: #ffffff;
-  --text-secondary: #cccccc;
-  --text-tertiary: #888888;
-  --text-quaternary: #666666;
-  --text-disabled: #444444;
-  --border-primary: #1f1f1f;
-  --border-secondary: #2a2a2a;
-  --border-tertiary: #3a3a3a;
-  --border-quaternary: #4a4a4a;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #ebebeb;
+  --bg-quaternary: #d4d4d4;
+  --bg-hover: #f0f9ff;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-tertiary: #9ca3af;
+  --text-quaternary: #d1d5db;
+  --text-disabled: #e5e7eb;
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-tertiary: #9ca3af;
+  --border-quaternary: #6b7280;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
@@ -79,12 +79,12 @@
   --z-toast: 800;
   --z-app-loader: 9000;
 
-  --assets_css_lyric-player_module_45_0: #ffffff05;
-  --assets_css_lyric-player_module_104_0: rgba(0, 0, 0, 0.6);
-  --assets_css_lyric-player_module_105_0: rgba(0, 0, 0, 0.5);
-  --assets_css_lyric-player_module_146_0: rgba(0, 0, 0, 0.5);
+  --assets_css_lyric-player_module_45_0: #ffffff1a;
+  --assets_css_lyric-player_module_104_0: rgba(0, 0, 0, 0.12);
+  --assets_css_lyric-player_module_105_0: rgba(0, 0, 0, 0.08);
+  --assets_css_lyric-player_module_146_0: rgba(0, 0, 0, 0.08);
   --assets_css_mobile-admin_425_0: rgba(102, 126, 234, 0.2);
-  --assets_css_print-fix_94_0: #f0f0f0;
+  --assets_css_print-fix_94_0: #fafafa;
   --assets_css_print-fix_124_0: #000;
   --assets_css_print-fix_133_0: #333;
   --assets_css_print-fix_146_0: #666;
@@ -95,8 +95,8 @@
   --assets_css_print-fix_191_0: #666;
   --assets_css_theme-protection_41_0: rgba(79, 70, 229, 0.3);
   --assets_css_theme-protection_46_0: rgba(79, 70, 229, 0.3);
-  --assets_css_transitions_100_0: #0a0a0a;
-  --assets_css_transitions_100_1: #1a1a1a;
+  --assets_css_transitions_100_0: #f5f5f5;
+  --assets_css_transitions_100_1: #e5e5e5;
   --assets_css_transitions_110_0: rgba(255, 255, 255, 0.1);
   --assets_css_transitions_111_0: #4f46e5;
   --assets_css_year-review_100_0: #111827;
