@@ -27,7 +27,7 @@
   --info-border: rgba(59, 130, 246, 0.2);
   --bg-primary: #ffffff;
   --bg-secondary: #f5f5f5;
-  --bg-tertiary: #ebebeb;
+  --bg-tertiary: #f3f4f6;
   --bg-quaternary: #d4d4d4;
   --bg-hover: #f0f9ff;
   --text-primary: #1f2937;
@@ -37,7 +37,7 @@
   --text-disabled: #e5e7eb;
   --border-primary: #e5e7eb;
   --border-secondary: #d1d5db;
-  --border-tertiary: #9ca3af;
+  --border-tertiary: #d1d5db;
   --border-quaternary: #6b7280;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -398,7 +398,7 @@
   --components_Songs_RecentSongsModal_446_0: #9ca3af;
   --components_Songs_RecentSongsModal_451_0: #d1d5db;
   --components_Songs_RequestForm_4032_0: #f5f5f5;
-  --components_Songs_RequestForm_4049_0: rgba(0, 0, 0, 0.1);
+  --components_Songs_RequestForm_4049_0: #f3f4f6;
   --components_Songs_RequestForm_4063_0: rgba(0, 0, 0, 0.4);
   --components_Songs_RequestForm_4073_0: #1f2937;
   --components_Songs_RequestForm_4092_0: rgba(0, 0, 0, 0.85);
@@ -557,7 +557,7 @@
   --components_Songs_RequestForm_5155_0: rgba(239, 68, 68, 0.15);
   --components_Songs_RequestForm_5156_0: rgba(239, 68, 68, 0.2);
   --components_Songs_RequestForm_5158_0: #f87171;
-  --components_Songs_RequestForm_5167_0: rgba(0, 0, 0, 0.15);
+  --components_Songs_RequestForm_5167_0: rgba(0, 0, 0, 0.04);
   --components_Songs_RequestForm_5198_0: rgba(59, 130, 246, 0.12);
   --components_Songs_RequestForm_5199_0: #3b82f6;
   --components_Songs_RequestForm_5205_0: rgba(0, 0, 0, 0.4);
@@ -682,7 +682,7 @@
   --components_Songs_RequestForm_6174_0: rgba(0, 0, 0, 0.04);
   --components_Songs_RequestForm_6181_0: rgba(0, 0, 0, 0.85);
   --components_Songs_RequestForm_6188_0: #f59e0b;
-  --components_Songs_RequestForm_6226_0: rgba(0, 0, 0, 0.01);
+  --components_Songs_RequestForm_6226_0: rgba(0, 0, 0, 0.03);
   --components_Songs_RequestForm_6228_0: rgba(0, 0, 0, 0.04);
   --components_Songs_RequestForm_6320_0: rgba(0, 0, 0, 0.03);
   --components_Songs_RequestForm_6321_0: rgba(0, 0, 0, 0.05);
@@ -775,7 +775,7 @@
   --components_Songs_ScheduleList_1885_0: rgba(0, 0, 0, 0.4);
   --components_Songs_ScheduleList_1899_0: rgba(11, 90, 254, 0.2);
   --components_Songs_ScheduleList_1900_0: #0b5afe;
-  --components_Songs_ScheduleList_1918_0: #21242d;
+  --components_Songs_ScheduleList_1918_0: #f3f4f6;
   --components_Songs_ScheduleList_1920_0: rgba(0, 0, 0, 0.4);
   --components_Songs_ScheduleList_1924_0: #ef4444;
   --components_Songs_ScheduleList_1948_0: rgba(255, 255, 255, 0.6);
@@ -1164,16 +1164,16 @@
   --components_Songs_SongList_3091_0: rgba(0, 0, 0, 0.08);
   --components_Songs_SongList_3092_0: rgba(0, 0, 0, 0.03);
   --components_Songs_SongList_3102_0: #f3f4f6;
-  --components_UI_AppLoadingScreen_122_0: #f9fafb;
+  --components_UI_AppLoadingScreen_122_0: #1f2937;
   --components_UI_AppLoadingScreen_123_0: #f9fafb;
-  --components_UI_AppLoadingScreen_155_0: rgba(0, 0, 0, 0.03);
-  --components_UI_AppLoadingScreen_165_0: rgba(0, 0, 0, 0.03);
+  --components_UI_AppLoadingScreen_155_0: rgba(0, 0, 0, 0.06);
+  --components_UI_AppLoadingScreen_165_0: rgba(0, 0, 0, 0.06);
   --components_UI_AppLoadingScreen_169_0: #6366f1;
   --components_UI_AppLoadingScreen_170_0: rgba(99, 102, 241, 0.25);
   --components_UI_AppLoadingScreen_175_0: rgba(99, 102, 241, 0.5);
-  --components_UI_AppLoadingScreen_191_0: #1f2937;
-  --components_UI_AppLoadingScreen_217_0: rgba(0, 0, 0, 0.85);
-  --components_UI_AppLoadingScreen_232_0: rgba(129, 140, 248, 0.5);
+  --components_UI_AppLoadingScreen_191_0: #6366f1;
+  --components_UI_AppLoadingScreen_217_0: #4b5563;
+  --components_UI_AppLoadingScreen_232_0: rgba(99, 102, 241, 0.6);
   --components_UI_AppLoadingScreen_242_0: #6366f1;
   --components_UI_AppLoadingScreen_242_1: #a78bfa;
   --components_UI_AppLoadingScreen_243_0: rgba(99, 102, 241, 0.35);
