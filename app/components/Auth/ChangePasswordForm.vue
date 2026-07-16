@@ -4,12 +4,12 @@
       <div v-if="!isFirstLogin" class="space-y-2">
         <label
           for="current-password"
-          class="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1"
+          class="text-xs font-black text-[var(--components_Auth_ChangePasswordForm_text-label)] uppercase tracking-widest ml-1"
           >当前密码</label
         >
         <div class="relative group">
           <div
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-blue-500 transition-colors"
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] group-focus-within:text-blue-500 transition-colors"
           >
             <Lock :size="18" />
           </div>
@@ -20,7 +20,7 @@
               inputClass,
               error
                 ? 'border-rose-500 shadow-[0_0_15px_var(--components_Auth_ChangePasswordForm_22_0)]'
-                : 'border-zinc-800 focus:border-blue-500/30'
+                : 'border-[var(--components_Auth_ChangePasswordForm_border)] focus:border-blue-500/30'
             ]"
             :type="showCurrentPassword ? 'text' : 'password'"
             placeholder="请输入当前密码"
@@ -28,7 +28,7 @@
             @input="error = ''"
           >
           <button
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] hover:text-[var(--components_Auth_ChangePasswordForm_text-icon)] transition-colors"
             type="button"
             @click="showCurrentPassword = !showCurrentPassword"
           >
@@ -41,12 +41,12 @@
       <div class="space-y-2">
         <label
           for="new-password"
-          class="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1"
+          class="text-xs font-black text-[var(--components_Auth_ChangePasswordForm_text-label)] uppercase tracking-widest ml-1"
           >新密码</label
         >
         <div class="relative group">
           <div
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-blue-500 transition-colors"
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] group-focus-within:text-blue-500 transition-colors"
           >
             <KeyRound :size="18" />
           </div>
@@ -57,7 +57,7 @@
               inputClass,
               error
                 ? 'border-rose-500 shadow-[0_0_15px_var(--components_Auth_ChangePasswordForm_59_0)]'
-                : 'border-zinc-800 focus:border-blue-500/30'
+                : 'border-[var(--components_Auth_ChangePasswordForm_border)] focus:border-blue-500/30'
             ]"
             :type="showNewPassword ? 'text' : 'password'"
             placeholder="请输入新密码"
@@ -68,7 +68,7 @@
             "
           >
           <button
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] hover:text-[var(--components_Auth_ChangePasswordForm_text-icon)] transition-colors"
             type="button"
             @click="showNewPassword = !showNewPassword"
           >
@@ -79,7 +79,7 @@
 
         <!-- 密码强度指示器 -->
         <div v-if="newPassword" class="px-1 pt-1 space-y-2">
-          <div class="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+          <div class="h-1 w-full bg-[var(--components_Auth_ChangePasswordForm_border)] rounded-full overflow-hidden">
             <div
               class="h-full transition-all duration-500"
               :class="passwordStrength.colorClass"
@@ -87,7 +87,7 @@
             />
           </div>
           <div class="flex justify-between items-center">
-            <span class="text-[10px] font-black uppercase tracking-widest text-zinc-500"
+            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--components_Auth_ChangePasswordForm_text-label)]"
               >密码强度</span
             >
             <span
@@ -103,12 +103,12 @@
       <div class="space-y-2">
         <label
           for="confirm-password"
-          class="text-xs font-black text-zinc-500 uppercase tracking-widest ml-1"
+          class="text-xs font-black text-[var(--components_Auth_ChangePasswordForm_text-label)] uppercase tracking-widest ml-1"
           >确认新密码</label
         >
         <div class="relative group">
           <div
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-blue-500 transition-colors"
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] group-focus-within:text-blue-500 transition-colors"
           >
             <CheckCircle2 :size="18" />
           </div>
@@ -119,7 +119,7 @@
               inputClass,
               error || (confirmPassword && newPassword !== confirmPassword)
                 ? 'border-rose-500 shadow-[0_0_15px_var(--components_Auth_ChangePasswordForm_121_0)]'
-                : 'border-zinc-800 focus:border-blue-500/30'
+                : 'border-[var(--components_Auth_ChangePasswordForm_border)] focus:border-blue-500/30'
             ]"
             :type="showConfirmPassword ? 'text' : 'password'"
             placeholder="请再次输入新密码"
@@ -127,7 +127,7 @@
             @input="error = ''"
           >
           <button
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] hover:text-[var(--components_Auth_ChangePasswordForm_text-icon)] transition-colors"
             type="button"
             @click="showConfirmPassword = !showConfirmPassword"
           >
@@ -214,7 +214,7 @@ const loading = ref(false)
 
 // 样式类
 const inputClass =
-  'w-full bg-zinc-950 border rounded-xl pl-11 pr-11 py-3 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none transition-all'
+  'w-full bg-[var(--components_Auth_ChangePasswordForm_bg-input)] border rounded-xl pl-11 pr-11 py-3 text-sm text-[var(--components_Auth_ChangePasswordForm_text-input)] placeholder:text-[var(--components_Auth_ChangePasswordForm_text-placeholder)] focus:outline-none transition-all'
 
 // 密码显示状态
 const showCurrentPassword = ref(false)

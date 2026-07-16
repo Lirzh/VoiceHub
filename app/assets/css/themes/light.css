@@ -195,6 +195,38 @@
   --components_Admin_BackupManager_1070_0: #ff9800;
   --components_Admin_BackupManager_1074_0: #1976d2;
   --components_Admin_BackupManager_1075_0: #2196f3;
+
+  /* ── 账号管理页面 (pages/account/index.vue) ── */
+  --pages_account_index_bg-page: #ffffff;          /* 页面背景 bg-white */
+  --pages_account_index_bg-section: #f5f5f5;       /* 区块背景 bg-gray-100 */
+  --pages_account_index_bg-card: #ffffff;           /* 卡片背景 bg-white */
+  --pages_account_index_bg-input: #ffffff;          /* 输入框背景 bg-white */
+  --pages_account_index_bg-button-secondary: #e5e7eb; /* 次要按钮背景 bg-gray-200 */
+  --pages_account_index_bg-button-secondary-hover: #d1d5db; /* 次要按钮悬停 bg-gray-300 */
+  --pages_account_index_bg-tag: #e5e7eb;            /* 标签背景 bg-gray-200 */
+  --pages_account_index_bg-dashed: #f5f5f540;       /* 虚线边框背景 bg-gray-100/40 */
+  --pages_account_index_bg-icon: #e5e7eb;           /* 图标容器背景 text-zinc-500 */
+  --pages_account_index_bg-table-header: #fafafa;   /* 表头背景 bg-white */
+  --pages_account_index_bg-table-row: #ffffff;      /* 表格行背景 bg-white */
+  --pages_account_index_bg-table-row-alt: #f9fafb;  /* 交替行背景 bg-gray-50 */
+  --pages_account_index_bg-close-btn: #f3f4f6;      /* 关闭按钮背景 bg-gray-100 */
+  --pages_account_index_text-primary: #111827;      /* 主文字 text-gray-900 */
+  --pages_account_index_text-secondary: #4b5563;    /* 次要文字 text-gray-600 */
+  --pages_account_index_text-tertiary: #6b7280;     /* 三级文字 text-gray-500 */
+  --pages_account_index_text-quaternary: #9ca3af;   /* 四级文字 text-gray-400 */
+  --pages_account_index_text-disabled: #d1d5db;     /* 禁用文字 text-gray-300 */
+  --pages_account_index_text-label: #6b7280;        /* 表单项标签 text-gray-500 */
+  --pages_account_index_text-button-secondary: #374151; /* 次要按钮文字 text-gray-700 */
+  --pages_account_index_text-icon: #9ca3af;         /* 图标文字 text-gray-400 */
+  --pages_account_index_border-primary: #e5e7eb;    /* 边框 border-gray-200 */
+  --pages_account_index_border-secondary: #e5e7eb;  /* 次要边框 border-gray-200 */
+  --pages_account_index_border-dashed: #d1d5db;     /* 虚线边框 border-gray-300 */
+  --pages_account_index_border-section: #e5e7eb80;  /* 区块底部分割线 border-gray-200/50 */
+  --pages_account_index_border-row: #f3f4f6;        /* 表格行分割线 border-gray-100 */
+  --pages_account_index_border-button-hover: #d1d5db; /* 按钮悬停边框 border-gray-300 */
+  --pages_account_index_border-tag-status: #d1d5db80; /* 状态标签边框 border-gray-300/50 */
+  --pages_account_index_border-button-secondary: #d1d5db; /* 次要按钮边框 border-gray-300 */
+
   --components_Admin_BatchUpdateModal_1446_0: #9ca3af;
   --components_Admin_BatchUpdateModal_1450_0: #d1d5db;
   --components_Admin_BlacklistManager_572_0: #f3f4f6;
@@ -358,6 +390,13 @@
   --components_Auth_ChangePasswordForm_22_0: rgba(244,63,94,0.1);
   --components_Auth_ChangePasswordForm_59_0: rgba(244,63,94,0.1);
   --components_Auth_ChangePasswordForm_121_0: rgba(244,63,94,0.1);
+  --components_Auth_ChangePasswordForm_bg-input: #ffffff;
+  --components_Auth_ChangePasswordForm_text-input: #374151;
+  --components_Auth_ChangePasswordForm_text-placeholder: #9ca3af;
+  --components_Auth_ChangePasswordForm_border: #e5e7eb;
+  --components_Auth_ChangePasswordForm_border-focus: rgba(59, 130, 246, 0.2);
+  --components_Auth_ChangePasswordForm_text-label: #6b7280;
+  --components_Auth_ChangePasswordForm_text-icon: #9ca3af;
   --components_Auth_OAuthButtons_47_0: #f3f4f6;
   --components_Auth_OAuthButtons_47_1: #f3f4f6;
   --components_Auth_OAuthButtons_50_0: #67c23a;

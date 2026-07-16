@@ -195,6 +195,38 @@
   --components_Admin_BackupManager_1070_0: #ff9800;
   --components_Admin_BackupManager_1074_0: #1976d2;
   --components_Admin_BackupManager_1075_0: #2196f3;
+
+  /* ── 账号管理页面 (pages/account/index.vue) ── */
+  --pages_account_index_bg-page: #111111;          /* 页面背景 bg-zinc-950 → --bg-primary */
+  --pages_account_index_bg-section: #1a1a1a;       /* 区块背景 bg-zinc-900 → --bg-secondary */
+  --pages_account_index_bg-card: #27272a;           /* 卡片背景 bg-zinc-800 */
+  --pages_account_index_bg-input: #27272a;          /* 输入框背景 bg-zinc-800 */
+  --pages_account_index_bg-button-secondary: #27272a; /* 次要按钮背景 bg-zinc-800 */
+  --pages_account_index_bg-button-secondary-hover: #3f3f46; /* 次要按钮悬停 bg-zinc-700 */
+  --pages_account_index_bg-tag: #27272a;            /* 标签背景 bg-zinc-800 */
+  --pages_account_index_bg-dashed: #11111140;       /* 虚线边框背景 bg-zinc-950/40 */
+  --pages_account_index_bg-icon: #3f3f46;           /* 图标容器背景 text-zinc-700 */
+  --pages_account_index_bg-table-header: #09090b;   /* 表头背景 bg-zinc-950/95 */
+  --pages_account_index_bg-table-row: #111111;      /* 表格行背景 bg-zinc-950 */
+  --pages_account_index_bg-table-row-alt: #18181b;  /* 交替行背景 bg-zinc-900 */
+  --pages_account_index_bg-close-btn: #18181b;      /* 关闭按钮背景 bg-zinc-900 */
+  --pages_account_index_text-primary: #ffffff;      /* 主文字 text-zinc-100 */
+  --pages_account_index_text-secondary: #e4e4e7;    /* 次要文字 text-zinc-200 */
+  --pages_account_index_text-tertiary: #a1a1aa;     /* 三级文字 text-zinc-400 */
+  --pages_account_index_text-quaternary: #71717a;   /* 四级文字 text-zinc-500 */
+  --pages_account_index_text-disabled: #52525b;     /* 禁用文字 text-zinc-600 */
+  --pages_account_index_text-label: #52525b;        /* 表单项标签 text-zinc-600 */
+  --pages_account_index_text-button-secondary: #d4d4d8; /* 次要按钮文字 text-zinc-300 */
+  --pages_account_index_text-icon: #52525b;         /* 图标文字 text-zinc-600 */
+  --pages_account_index_border-primary: #27272a;    /* 边框 border-zinc-800 */
+  --pages_account_index_border-secondary: #27272a;  /* 次要边框 border-zinc-800 */
+  --pages_account_index_border-dashed: #27272a;     /* 虚线边框 border-zinc-800 */
+  --pages_account_index_border-section: #27272a80;  /* 区块底部分割线 border-zinc-800/50 */
+  --pages_account_index_border-row: #18181b;        /* 表格行分割线 border-zinc-900 */
+  --pages_account_index_border-button-hover: #3f3f46; /* 按钮悬停边框 border-zinc-700 */
+  --pages_account_index_border-tag-status: #3f3f4680; /* 状态标签边框 border-zinc-700/50 */
+  --pages_account_index_border-button-secondary: #3f3f46; /* 次要按钮边框 border-zinc-700 */
+
   --components_Admin_BatchUpdateModal_1446_0: #4a5568;
   --components_Admin_BatchUpdateModal_1450_0: #718096;
   --components_Admin_BlacklistManager_572_0: #27272a;
@@ -358,6 +390,13 @@
   --components_Auth_ChangePasswordForm_22_0: rgba(244,63,94,0.1);
   --components_Auth_ChangePasswordForm_59_0: rgba(244,63,94,0.1);
   --components_Auth_ChangePasswordForm_121_0: rgba(244,63,94,0.1);
+  --components_Auth_ChangePasswordForm_bg-input: #27272a;
+  --components_Auth_ChangePasswordForm_text-input: #e4e4e7;
+  --components_Auth_ChangePasswordForm_text-placeholder: #52525b;
+  --components_Auth_ChangePasswordForm_border: #27272a;
+  --components_Auth_ChangePasswordForm_border-focus: rgba(59, 130, 246, 0.2);
+  --components_Auth_ChangePasswordForm_text-label: #52525b;
+  --components_Auth_ChangePasswordForm_text-icon: #52525b;
   --components_Auth_OAuthButtons_47_0: #24292e;
   --components_Auth_OAuthButtons_47_1: #24292e;
   --components_Auth_OAuthButtons_50_0: #67c23a;

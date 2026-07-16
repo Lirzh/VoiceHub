@@ -1,20 +1,20 @@
 <template>
-  <div class="min-h-screen bg-zinc-950 text-zinc-200 pb-24">
+  <div class="min-h-screen bg-[var(--pages_account_index_bg-page)] text-[var(--pages_account_index_text-secondary)] pb-24">
     <!-- 顶部导航栏 -->
     <div
-      class="sticky top-0 z-30 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-900/50 px-4 py-4 mb-8"
+      class="sticky top-0 z-30 bg-[var(--pages_account_index_bg-page)]/80 backdrop-blur-xl border-b border-[var(--pages_account_index_border-section)] px-4 py-4 mb-8"
     >
       <div class="max-w-[1200px] mx-auto flex items-center justify-between">
         <div class="flex items-center gap-4">
           <button
-            class="p-2 hover:bg-zinc-900 rounded-xl transition-all text-zinc-400 hover:text-zinc-100"
+            class="p-2 hover:bg-[var(--pages_account_index_bg-section)] rounded-xl transition-all text-[var(--pages_account_index_text-tertiary)] hover:text-[var(--pages_account_index_text-primary)]"
             @click="goBack"
           >
             <ArrowLeft :size="20" />
           </button>
           <div>
-            <h1 class="text-xl font-black text-zinc-100 tracking-tight">账号管理</h1>
-            <p class="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">
+            <h1 class="text-xl font-black text-[var(--pages_account_index_text-primary)] tracking-tight">账号管理</h1>
+            <p class="text-[10px] text-[var(--pages_account_index_text-quaternary)] font-medium uppercase tracking-widest mt-0.5">
               Account Management
             </p>
           </div>
@@ -40,17 +40,17 @@
                 <span v-else>{{ userInitials }}</span>
               </div>
               <div
-                class="absolute -bottom-1 -right-1 p-2 bg-zinc-900 border border-zinc-800 rounded-full text-blue-500 shadow-xl"
+                class="absolute -bottom-1 -right-1 p-2 bg-[var(--pages_account_index_bg-section)] border border-[var(--pages_account_index_border-primary)] rounded-full text-blue-500 shadow-xl"
               >
                 <User :size="16" />
               </div>
             </div>
 
             <div class="space-y-2">
-              <h2 class="text-2xl font-black text-zinc-100 tracking-tight">
+              <h2 class="text-2xl font-black text-[var(--pages_account_index_text-primary)] tracking-tight">
                 {{ auth.user.value?.name || auth.user.value?.username }}
               </h2>
-              <p class="text-sm font-medium text-zinc-500">@{{ auth.user.value?.username }}</p>
+              <p class="text-sm font-medium text-[var(--pages_account_index_text-quaternary)]">@{{ auth.user.value?.username }}</p>
             </div>
 
             <div class="flex flex-wrap justify-center gap-2 mt-6">
@@ -61,13 +61,13 @@
               </span>
               <span
                 v-if="auth.user.value?.grade"
-                class="px-3 py-1 bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-wider rounded-full"
+                class="px-3 py-1 bg-[var(--pages_account_index_bg-tag)] text-[var(--pages_account_index_text-tertiary)] text-[10px] font-black uppercase tracking-wider rounded-full"
               >
                 {{ auth.user.value?.grade }}
               </span>
               <span
                 v-if="auth.user.value?.class"
-                class="px-3 py-1 bg-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-wider rounded-full"
+                class="px-3 py-1 bg-[var(--pages_account_index_bg-tag)] text-[var(--pages_account_index_text-tertiary)] text-[10px] font-black uppercase tracking-wider rounded-full"
               >
                 {{ auth.user.value?.class }}
               </span>
@@ -79,13 +79,13 @@
         <div class="lg:col-span-8 space-y-8">
           <!-- 第三方登录绑定 -->
           <section v-if="hasOAuthProviders" :class="sectionClass">
-            <div class="flex items-center gap-3 border-b border-zinc-800/50 pb-5 mb-6">
+            <div class="flex items-center gap-3 border-b border-[var(--pages_account_index_border-section)] pb-5 mb-6">
               <div class="p-2.5 bg-purple-500/10 rounded-xl">
                 <LinkIcon :size="20" class="text-purple-500" />
               </div>
               <div>
-                <h2 class="text-base font-black text-zinc-100">第三方账号绑定</h2>
-                <p class="text-xs text-zinc-500 mt-0.5">绑定社交账号以便更快捷地登录系统</p>
+                <h2 class="text-base font-black text-[var(--pages_account_index_text-primary)]">第三方账号绑定</h2>
+                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-0.5">绑定社交账号以便更快捷地登录系统</p>
               </div>
             </div>
             <AuthOAuthBindingCard />
@@ -93,14 +93,14 @@
 
           <!-- 个人 API Key -->
           <section :class="sectionClass">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-800/50 pb-5 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--pages_account_index_border-section)] pb-5 mb-6">
               <div class="flex items-center gap-3">
                 <div class="p-2.5 bg-emerald-500/10 rounded-xl">
                   <KeyRound :size="20" class="text-emerald-500" />
                 </div>
                 <div>
-                  <h2 class="text-base font-black text-zinc-100">个人 API Key</h2>
-                  <p class="text-xs text-zinc-500 mt-0.5">用于个人集成和投稿</p>
+                  <h2 class="text-base font-black text-[var(--pages_account_index_text-primary)]">个人 API Key</h2>
+                  <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-0.5">用于个人集成和投稿</p>
                 </div>
               </div>
               <button
@@ -114,18 +114,18 @@
               </button>
             </div>
 
-            <div v-if="apiKeyLoading" class="flex items-center justify-center gap-2 py-8 text-xs text-zinc-500 text-center">
+            <div v-if="apiKeyLoading" class="flex items-center justify-center gap-2 py-8 text-xs text-[var(--pages_account_index_text-quaternary)] text-center">
               <RefreshCw :size="16" class="animate-spin" />
               <span>正在加载 API Key...</span>
             </div>
 
             <div
               v-else-if="personalApiKeys.length === 0"
-              class="rounded-2xl border border-dashed border-zinc-800 bg-zinc-950/40 px-5 py-8 text-center"
+              class="rounded-2xl border border-dashed border-[var(--pages_account_index_border-dashed)] bg-[var(--pages_account_index_bg-dashed)] px-5 py-8 text-center"
             >
-              <KeyRound :size="28" class="mx-auto text-zinc-700 mb-3" />
-              <p class="text-sm font-bold text-zinc-300">还没有个人 API Key</p>
-              <p class="text-xs text-zinc-600 mt-2 leading-relaxed">
+              <KeyRound :size="28" class="mx-auto text-[var(--pages_account_index_text-icon)] mb-3" />
+              <p class="text-sm font-bold text-[var(--pages_account_index_text-secondary)]">还没有个人 API Key</p>
+              <p class="text-xs text-[var(--pages_account_index_text-disabled)] mt-2 leading-relaxed">
                 创建后可用于个人侧的集成与投稿。
               </p>
             </div>
@@ -134,12 +134,12 @@
               <div
                 v-for="key in personalApiKeys"
                 :key="key.id"
-                class="rounded-2xl border border-zinc-800/70 bg-zinc-950/45 p-4"
+                class="rounded-2xl border border-[var(--pages_account_index_border-primary)]/70 bg-[var(--pages_account_index_bg-dashed)] p-4"
               >
                 <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
                   <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                      <h3 class="text-sm font-black text-zinc-100">{{ key.name }}</h3>
+                      <h3 class="text-sm font-black text-[var(--pages_account_index_text-primary)]">{{ key.name }}</h3>
                       <span
                         class="px-2 py-0.5 rounded text-[10px] font-black border"
                         :class="getApiKeyStatusClass(key.status)"
@@ -147,7 +147,7 @@
                         {{ getApiKeyStatusLabel(key.status) }}
                       </span>
                     </div>
-                    <p class="text-xs text-zinc-500 mt-1">{{ key.description || '暂无描述' }}</p>
+                    <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">{{ key.description || '暂无描述' }}</p>
                   </div>
                   <button
                     class="inline-flex items-center justify-center gap-2 px-3 py-2 border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/15 text-xs font-bold rounded-xl transition-all disabled:opacity-50"
@@ -162,19 +162,19 @@
 
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
                   <div class="space-y-1">
-                    <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Key 前缀</p>
+                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">Key 前缀</p>
                     <p class="font-mono text-xs text-blue-400">{{ key.keyPrefix }}...</p>
                   </div>
                   <div class="space-y-1">
-                    <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">创建时间</p>
-                    <p class="text-xs text-zinc-400">{{ formatDate(key.createdAt) }}</p>
+                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">创建时间</p>
+                    <p class="text-xs text-[var(--pages_account_index_text-tertiary)]">{{ formatDate(key.createdAt) }}</p>
                   </div>
                   <div class="space-y-1">
-                    <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">最后使用</p>
-                    <p class="text-xs text-zinc-400">{{ key.lastUsedAt ? formatDate(key.lastUsedAt) : '从未使用' }}</p>
+                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">最后使用</p>
+                    <p class="text-xs text-[var(--pages_account_index_text-tertiary)]">{{ key.lastUsedAt ? formatDate(key.lastUsedAt) : '从未使用' }}</p>
                   </div>
                   <div class="space-y-1">
-                    <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">调用次数</p>
+                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">调用次数</p>
                     <button
                       class="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors disabled:cursor-default disabled:opacity-60"
                       @click="openPersonalApiKeyLogs(key)"
@@ -183,8 +183,8 @@
                     </button>
                   </div>
                   <div class="space-y-1">
-                    <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">过期时间</p>
-                    <p class="text-xs text-zinc-400">{{ key.expiresAt ? formatDate(key.expiresAt) : '永不过期' }}</p>
+                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">过期时间</p>
+                    <p class="text-xs text-[var(--pages_account_index_text-tertiary)]">{{ key.expiresAt ? formatDate(key.expiresAt) : '永不过期' }}</p>
                   </div>
                 </div>
               </div>
@@ -193,13 +193,13 @@
 
           <!-- 修改密码 -->
           <section :class="sectionClass">
-            <div class="flex items-center gap-3 border-b border-zinc-800/50 pb-5 mb-6">
+            <div class="flex items-center gap-3 border-b border-[var(--pages_account_index_border-section)] pb-5 mb-6">
               <div class="p-2.5 bg-blue-500/10 rounded-xl">
                 <Lock :size="20" class="text-blue-500" />
               </div>
               <div>
-                <h2 class="text-base font-black text-zinc-100">修改密码</h2>
-                <p class="text-xs text-zinc-500 mt-0.5">为了您的账号安全，建议定期更换高强度密码</p>
+                <h2 class="text-base font-black text-[var(--pages_account_index_text-primary)]">修改密码</h2>
+                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-0.5">为了您的账号安全，建议定期更换高强度密码</p>
               </div>
             </div>
             <div class="max-w-md">
@@ -233,13 +233,13 @@
           v-if="createdApiKey"
           class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
         >
-          <div class="w-full max-w-xl bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-zinc-800 flex items-center justify-between">
+          <div class="w-full max-w-xl bg-[var(--pages_account_index_bg-section)] border border-[var(--pages_account_index_border-primary)] rounded-3xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-[var(--pages_account_index_border-primary)] flex items-center justify-between">
               <div>
-                <h3 class="text-lg font-black text-zinc-100">API Key 创建成功</h3>
-                <p class="text-xs text-zinc-500 mt-1">完整 Key 只会显示这一次</p>
+                <h3 class="text-lg font-black text-[var(--pages_account_index_text-primary)]">API Key 创建成功</h3>
+                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">完整 Key 只会显示这一次</p>
               </div>
-              <button class="text-zinc-500 hover:text-zinc-200 transition-colors" @click="closeCreatedApiKey">
+              <button class="text-[var(--pages_account_index_text-quaternary)] hover:text-[var(--pages_account_index_text-secondary)] transition-colors" @click="closeCreatedApiKey">
                 <X :size="20" />
               </button>
             </div>
@@ -253,14 +253,14 @@
               </div>
 
               <div class="space-y-2">
-                <p class="text-[10px] font-black text-zinc-600 uppercase tracking-widest">完整 Key</p>
+                <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">完整 Key</p>
                 <div class="flex items-stretch gap-2">
-                  <div class="flex-1 min-w-0 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-xs text-blue-400 break-all select-all">
+                  <div class="flex-1 min-w-0 rounded-xl border border-[var(--pages_account_index_border-primary)] bg-[var(--pages_account_index_bg-page)] px-4 py-3 font-mono text-xs text-blue-400 break-all select-all">
                     {{ createdApiKey.apiKey }}
                   </div>
                   <button
                     class="w-12 rounded-xl flex items-center justify-center transition-all"
-                    :class="apiKeyCopied ? 'bg-emerald-600 text-white' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'"
+                    :class="apiKeyCopied ? 'bg-emerald-600 text-white' : 'bg-[var(--pages_account_index_bg-card)] hover:bg-[var(--pages_account_index_bg-button-secondary-hover)] text-[var(--pages_account_index_text-button-secondary)]'"
                     @click="copyApiKey(createdApiKey.apiKey)"
                   >
                     <Check v-if="apiKeyCopied" :size="16" />
@@ -270,9 +270,9 @@
               </div>
             </div>
 
-            <div class="p-6 border-t border-zinc-800">
+            <div class="p-6 border-t border-[var(--pages_account_index_border-primary)]">
               <button
-                class="w-full py-3 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-xs font-black rounded-xl transition-all"
+                class="w-full py-3 bg-[var(--pages_account_index_bg-page)] border border-[var(--pages_account_index_border-primary)] hover:border-[var(--pages_account_index_border-button-hover)] text-[var(--pages_account_index_text-secondary)] text-xs font-black rounded-xl transition-all"
                 @click="closeCreatedApiKey"
               >
                 我已保存，关闭
@@ -289,36 +289,36 @@
           v-if="showApiKeyLogsModal"
           class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
         >
-          <div class="w-full max-w-4xl bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-zinc-800 flex items-start justify-between gap-4">
+          <div class="w-full max-w-4xl bg-[var(--pages_account_index_bg-section)] border border-[var(--pages_account_index_border-primary)] rounded-3xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-[var(--pages_account_index_border-primary)] flex items-start justify-between gap-4">
               <div>
-                <h3 class="text-lg font-black text-zinc-100">调用记录</h3>
-                <p class="text-xs text-zinc-500 mt-1">
+                <h3 class="text-lg font-black text-[var(--pages_account_index_text-primary)]">调用记录</h3>
+                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">
                   {{ selectedApiKeyForLogs?.name || '个人 API Key' }} · 共 {{ apiKeyLogsPagination.total }} 条
                 </p>
               </div>
-              <button class="text-zinc-500 hover:text-zinc-200 transition-colors" @click="closePersonalApiKeyLogs">
+              <button class="text-[var(--pages_account_index_text-quaternary)] hover:text-[var(--pages_account_index_text-secondary)] transition-colors" @click="closePersonalApiKeyLogs">
                 <X :size="20" />
               </button>
             </div>
 
             <div class="p-6">
-              <div v-if="apiKeyLogsLoading" class="flex items-center justify-center gap-2 py-10 text-xs text-zinc-500">
+              <div v-if="apiKeyLogsLoading" class="flex items-center justify-center gap-2 py-10 text-xs text-[var(--pages_account_index_text-quaternary)]">
                 <RefreshCw :size="16" class="animate-spin" />
                 <span>正在加载调用记录...</span>
               </div>
 
               <div v-else-if="apiKeyLogs.length === 0" class="py-10 text-center">
-                <p class="text-sm font-bold text-zinc-300">暂无调用记录</p>
-                <p class="text-xs text-zinc-600 mt-2">这个令牌还没有产生过 API 调用。</p>
+                <p class="text-sm font-bold text-[var(--pages_account_index_text-secondary)]">暂无调用记录</p>
+                <p class="text-xs text-[var(--pages_account_index_text-disabled)] mt-2">这个令牌还没有产生过 API 调用。</p>
               </div>
 
               <div v-else class="space-y-4">
-                <div class="overflow-hidden rounded-2xl border border-zinc-800">
+                <div class="overflow-hidden rounded-2xl border border-[var(--pages_account_index_border-primary)]">
                   <div class="max-h-[60vh] overflow-auto">
                     <table class="min-w-full text-left">
-                      <thead class="sticky top-0 bg-zinc-950/95 backdrop-blur border-b border-zinc-800">
-                        <tr class="text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                      <thead class="sticky top-0 bg-[var(--pages_account_index_bg-table-header)] backdrop-blur border-b border-[var(--pages_account_index_border-primary)]">
+                        <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--pages_account_index_text-quaternary)]">
                           <th class="px-4 py-3">时间</th>
                           <th class="px-4 py-3">方法</th>
                           <th class="px-4 py-3">接口</th>
@@ -329,8 +329,8 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="log in apiKeyLogs" :key="log.id" class="border-b border-zinc-900 last:border-0">
-                          <td class="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{{ formatDate(log.createdAt) }}</td>
+                        <tr v-for="log in apiKeyLogs" :key="log.id" class="border-b border-[var(--pages_account_index_border-row)] last:border-0">
+                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ formatDate(log.createdAt) }}</td>
                           <td class="px-4 py-3">
                             <span
                               class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border"
@@ -339,13 +339,13 @@
                               {{ log.method }}
                             </span>
                           </td>
-                          <td class="px-4 py-3 text-xs text-zinc-300 break-all">{{ log.endpoint }}</td>
+                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-secondary)] break-all">{{ log.endpoint }}</td>
                           <td class="px-4 py-3 text-xs font-bold" :class="getApiStatusClass(log.statusCode)">
                             {{ log.statusCode }}
                           </td>
-                          <td class="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{{ log.ipAddress }}</td>
-                          <td class="px-4 py-3 text-xs text-zinc-400 whitespace-nowrap">{{ log.responseTimeMs }} ms</td>
-                          <td class="px-4 py-3 text-xs text-zinc-500 break-all">
+                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ log.ipAddress }}</td>
+                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ log.responseTimeMs }} ms</td>
+                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-quaternary)] break-all">
                             {{ log.errorMessage || '无' }}
                           </td>
                         </tr>
@@ -355,19 +355,19 @@
                 </div>
 
                 <div class="flex items-center justify-between gap-3">
-                  <p class="text-xs text-zinc-500">
+                  <p class="text-xs text-[var(--pages_account_index_text-quaternary)]">
                     第 {{ apiKeyLogsPagination.page }} / {{ apiKeyLogsPagination.totalPages || 1 }} 页
                   </p>
                   <div class="flex items-center gap-2">
                     <button
-                      class="px-3 py-2 rounded-xl border border-zinc-800 text-xs font-bold text-zinc-300 disabled:opacity-40"
+                      class="px-3 py-2 rounded-xl border border-[var(--pages_account_index_border-primary)] text-xs font-bold text-[var(--pages_account_index_text-button-secondary)] disabled:opacity-40"
                       :disabled="apiKeyLogsPagination.page <= 1 || apiKeyLogsLoading"
                       @click="changePersonalApiKeyLogsPage(apiKeyLogsPagination.page - 1)"
                     >
                       上一页
                     </button>
                     <button
-                      class="px-3 py-2 rounded-xl border border-zinc-800 text-xs font-bold text-zinc-300 disabled:opacity-40"
+                      class="px-3 py-2 rounded-xl border border-[var(--pages_account_index_border-primary)] text-xs font-bold text-[var(--pages_account_index_text-button-secondary)] disabled:opacity-40"
                       :disabled="apiKeyLogsPagination.page >= apiKeyLogsPagination.totalPages || apiKeyLogsLoading"
                       @click="changePersonalApiKeyLogsPage(apiKeyLogsPagination.page + 1)"
                     >
@@ -458,7 +458,7 @@ onMounted(() => {
 })
 
 // 样式类常量
-const sectionClass = 'bg-zinc-900/40 border border-zinc-900 rounded-3xl p-6 md:p-8 shadow-2xl'
+const sectionClass = 'bg-[var(--pages_account_index_bg-section)]/40 border border-[var(--pages_account_index_border-section)] rounded-3xl p-6 md:p-8 shadow-2xl'
 
 const userInitials = computed(() => {
   const name = auth.user.value?.name || auth.user.value?.username || 'U'
@@ -668,10 +668,10 @@ const getApiKeyStatusLabel = (status) => {
 const getApiKeyStatusClass = (status) => {
   const map = {
     active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    inactive: 'bg-zinc-800 text-zinc-500 border-zinc-700/50',
+    inactive: 'bg-[var(--pages_account_index_bg-card)] text-[var(--pages_account_index_text-quaternary)] border-[var(--pages_account_index_border-tag-status)]',
     expired: 'bg-red-500/10 text-red-400 border-red-500/20'
   }
-  return map[status] || 'bg-zinc-800 text-zinc-500 border-zinc-700/50'
+  return map[status] || 'bg-[var(--pages_account_index_bg-card)] text-[var(--pages_account_index_text-quaternary)] border-[var(--pages_account_index_border-tag-status)]'
 }
 
 const getApiMethodClass = (method) => {
@@ -681,7 +681,7 @@ const getApiMethodClass = (method) => {
     PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     DELETE: 'bg-red-500/10 text-red-400 border-red-500/20'
   }
-  return map[method] || 'bg-zinc-800 text-zinc-400 border-zinc-700/50'
+  return map[method] || 'bg-[var(--pages_account_index_bg-card)] text-[var(--pages_account_index_text-tertiary)] border-[var(--pages_account_index_border-tag-status)]'
 }
 
 const getApiStatusClass = (statusCode) => {
