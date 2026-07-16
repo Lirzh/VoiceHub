@@ -29,7 +29,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 // 导入通知容器组件和音频播放器
 import { useAudioPlayer } from '~/composables/useAudioPlayer'
 import { useAuth } from '~/composables/useAuth'
-import { useTheme } from '~/composables/useTheme'
 import { useRoute } from 'vue-router'
 
 // 获取运行时配置
@@ -194,7 +193,7 @@ const setupHarmonyOSListeners = () => {
 }
 
 // 主题管理
-const theme = useTheme()
+// const theme = useTheme()
 
 // 在组件挂载后初始化认证（只会在客户端执行）
 onMounted(async () => {
@@ -204,8 +203,9 @@ onMounted(async () => {
   // 初始化鸿蒙系统控制事件监听
   setupHarmonyOSListeners()
 
-  // 初始化主题（从 localStorage 恢复）
-  theme.initTheme()
+  // 主题初始化已移至 nuxt.config.ts 的 head.script 内联脚本
+  // 在页面渲染前同步执行，避免闪烁
+  // theme.initTheme()
 })
 
 // 使用计算属性确保安全地访问auth对象

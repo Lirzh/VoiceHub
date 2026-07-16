@@ -97,3 +97,8 @@ pre code {
   padding: 0;
   background: none;
 }
+
+/* 主题闪烁保护 - 在主题初始化前隐藏页面 */
+html:not([data-theme]) {
+  visibility: hidden;
+}
