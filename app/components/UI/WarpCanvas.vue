@@ -47,17 +47,17 @@ interface Star {
 }
 
 function getRandomColor(base: string): string {
-  const cold = ['var(--components_UI_WarpCanvas_50_0)', 'var(--components_UI_WarpCanvas_50_1)', 'var(--components_UI_WarpCanvas_50_2)', 'var(--components_UI_WarpCanvas_50_3)', 'var(--components_UI_WarpCanvas_50_4)', 'var(--components_UI_WarpCanvas_50_5)']
+  const cold = ['#6366f1', '#8b5cf6', '#a855f7', '#3b82f6', '#ffffff', '#e0e7ff']
   if (base === 'emerald') {
-    const greens = ['var(--components_UI_WarpCanvas_52_0)', 'var(--components_UI_WarpCanvas_52_1)', 'var(--components_UI_WarpCanvas_52_2)', 'var(--components_UI_WarpCanvas_52_3)', 'var(--components_UI_WarpCanvas_52_4)']
+    const greens = ['#10b981', '#34d399', '#6ee7b7', '#059669', '#38bdf8']
     return greens[Math.floor(Math.random() * greens.length)]
   }
   if (base === 'cyberpunk') {
-    const pinks = ['var(--components_UI_WarpCanvas_56_0)', 'var(--components_UI_WarpCanvas_56_1)', 'var(--components_UI_WarpCanvas_56_2)', 'var(--components_UI_WarpCanvas_56_3)', 'var(--components_UI_WarpCanvas_56_4)']
+    const pinks = ['#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#06b6d4']
     return pinks[Math.floor(Math.random() * pinks.length)]
   }
   if (base === 'sunset') {
-    const warm = ['var(--components_UI_WarpCanvas_60_0)', 'var(--components_UI_WarpCanvas_60_1)', 'var(--components_UI_WarpCanvas_60_2)', 'var(--components_UI_WarpCanvas_60_3)', 'var(--components_UI_WarpCanvas_60_4)']
+    const warm = ['#f97316', '#ef4444', '#f1f5f9', '#facc15', '#ec4899']
     return warm[Math.floor(Math.random() * warm.length)]
   }
   return cold[Math.floor(Math.random() * cold.length)]
@@ -157,7 +157,7 @@ onMounted(() => {
     pointer.y += (pointer.targetY - pointer.y) * 0.08
 
     ctx.save()
-    ctx.fillStyle = 'var(--components_UI_WarpCanvas_160_0)'
+    ctx.fillStyle = 'rgba(7, 7, 9, 0.18)'
     ctx.fillRect(0, 0, width, height)
 
     const centerX = width / 2 + pointer.x * (width * 0.12)
@@ -195,8 +195,8 @@ onMounted(() => {
       ctx.globalAlpha = glowFactor
       const grad = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, Math.max(width, height) * 0.75)
       grad.addColorStop(0, `rgba(99, 102, 241, ${radialGlowOpacity})`)
-      grad.addColorStop(0.5, 'var(--components_UI_WarpCanvas_198_0)')
-      grad.addColorStop(1, 'var(--components_UI_WarpCanvas_199_0)')
+      grad.addColorStop(0.5, 'rgba(99, 102, 241, 0.04)')
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)')
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, width, height)
     }

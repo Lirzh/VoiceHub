@@ -1108,7 +1108,7 @@ const drawSpectrum = () => {
 
   const step = Math.floor(data.length / 2 / barCount)
 
-  ctx.fillStyle = 'var(--components_UI_LyricsModal_1111_0)'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
 
   for (let i = 0; i < barCount; i++) {
     const dataIndex = i * step

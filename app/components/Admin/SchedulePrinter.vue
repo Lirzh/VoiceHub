@@ -1484,7 +1484,7 @@ const generateAndDownloadImage = async (sourceElement, filename, preProcessCallb
 
     const blob = await toBlob(imageContainer, {
       quality: 0.9,
-      backgroundColor: 'var(--components_Admin_SchedulePrinter_1487_0)',
+      backgroundColor: '#ffffff',
       width: targetWidth,
       height: contentHeight,
       pixelRatio: pixelRatio,
