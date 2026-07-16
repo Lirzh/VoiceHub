@@ -193,7 +193,7 @@ watch(
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--components_Admin_VotersModal_196_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -202,9 +202,9 @@ watch(
 }
 
 .modal-content {
-  background: #1a1a1a;
+  background: var(--components_Admin_VotersModal_205_0);
   border-radius: 16px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--components_Admin_VotersModal_207_0);
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
@@ -223,14 +223,14 @@ watch(
 .modal-title {
   font-size: 20px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_VotersModal_226_0);
   margin: 0;
 }
 
 .close-btn {
   background: none;
   border: none;
-  color: #888;
+  color: var(--components_Admin_VotersModal_233_0);
   cursor: pointer;
   padding: 8px;
   border-radius: 8px;
@@ -238,8 +238,8 @@ watch(
 }
 
 .close-btn:hover {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--components_Admin_VotersModal_241_0);
+  color: var(--components_Admin_VotersModal_242_0);
 }
 
 .close-btn svg {
@@ -254,22 +254,22 @@ watch(
 }
 
 .song-info {
-  background: #2a2a2a;
+  background: var(--components_Admin_VotersModal_257_0);
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 24px;
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--components_Admin_VotersModal_261_0);
 }
 
 .song-title {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_VotersModal_267_0);
   margin: 0 0 8px 0;
 }
 
 .song-artist {
-  color: #888;
+  color: var(--components_Admin_VotersModal_272_0);
   margin: 0 0 16px 0;
   font-size: 14px;
 }
@@ -283,11 +283,11 @@ watch(
 .heart-icon {
   width: 20px;
   height: 20px;
-  color: #ef4444;
+  color: var(--components_Admin_VotersModal_286_0);
 }
 
 .vote-count {
-  color: #ef4444;
+  color: var(--components_Admin_VotersModal_290_0);
   font-weight: 600;
   font-size: 16px;
 }
@@ -304,8 +304,8 @@ watch(
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #3a3a3a;
-  border-top: 3px solid #667eea;
+  border: 3px solid var(--components_Admin_VotersModal_307_0);
+  border-top: 3px solid var(--components_Admin_VotersModal_308_0);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -331,17 +331,17 @@ watch(
 .error-icon {
   width: 48px;
   height: 48px;
-  color: #ef4444;
+  color: var(--components_Admin_VotersModal_334_0);
 }
 
 .error-message {
-  color: #ef4444;
+  color: var(--components_Admin_VotersModal_338_0);
   text-align: center;
   margin: 0;
 }
 
 .retry-btn {
-  background: #667eea;
+  background: var(--components_Admin_VotersModal_344_0);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -352,7 +352,7 @@ watch(
 }
 
 .retry-btn:hover {
-  background: #5a67d8;
+  background: var(--components_Admin_VotersModal_355_0);
 }
 
 .voters-list {
@@ -366,12 +366,12 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding-bottom: 12px;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--components_Admin_VotersModal_369_0);
 }
 
 .voters-title {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_VotersModal_374_0);
   font-size: 16px;
 }
 
@@ -388,15 +388,15 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: #2a2a2a;
+  background: var(--components_Admin_VotersModal_391_0);
   border-radius: 8px;
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--components_Admin_VotersModal_393_0);
   transition: all 0.2s ease;
 }
 
 .voter-item:hover {
-  background: #333333;
-  border-color: #4a4a4a;
+  background: var(--components_Admin_VotersModal_398_0);
+  border-color: var(--components_Admin_VotersModal_399_0);
 }
 
 .voter-info {
@@ -410,7 +410,7 @@ watch(
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, var(--components_Admin_VotersModal_413_0), var(--components_Admin_VotersModal_413_1));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -426,18 +426,18 @@ watch(
 }
 
 .voter-name {
-  color: #ffffff;
+  color: var(--components_Admin_VotersModal_429_0);
   font-weight: 500;
   font-size: 14px;
 }
 
 .vote-time {
-  color: #888;
+  color: var(--components_Admin_VotersModal_435_0);
   font-size: 12px;
 }
 
 .voter-number {
-  color: #888;
+  color: var(--components_Admin_VotersModal_440_0);
   font-size: 12px;
   font-weight: 500;
 }
@@ -454,11 +454,11 @@ watch(
 .empty-icon {
   width: 48px;
   height: 48px;
-  color: #666;
+  color: var(--components_Admin_VotersModal_457_0);
 }
 
 .empty-state p {
-  color: #888;
+  color: var(--components_Admin_VotersModal_461_0);
   margin: 0;
 }
 
@@ -469,8 +469,8 @@ watch(
 }
 
 .close-button {
-  background: #3a3a3a;
-  color: #ffffff;
+  background: var(--components_Admin_VotersModal_472_0);
+  color: var(--components_Admin_VotersModal_473_0);
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
@@ -481,7 +481,7 @@ watch(
 }
 
 .close-button:hover {
-  background: #4a4a4a;
+  background: var(--components_Admin_VotersModal_484_0);
 }
 
 /* 滚动条样式 */
@@ -490,17 +490,17 @@ watch(
 }
 
 .voters-container::-webkit-scrollbar-track {
-  background: #2a2a2a;
+  background: var(--components_Admin_VotersModal_493_0);
   border-radius: 3px;
 }
 
 .voters-container::-webkit-scrollbar-thumb {
-  background: #4a4a4a;
+  background: var(--components_Admin_VotersModal_498_0);
   border-radius: 3px;
 }
 
 .voters-container::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: var(--components_Admin_VotersModal_503_0);
 }
 
 /* 响应式设计 */

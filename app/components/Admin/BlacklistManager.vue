@@ -569,7 +569,7 @@ onMounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_BlacklistManager_572_0);
   border-radius: 10px;
 }
 </style>

@@ -54,7 +54,7 @@
 
       <!-- 迷你趋势图 -->
       <div v-if="trendData && trendData.length > 0" class="w-24 h-12 self-end mb-1">
-        <svg class="w-full h-full drop-shadow-[0_0_8px_rgba(59,130,246,0.2)]" viewBox="0 0 100 20">
+        <svg class="w-full h-full drop-shadow-[0_0_8px_var(--components_UI_Common_StatCard_57_0)]" viewBox="0 0 100 20">
           <polyline
             :points="trendPoints"
             :stroke="trendColor"
@@ -174,17 +174,17 @@ const trendPoints = computed(() => {
 
 const trendColor = computed(() => {
   if (!props.trendData || props.trendData.length < 2) {
-    if (props.change > 0) return '#10b981' // emerald-500
-    if (props.change < 0) return '#ef4444' // red-500
-    return '#3b82f6' // blue-500
+    if (props.change > 0) return 'var(--components_UI_Common_StatCard_177_0)' // emerald-500
+    if (props.change < 0) return 'var(--components_UI_Common_StatCard_178_0)' // red-500
+    return 'var(--components_UI_Common_StatCard_179_0)' // blue-500
   }
 
   const first = props.trendData[0]
   const last = props.trendData[props.trendData.length - 1]
 
-  if (last > first) return '#10b981' // emerald-500
-  if (last < first) return '#ef4444' // red-500
-  return '#3b82f6' // blue-500
+  if (last > first) return 'var(--components_UI_Common_StatCard_185_0)' // emerald-500
+  if (last < first) return 'var(--components_UI_Common_StatCard_186_0)' // red-500
+  return 'var(--components_UI_Common_StatCard_187_0)' // blue-500
 })
 </script>
 

@@ -210,17 +210,17 @@ const handleImageError = (event) => {
 
 .schedule-timetable th,
 .schedule-timetable td {
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--components_Admin_ScheduleTablePrint_213_0);
   padding: 8px;
   vertical-align: top;
   overflow: hidden;
 }
 
 .schedule-timetable th {
-  background: #f8f9fa;
+  background: var(--components_Admin_ScheduleTablePrint_220_0);
   font-weight: bold;
   text-align: center;
-  color: #333;
+  color: var(--components_Admin_ScheduleTablePrint_223_0);
 }
 
 .col-sequence {
@@ -238,12 +238,12 @@ const handleImageError = (event) => {
 }
 
 .playtime-header-row {
-  background: #e3f2fd;
+  background: var(--components_Admin_ScheduleTablePrint_241_0);
 }
 
 .playtime-header {
   font-weight: bold;
-  color: #1565c0;
+  color: var(--components_Admin_ScheduleTablePrint_246_0);
   text-align: center !important;
   padding: 6px !important;
 }
@@ -272,7 +272,7 @@ const handleImageError = (event) => {
 
 .song-title {
   font-weight: bold;
-  color: #333;
+  color: var(--components_Admin_ScheduleTablePrint_275_0);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -291,10 +291,10 @@ const handleImageError = (event) => {
 .replay-badge-print {
   display: inline-block;
   padding: 1px 4px;
-  background: #e3f2fd;
-  border: 1px solid #2196f3;
+  background: var(--components_Admin_ScheduleTablePrint_294_0);
+  border: 1px solid var(--components_Admin_ScheduleTablePrint_295_0);
   border-radius: 3px;
-  color: #1976d2;
+  color: var(--components_Admin_ScheduleTablePrint_297_0);
   font-size: 10px;
   font-weight: bold;
   flex-shrink: 0;
@@ -305,9 +305,9 @@ const handleImageError = (event) => {
 .cross-semester-badge-print {
   display: inline-block;
   padding: 1px 4px;
-  background: #f5f5f5;
-  border: 1px solid #d9d9d9;
-  color: #666;
+  background: var(--components_Admin_ScheduleTablePrint_308_0);
+  border: 1px solid var(--components_Admin_ScheduleTablePrint_309_0);
+  color: var(--components_Admin_ScheduleTablePrint_310_0);
   font-size: 10px;
   border-radius: 2px;
   font-weight: normal;
@@ -316,7 +316,7 @@ const handleImageError = (event) => {
 }
 
 .song-artist {
-  color: #666;
+  color: var(--components_Admin_ScheduleTablePrint_319_0);
   font-size: 11px;
   line-height: 1.2;
   white-space: nowrap;
@@ -328,7 +328,7 @@ const handleImageError = (event) => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #888;
+  color: var(--components_Admin_ScheduleTablePrint_331_0);
   font-size: 10px;
   line-height: 1.2;
   white-space: nowrap;
@@ -344,25 +344,25 @@ const handleImageError = (event) => {
 }
 
 .meta-divider {
-  color: #ccc;
+  color: var(--components_Admin_ScheduleTablePrint_347_0);
   font-size: 8px;
 }
 
 @media print {
   .schedule-timetable {
-    color: #000 !important;
+    color: var(--components_Admin_ScheduleTablePrint_353_0) !important;
   }
   .schedule-timetable th,
   .schedule-timetable td {
-    border-color: #ddd !important;
+    border-color: var(--components_Admin_ScheduleTablePrint_357_0) !important;
   }
   .schedule-timetable th {
-    background: #f0f0f0 !important;
+    background: var(--components_Admin_ScheduleTablePrint_360_0) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
   .playtime-header-row {
-    background: #e3f2fd !important;
+    background: var(--components_Admin_ScheduleTablePrint_365_0) !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

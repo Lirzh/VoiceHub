@@ -802,7 +802,7 @@ onMounted(refreshAll)
 <style scoped>
 textarea {
   scrollbar-width: thin;
-  scrollbar-color: #3f3f46 transparent;
+  scrollbar-color: var(--components_Admin_CardCodesManager_805_0) transparent;
 }
 
 textarea::-webkit-scrollbar {
@@ -810,7 +810,7 @@ textarea::-webkit-scrollbar {
 }
 
 textarea::-webkit-scrollbar-thumb {
-  background: #3f3f46;
+  background: var(--components_Admin_CardCodesManager_813_0);
   border-radius: 9999px;
 }
 </style>

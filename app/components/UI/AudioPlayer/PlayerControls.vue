@@ -170,7 +170,7 @@ defineExpose({
 }
 
 .control-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_UI_AudioPlayer_PlayerControls_173_0);
   border: none;
   border-radius: 50%;
   width: 36px;
@@ -185,7 +185,7 @@ defineExpose({
 }
 
 .control-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--components_UI_AudioPlayer_PlayerControls_188_0);
   transform: scale(1.05);
 }
 
@@ -201,13 +201,13 @@ defineExpose({
 .play-pause-btn {
   width: 44px;
   height: 44px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--components_UI_AudioPlayer_PlayerControls_204_0);
 }
 
 .loading-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--components_UI_AudioPlayer_PlayerControls_210_0);
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -240,7 +240,7 @@ defineExpose({
 .progress {
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--components_UI_AudioPlayer_PlayerControls_243_0);
   border-radius: 2px;
   position: relative;
   overflow: hidden;
@@ -254,7 +254,7 @@ defineExpose({
   left: 0;
   height: 100%;
   width: var(--progress-width, 0%);
-  background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+  background: linear-gradient(90deg, var(--components_UI_AudioPlayer_PlayerControls_257_0) 0%, var(--components_UI_AudioPlayer_PlayerControls_257_1) 100%);
   border-radius: 2px;
   transition: width 0.05s linear;
   will-change: width;
@@ -269,7 +269,7 @@ defineExpose({
   height: 12px;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px var(--components_UI_AudioPlayer_PlayerControls_272_0);
   opacity: 0;
   transition:
     opacity 0.2s ease,
@@ -319,8 +319,8 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.8);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  color: var(--components_UI_AudioPlayer_PlayerControls_322_0);
+  text-shadow: 0 1px 2px var(--components_UI_AudioPlayer_PlayerControls_323_0);
   width: 100%;
 }
 

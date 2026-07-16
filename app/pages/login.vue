@@ -99,7 +99,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="var(--pages_login_102_0)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
   opacity: 0.3;
 }
 
@@ -126,7 +126,7 @@ onMounted(async () => {
 
 .brand-logo:hover {
   transform: translateY(-3px) scale(1.02);
-  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 10px 20px var(--pages_login_129_0));
 }
 
 .brand-title {
@@ -220,7 +220,7 @@ onMounted(async () => {
   object-fit: contain;
   max-width: 100%;
   max-height: 100%;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 2px 8px var(--pages_login_223_0));
 }
 
 .school-logo {
@@ -230,7 +230,7 @@ onMounted(async () => {
   object-fit: contain;
   max-width: 100%;
   max-height: 100%;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 2px 8px var(--pages_login_233_0));
 }
 
 .form-title {
@@ -300,7 +300,7 @@ onMounted(async () => {
 
 .icp-link:hover,
 .voicehub-link:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--pages_login_303_0);
 }
 
 @media (max-width: 768px) {

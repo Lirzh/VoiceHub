@@ -443,11 +443,11 @@ defineExpose({
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #4a5568;
+  background: var(--components_Songs_RecentSongsModal_446_0);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #718096;
+  background: var(--components_Songs_RecentSongsModal_451_0);
 }
 </style>

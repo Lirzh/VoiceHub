@@ -1,6 +1,6 @@
 <template>
   <div
-    class="backdrop-blur-md p-6 rounded-xl border border-white/10 bg-slate-800/70 shadow-2xl max-w-[400px] mx-auto text-zinc-100 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_30px_rgba(0,0,0,0.2)]"
+    class="backdrop-blur-md p-6 rounded-xl border border-white/10 bg-slate-800/70 shadow-2xl max-w-[400px] mx-auto text-zinc-100 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_30px_var(--components_Admin_ScheduleForm_3_0)]"
   >
     <h3 class="mb-6 pb-2 border-b border-white/10 text-zinc-100 font-bold text-lg">
       为歌曲 "{{ song?.title }}" 创建排期
@@ -12,7 +12,7 @@
         <input
           id="playDate"
           v-model="playDate"
-          class="w-full p-3 border border-white/10 rounded-lg text-base bg-[#0f172a99] text-zinc-100 outline-none transition-colors duration-150 focus:border-indigo-500 focus:shadow-[0_0_0_2px_rgba(99,102,241,0.25)]"
+          class="w-full p-3 border border-white/10 rounded-lg text-base bg-[var(--components_Admin_ScheduleForm_15_0)] text-zinc-100 outline-none transition-colors duration-150 focus:border-indigo-500 focus:shadow-[0_0_0_2px_var(--components_Admin_ScheduleForm_15_1)]"
           required
           type="date"
         >

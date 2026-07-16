@@ -54,7 +54,7 @@ const formatPlatform = (platform) => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #111827; /* gray-900 */
+  background-color: var(--components_year-review_MiscSlide_57_0); /* gray-900 */
 }
 
 .bg-gradient {
@@ -63,7 +63,7 @@ const formatPlatform = (platform) => {
   left: 0;
   width: 100%;
   height: 50%;
-  background: linear-gradient(to bottom, #1f2937, transparent);
+  background: linear-gradient(to bottom, var(--components_year-review_MiscSlide_66_0), transparent);
   opacity: 0.2;
 }
 
@@ -79,8 +79,8 @@ const formatPlatform = (platform) => {
 .card {
   padding: 1.5rem;
   border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--components_year-review_MiscSlide_82_0);
+  border: 1px solid var(--components_year-review_MiscSlide_83_0);
   backdrop-filter: blur(12px);
   display: flex;
   flex-direction: column;
@@ -90,7 +90,7 @@ const formatPlatform = (platform) => {
 
 .label {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--components_year-review_MiscSlide_93_0);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-bottom: 0.5rem; /* adjusted */
@@ -99,7 +99,7 @@ const formatPlatform = (platform) => {
 .platform-value {
   font-size: 1.5rem; /* text-2xl */
   font-weight: 700;
-  background-image: linear-gradient(to right, #f87171, #fb923c);
+  background-image: linear-gradient(to right, var(--components_year-review_MiscSlide_102_0), var(--components_year-review_MiscSlide_102_1));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -119,19 +119,19 @@ const formatPlatform = (platform) => {
 .active-value {
   font-size: 2.25rem; /* text-4xl */
   font-weight: 700;
-  color: #fde047; /* yellow-300 */
+  color: var(--components_year-review_MiscSlide_122_0); /* yellow-300 */
 }
 
 .unit {
   font-size: 1rem;
   margin-left: 0.25rem;
-  color: #9ca3af;
+  color: var(--components_year-review_MiscSlide_128_0);
 }
 
 .votes-value {
   font-size: 1.875rem; /* text-3xl */
   font-weight: 700;
-  color: #67e8f9; /* cyan-300 */
+  color: var(--components_year-review_MiscSlide_134_0); /* cyan-300 */
 }
 
 @media (min-width: 768px) {

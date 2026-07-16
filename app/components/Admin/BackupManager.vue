@@ -520,8 +520,8 @@ const formatFileSize = (bytes) => {
 /* 主容器 */
 .backup-manager {
   min-height: 100vh;
-  background: #1a1a1a;
-  color: #e5e5e5;
+  background: var(--components_Admin_BackupManager_523_0);
+  color: var(--components_Admin_BackupManager_524_0);
   padding: 2rem;
   position: relative;
 }
@@ -535,13 +535,13 @@ const formatFileSize = (bytes) => {
 .header h3 {
   font-size: 2.5rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_538_0);
   margin: 0 0 1rem 0;
 }
 
 .header .description {
   font-size: 1.125rem;
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_544_0);
   margin: 0;
 }
 
@@ -556,8 +556,8 @@ const formatFileSize = (bytes) => {
 
 /* 操作卡片 */
 .action-card {
-  background: #2a2a2a;
-  border: 1px solid #404040;
+  background: var(--components_Admin_BackupManager_559_0);
+  border: 1px solid var(--components_Admin_BackupManager_560_0);
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
@@ -565,8 +565,8 @@ const formatFileSize = (bytes) => {
 }
 
 .action-card:hover {
-  border-color: #606060;
-  background: #2f2f2f;
+  border-color: var(--components_Admin_BackupManager_568_0);
+  background: var(--components_Admin_BackupManager_569_0);
 }
 
 .action-card .card-content {
@@ -582,12 +582,12 @@ const formatFileSize = (bytes) => {
   width: 4rem;
   height: 4rem;
   margin: 0 auto 1.5rem;
-  background: #404040;
+  background: var(--components_Admin_BackupManager_585_0);
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_590_0);
 }
 
 .action-icon svg {
@@ -599,12 +599,12 @@ const formatFileSize = (bytes) => {
 .action-card h4 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_602_0);
   margin: 0 0 0.75rem 0;
 }
 
 .action-card p {
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_607_0);
   font-size: 1rem;
   margin: 0 0 2rem 0;
   line-height: 1.6;
@@ -629,24 +629,24 @@ const formatFileSize = (bytes) => {
 }
 
 .action-btn.primary {
-  background: #4a90e2;
+  background: var(--components_Admin_BackupManager_632_0);
 }
 
 .action-btn.primary:hover {
-  background: #357abd;
+  background: var(--components_Admin_BackupManager_636_0);
 }
 
 .action-btn.secondary {
-  background: #606060;
+  background: var(--components_Admin_BackupManager_640_0);
 }
 
 .action-btn.secondary:hover {
-  background: #505050;
+  background: var(--components_Admin_BackupManager_644_0);
 }
 
 .action-btn:disabled {
-  background: #404040 !important;
-  color: #808080 !important;
+  background: var(--components_Admin_BackupManager_648_0) !important;
+  color: var(--components_Admin_BackupManager_649_0) !important;
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -663,7 +663,7 @@ const formatFileSize = (bytes) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--components_Admin_BackupManager_666_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -672,8 +672,8 @@ const formatFileSize = (bytes) => {
 }
 
 .modal {
-  background: #2a2a2a;
-  border: 1px solid #404040;
+  background: var(--components_Admin_BackupManager_675_0);
+  border: 1px solid var(--components_Admin_BackupManager_676_0);
   border-radius: 12px;
   max-width: 600px;
   width: 100%;
@@ -691,19 +691,19 @@ const formatFileSize = (bytes) => {
 
 .current-status h4 {
   margin: 0 0 15px 0;
-  color: #4a90e2;
+  color: var(--components_Admin_BackupManager_694_0);
   font-size: 18px;
 }
 
 .progress-stats p {
   margin: 5px 0;
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_700_0);
 }
 
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #404040;
+  background: var(--components_Admin_BackupManager_706_0);
   border-radius: 4px;
   margin: 15px 0;
   overflow: hidden;
@@ -711,7 +711,7 @@ const formatFileSize = (bytes) => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4a90e2, #357abd);
+  background: linear-gradient(90deg, var(--components_Admin_BackupManager_714_0), var(--components_Admin_BackupManager_714_1));
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -724,7 +724,7 @@ const formatFileSize = (bytes) => {
 .progress-details h5,
 .progress-errors h5 {
   margin: 0 0 10px 0;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_727_0);
   font-size: 14px;
   font-weight: 600;
 }
@@ -733,17 +733,17 @@ const formatFileSize = (bytes) => {
 .errors-list {
   max-height: 150px;
   overflow-y: auto;
-  border: 1px solid #505050;
+  border: 1px solid var(--components_Admin_BackupManager_736_0);
   border-radius: 6px;
   padding: 10px;
-  background: #333333;
+  background: var(--components_Admin_BackupManager_739_0);
 }
 
 .detail-item {
   padding: 4px 0;
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_744_0);
   font-size: 13px;
-  border-bottom: 1px solid #404040;
+  border-bottom: 1px solid var(--components_Admin_BackupManager_746_0);
 }
 
 .detail-item:last-child {
@@ -752,9 +752,9 @@ const formatFileSize = (bytes) => {
 
 .error-item {
   padding: 4px 0;
-  color: #ff6b6b;
+  color: var(--components_Admin_BackupManager_755_0);
   font-size: 13px;
-  border-bottom: 1px solid #4a2a2a;
+  border-bottom: 1px solid var(--components_Admin_BackupManager_757_0);
 }
 
 .error-item:last-child {
@@ -772,14 +772,14 @@ const formatFileSize = (bytes) => {
 .modal-title {
   font-size: 1.75rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_775_0);
   margin: 0;
 }
 
 .close-btn {
-  background: #404040;
+  background: var(--components_Admin_BackupManager_780_0);
   border: none;
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_782_0);
   cursor: pointer;
   padding: 0.75rem;
   border-radius: 8px;
@@ -787,8 +787,8 @@ const formatFileSize = (bytes) => {
 }
 
 .close-btn:hover {
-  background: #505050;
-  color: #ffffff;
+  background: var(--components_Admin_BackupManager_790_0);
+  color: var(--components_Admin_BackupManager_791_0);
 }
 
 .close-btn svg {
@@ -802,11 +802,11 @@ const formatFileSize = (bytes) => {
 
 .modal-footer {
   padding: 1.5rem 2rem;
-  border-top: 1px solid #404040;
+  border-top: 1px solid var(--components_Admin_BackupManager_805_0);
   display: flex;
   gap: 1rem;
   justify-content: flex-end;
-  background: #252525;
+  background: var(--components_Admin_BackupManager_809_0);
 }
 
 .modal-footer button {
@@ -822,7 +822,7 @@ const formatFileSize = (bytes) => {
   display: block;
   font-size: 1.125rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_825_0);
   margin-bottom: 1rem;
 }
 
@@ -838,8 +838,8 @@ const formatFileSize = (bytes) => {
   align-items: flex-start;
   gap: 1rem;
   padding: 1.25rem;
-  background: #333333;
-  border: 1px solid #505050;
+  background: var(--components_Admin_BackupManager_841_0);
+  border: 1px solid var(--components_Admin_BackupManager_842_0);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -847,8 +847,8 @@ const formatFileSize = (bytes) => {
 
 .radio-option:hover,
 .checkbox-option:hover {
-  border-color: #606060;
-  background: #383838;
+  border-color: var(--components_Admin_BackupManager_850_0);
+  background: var(--components_Admin_BackupManager_851_0);
 }
 
 .radio-option input[type='radio'],
@@ -856,7 +856,7 @@ const formatFileSize = (bytes) => {
   width: 1.25rem;
   height: 1.25rem;
   margin: 0;
-  accent-color: #4a90e2;
+  accent-color: var(--components_Admin_BackupManager_859_0);
   cursor: pointer;
 }
 
@@ -870,7 +870,7 @@ const formatFileSize = (bytes) => {
   display: block;
   font-size: 1rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_873_0);
   margin-bottom: 0.25rem;
 }
 
@@ -878,21 +878,21 @@ const formatFileSize = (bytes) => {
 .checkbox-option small {
   display: block;
   font-size: 0.875rem;
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_881_0);
   line-height: 1.4;
 }
 
 .checkbox-option.danger {
-  border-color: #d32f2f;
-  background: rgba(211, 47, 47, 0.1);
+  border-color: var(--components_Admin_BackupManager_886_0);
+  background: var(--components_Admin_BackupManager_887_0);
 }
 
 .checkbox-option.danger span {
-  color: #ff6b6b;
+  color: var(--components_Admin_BackupManager_891_0);
 }
 
 .checkbox-option.danger small {
-  color: #ff8a80;
+  color: var(--components_Admin_BackupManager_895_0);
 }
 
 /* 文件上传区域 */
@@ -901,37 +901,37 @@ const formatFileSize = (bytes) => {
 }
 
 .upload-area {
-  border: 2px dashed #505050;
+  border: 2px dashed var(--components_Admin_BackupManager_904_0);
   border-radius: 8px;
   padding: 3rem 2rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #333333;
+  background: var(--components_Admin_BackupManager_910_0);
 }
 
 .upload-area:hover,
 .upload-area.drag-over {
-  border-color: #4a90e2;
-  background: #383838;
+  border-color: var(--components_Admin_BackupManager_915_0);
+  background: var(--components_Admin_BackupManager_916_0);
 }
 
 .upload-area svg {
   width: 4rem;
   height: 4rem;
-  color: #4a90e2;
+  color: var(--components_Admin_BackupManager_922_0);
   margin-bottom: 1.5rem;
 }
 
 .upload-area h4 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_929_0);
   margin: 0 0 0.5rem 0;
 }
 
 .upload-area p {
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_934_0);
   font-size: 1rem;
   margin: 0;
 }
@@ -941,8 +941,8 @@ const formatFileSize = (bytes) => {
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem;
-  background: #333333;
-  border: 1px solid #505050;
+  background: var(--components_Admin_BackupManager_944_0);
+  border: 1px solid var(--components_Admin_BackupManager_945_0);
   border-radius: 8px;
   margin-top: 1rem;
 }
@@ -957,7 +957,7 @@ const formatFileSize = (bytes) => {
 .file-info svg {
   width: 1.5rem;
   height: 1.5rem;
-  color: #4a90e2;
+  color: var(--components_Admin_BackupManager_960_0);
   flex-shrink: 0;
 }
 
@@ -969,28 +969,28 @@ const formatFileSize = (bytes) => {
   display: block;
   font-size: 1rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--components_Admin_BackupManager_972_0);
   margin-bottom: 0.25rem;
 }
 
 .file-size {
   display: block;
   font-size: 0.875rem;
-  color: #a0a0a0;
+  color: var(--components_Admin_BackupManager_979_0);
 }
 
 .remove-file-btn {
-  background: rgba(211, 47, 47, 0.2);
+  background: var(--components_Admin_BackupManager_983_0);
   border: none;
   padding: 0.75rem;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  color: #ff6b6b;
+  color: var(--components_Admin_BackupManager_989_0);
 }
 
 .remove-file-btn:hover {
-  background: rgba(211, 47, 47, 0.3);
+  background: var(--components_Admin_BackupManager_993_0);
 }
 
 .remove-file-btn svg {
@@ -1000,8 +1000,8 @@ const formatFileSize = (bytes) => {
 
 /* 警告框 */
 .warning-box {
-  background: rgba(255, 152, 0, 0.1);
-  border: 1px solid #ff9800;
+  background: var(--components_Admin_BackupManager_1003_0);
+  border: 1px solid var(--components_Admin_BackupManager_1004_0);
   border-radius: 8px;
   padding: 1.5rem;
   display: flex;
@@ -1013,7 +1013,7 @@ const formatFileSize = (bytes) => {
 .warning-box svg {
   width: 1.5rem;
   height: 1.5rem;
-  color: #ff9800;
+  color: var(--components_Admin_BackupManager_1016_0);
   flex-shrink: 0;
   margin-top: 0.125rem;
 }
@@ -1023,14 +1023,14 @@ const formatFileSize = (bytes) => {
 }
 
 .warning-box h4 {
-  color: #ff9800;
+  color: var(--components_Admin_BackupManager_1026_0);
   font-weight: 600;
   margin: 0 0 0.5rem 0;
   font-size: 1rem;
 }
 
 .warning-box p {
-  color: #ffb74d;
+  color: var(--components_Admin_BackupManager_1033_0);
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.5;
@@ -1045,7 +1045,7 @@ const formatFileSize = (bytes) => {
   border-radius: 8px;
   color: white;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px var(--components_Admin_BackupManager_1048_0);
   z-index: 1001;
   animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -1056,23 +1056,23 @@ const formatFileSize = (bytes) => {
 }
 
 .notification.success {
-  background: #2e7d32;
-  border: 1px solid #4caf50;
+  background: var(--components_Admin_BackupManager_1059_0);
+  border: 1px solid var(--components_Admin_BackupManager_1060_0);
 }
 
 .notification.error {
-  background: #d32f2f;
-  border: 1px solid #f44336;
+  background: var(--components_Admin_BackupManager_1064_0);
+  border: 1px solid var(--components_Admin_BackupManager_1065_0);
 }
 
 .notification.warning {
-  background: #f57c00;
-  border: 1px solid #ff9800;
+  background: var(--components_Admin_BackupManager_1069_0);
+  border: 1px solid var(--components_Admin_BackupManager_1070_0);
 }
 
 .notification.info {
-  background: #1976d2;
-  border: 1px solid #2196f3;
+  background: var(--components_Admin_BackupManager_1074_0);
+  border: 1px solid var(--components_Admin_BackupManager_1075_0);
 }
 
 @keyframes slideInRight {

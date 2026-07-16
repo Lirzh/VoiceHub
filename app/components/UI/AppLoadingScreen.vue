@@ -119,8 +119,8 @@ const warpSettings = computed(() => ({
   justify-content: space-between;
   padding: 0;
   overflow: hidden;
-  color: #f3f4f6;
-  background: #070709;
+  color: var(--components_UI_AppLoadingScreen_122_0);
+  background: var(--components_UI_AppLoadingScreen_123_0);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   user-select: none;
 }
@@ -152,7 +152,7 @@ const warpSettings = computed(() => ({
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--components_UI_AppLoadingScreen_155_0);
 }
 
 .progress-ring {
@@ -162,17 +162,17 @@ const warpSettings = computed(() => ({
 }
 
 .ring-track {
-  stroke: rgba(255, 255, 255, 0.05);
+  stroke: var(--components_UI_AppLoadingScreen_165_0);
 }
 
 .ring-fill {
-  stroke: #6366f1;
-  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
+  stroke: var(--components_UI_AppLoadingScreen_169_0);
+  filter: drop-shadow(0 0 8px var(--components_UI_AppLoadingScreen_170_0));
   transition: stroke-dashoffset 360ms cubic-bezier(0.22, 1, 0.36, 1), filter 400ms ease;
 }
 
 .ring-fill.accelerating {
-  filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.8)) brightness(1.3);
+  filter: drop-shadow(0 0 20px var(--components_UI_AppLoadingScreen_175_0)) brightness(1.3);
 }
 
 .ring-label {
@@ -188,7 +188,7 @@ const warpSettings = computed(() => ({
   font-size: 26px;
   font-weight: 700;
   letter-spacing: normal;
-  color: #fff;
+  color: var(--components_UI_AppLoadingScreen_191_0);
 }
 
 .text-container {
@@ -214,7 +214,7 @@ const warpSettings = computed(() => ({
   font-size: 18px;
   font-weight: 500;
   letter-spacing: -0.025em;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--components_UI_AppLoadingScreen_217_0);
   text-wrap: balance;
 }
 
@@ -229,7 +229,7 @@ const warpSettings = computed(() => ({
   font-size: 10px;
   font-family: ui-monospace, monospace;
   letter-spacing: 0.2em;
-  color: rgba(129, 140, 248, 0.8);
+  color: var(--components_UI_AppLoadingScreen_232_0);
   text-transform: uppercase;
 }
 
@@ -239,8 +239,8 @@ const warpSettings = computed(() => ({
   left: 0;
   height: 3px;
   z-index: 20;
-  background: linear-gradient(90deg, #6366f1, #a78bfa);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.6), 0 0 40px rgba(99, 102, 241, 0.25);
+  background: linear-gradient(90deg, var(--components_UI_AppLoadingScreen_242_0), var(--components_UI_AppLoadingScreen_242_1));
+  box-shadow: 0 0 12px var(--components_UI_AppLoadingScreen_243_0), 0 0 40px var(--components_UI_AppLoadingScreen_243_1);
   transition: width 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 

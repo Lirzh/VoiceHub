@@ -67,7 +67,7 @@
                       >
                       <div
                         v-if="selectedQuality === option.value"
-                        class="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                        class="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_var(--components_Songs_NeteaseUploadDialog_70_0)]"
                       />
                     </div>
                     <span class="text-[10px] text-zinc-500 relative z-10">{{
@@ -605,12 +605,12 @@ const startUpload = async () => {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_Songs_NeteaseUploadDialog_608_0);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--components_Songs_NeteaseUploadDialog_613_0);
 }
 
 @keyframes shimmer {

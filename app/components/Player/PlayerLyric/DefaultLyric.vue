@@ -824,6 +824,6 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   font-size: 22px;
-  color: #fff;
+  color: var(--components_Player_PlayerLyric_DefaultLyric_827_0);
 }
 </style>

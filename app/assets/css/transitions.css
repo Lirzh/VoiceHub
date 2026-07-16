@@ -97,7 +97,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  background: linear-gradient(135deg, var(--assets_css_transitions_100_0) 0%, var(--assets_css_transitions_100_1) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,8 +107,8 @@
 .loading-spinner {
   width: 60px;
   height: 60px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top: 3px solid #4f46e5;
+  border: 3px solid var(--assets_css_transitions_110_0);
+  border-top: 3px solid var(--assets_css_transitions_111_0);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

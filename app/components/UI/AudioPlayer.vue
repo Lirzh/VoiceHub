@@ -69,7 +69,7 @@
               />
             </button>
             <button class="mobile-control-btn" @click.stop="stopPlaying">
-              <Icon name="close" :size="20" color="rgba(255,255,255,0.6)" />
+              <Icon name="close" :size="20" color="var(--components_UI_AudioPlayer_72_0)" />
             </button>
           </div>
 
@@ -197,9 +197,9 @@
               :show-translation="false"
               :translation-lyrics="control.lyrics.translationLyrics.value"
               :word-by-word-lyrics="control.lyrics.wordByWordLyrics.value"
-              active-line-color="#ffffff"
+              active-line-color="var(--components_UI_AudioPlayer_200_0)"
               height="120px"
-              inactive-line-color="rgba(255, 255, 255, 0.6)"
+              inactive-line-color="var(--components_UI_AudioPlayer_202_0)"
               @seek="handleLyricSeek"
             />
           </div>
@@ -1842,20 +1842,20 @@ const getFirstChar = (text) => {
   0%,
   100% {
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      0 4px 16px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.1),
-      0 0 0 1px rgba(255, 255, 255, 0.1);
+      0 8px 32px var(--components_UI_AudioPlayer_1845_0),
+      0 4px 16px var(--components_UI_AudioPlayer_1846_0),
+      inset 0 1px 0 var(--components_UI_AudioPlayer_1847_0),
+      inset 0 -1px 0 var(--components_UI_AudioPlayer_1848_0),
+      0 0 0 1px var(--components_UI_AudioPlayer_1849_0);
   }
   50% {
     box-shadow:
-      0 12px 48px rgba(0, 0, 0, 0.4),
-      0 6px 24px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.15),
-      0 0 40px rgba(255, 255, 255, 0.08);
+      0 12px 48px var(--components_UI_AudioPlayer_1853_0),
+      0 6px 24px var(--components_UI_AudioPlayer_1854_0),
+      inset 0 1px 0 var(--components_UI_AudioPlayer_1855_0),
+      inset 0 -1px 0 var(--components_UI_AudioPlayer_1856_0),
+      0 0 0 1px var(--components_UI_AudioPlayer_1857_0),
+      0 0 40px var(--components_UI_AudioPlayer_1858_0);
   }
 }
 
@@ -1877,7 +1877,7 @@ const getFirstChar = (text) => {
   left: 0;
   right: 0;
   height: 20vh;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.3));
+  background: linear-gradient(to bottom, var(--components_UI_AudioPlayer_1880_0), var(--components_UI_AudioPlayer_1880_1));
   z-index: 999;
   backdrop-filter: blur(1px);
   pointer-events: none;
@@ -1941,11 +1941,11 @@ const getFirstChar = (text) => {
   padding: 0 12px;
   flex-direction: row;
   align-items: center;
-  background: rgba(20, 20, 25, 0.85);
+  background: var(--components_UI_AudioPlayer_1944_0);
   backdrop-filter: blur(20px) saturate(1.8);
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--components_UI_AudioPlayer_1947_0);
+  box-shadow: 0 8px 32px var(--components_UI_AudioPlayer_1948_0);
   animation: none;
   overflow: hidden;
 }
@@ -1961,15 +1961,15 @@ const getFirstChar = (text) => {
   left: 0;
   right: 0;
   height: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_UI_AudioPlayer_1964_0);
   cursor: pointer;
   z-index: 10;
 }
 
 .mobile-top-progress .progress-fill {
   height: 100%;
-  background: #0b5afe;
-  box-shadow: 0 0 8px rgba(11, 90, 254, 0.6);
+  background: var(--components_UI_AudioPlayer_1971_0);
+  box-shadow: 0 0 8px var(--components_UI_AudioPlayer_1972_0);
   border-radius: 0 1px 1px 0;
 }
 
@@ -1984,7 +1984,7 @@ const getFirstChar = (text) => {
   height: 44px;
   aspect-ratio: 1;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px var(--components_UI_AudioPlayer_1987_0);
 }
 
 .music-widget.mobile-player-bar .song-info {
@@ -2038,7 +2038,7 @@ const getFirstChar = (text) => {
 .loading-spinner-small {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--components_UI_AudioPlayer_2041_0);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -2067,7 +2067,7 @@ const getFirstChar = (text) => {
   flex-shrink: 0;
   align-items: center;
   border-radius: 7px;
-  background: rgba(74, 74, 74, 0.39);
+  background: var(--components_UI_AudioPlayer_2070_0);
   height: 7px;
   width: 100%;
   max-width: 376px;
@@ -2080,7 +2080,7 @@ const getFirstChar = (text) => {
 }
 
 .progress-fill {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--components_UI_AudioPlayer_2083_0);
   height: 100%;
   transition: width 0.1s linear;
   border-radius: 6px;
@@ -2098,21 +2098,21 @@ const getFirstChar = (text) => {
   align-items: flex-start;
   border-radius: 22px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)),
-    rgba(128, 128, 128, 0.25);
+    linear-gradient(135deg, var(--components_UI_AudioPlayer_2101_0), var(--components_UI_AudioPlayer_2101_1)),
+    var(--components_UI_AudioPlayer_2102_0);
   padding: 10px 7px 10px 13px;
   width: 400px;
   height: 165px;
   backdrop-filter: blur(60px) saturate(2) brightness(1.1);
   -webkit-backdrop-filter: blur(60px) saturate(2) brightness(1.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--components_UI_AudioPlayer_2108_0);
   box-shadow:
-    0 16px 48px rgba(0, 0, 0, 0.3),
-    0 8px 24px rgba(0, 0, 0, 0.2),
-    0 4px 12px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.05);
+    0 16px 48px var(--components_UI_AudioPlayer_2110_0),
+    0 8px 24px var(--components_UI_AudioPlayer_2111_0),
+    0 4px 12px var(--components_UI_AudioPlayer_2112_0),
+    inset 0 1px 0 var(--components_UI_AudioPlayer_2113_0),
+    inset 0 -1px 0 var(--components_UI_AudioPlayer_2114_0),
+    0 0 0 1px var(--components_UI_AudioPlayer_2115_0);
   z-index: 1000;
   will-change: transform, opacity;
   font-family:
@@ -2125,14 +2125,14 @@ const getFirstChar = (text) => {
 .music-widget:hover {
   transform: translateX(-50%) translateY(-2px);
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    0 12px 32px rgba(0, 0, 0, 0.25),
-    0 6px 16px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 0 40px rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
+    0 20px 60px var(--components_UI_AudioPlayer_2128_0),
+    0 12px 32px var(--components_UI_AudioPlayer_2129_0),
+    0 6px 16px var(--components_UI_AudioPlayer_2130_0),
+    inset 0 1px 0 var(--components_UI_AudioPlayer_2131_0),
+    inset 0 -1px 0 var(--components_UI_AudioPlayer_2132_0),
+    0 0 0 1px var(--components_UI_AudioPlayer_2133_0),
+    0 0 40px var(--components_UI_AudioPlayer_2134_0);
+  border-color: var(--components_UI_AudioPlayer_2135_0);
 }
 
 /* 标题区域 */
@@ -2161,7 +2161,7 @@ const getFirstChar = (text) => {
 }
 
 .cover-container.clickable:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px var(--components_UI_AudioPlayer_2164_0);
 }
 
 .cover-container.clickable:hover .cover-hover-overlay {
@@ -2190,7 +2190,7 @@ const getFirstChar = (text) => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--components_UI_AudioPlayer_2193_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2207,8 +2207,8 @@ const getFirstChar = (text) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--components_UI_AudioPlayer_2210_0) 0%, var(--components_UI_AudioPlayer_2210_1) 100%);
+  color: var(--components_UI_AudioPlayer_2211_0);
   font-size: 18px;
   font-weight: 600;
   font-family:
@@ -2236,7 +2236,7 @@ const getFirstChar = (text) => {
   line-height: 22px;
   padding-bottom: 2px;
   letter-spacing: -0.4px;
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2239_0);
   font-family:
     'SF Pro', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', SimHei, Arial, Helvetica,
     sans-serif;
@@ -2256,7 +2256,7 @@ const getFirstChar = (text) => {
   overflow: hidden;
   line-height: 20px;
   letter-spacing: -0.4px;
-  color: #ffffff75;
+  color: var(--components_UI_AudioPlayer_2259_0);
   font-family:
     'SF Pro', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', SimHei, Arial, Helvetica,
     sans-serif;
@@ -2277,7 +2277,7 @@ const getFirstChar = (text) => {
   align-items: center;
   justify-content: center;
   border-radius: 100px;
-  background: #00000042;
+  background: var(--components_UI_AudioPlayer_2280_0);
   padding: 6px;
   width: 32px;
   height: 32px;
@@ -2289,12 +2289,12 @@ const getFirstChar = (text) => {
 }
 
 .close-button:hover {
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--components_UI_AudioPlayer_2292_0);
   transform: scale(1.05);
 }
 
 .close-icon {
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2297_0);
   font-size: 15px;
   line-height: 1;
   font-family:
@@ -2331,7 +2331,7 @@ const getFirstChar = (text) => {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--components_UI_AudioPlayer_2334_0);
   border-radius: 7px;
   height: 8px;
   width: 100%;
@@ -2344,21 +2344,21 @@ const getFirstChar = (text) => {
 }
 
 .ios-progress-bar:hover {
-  border-color: #333;
+  border-color: var(--components_UI_AudioPlayer_2347_0);
   box-shadow:
-    0 0 20px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 0 20px var(--components_UI_AudioPlayer_2349_0),
+    inset 0 1px 0 var(--components_UI_AudioPlayer_2350_0);
 }
 
 .progress-fill {
-  background: linear-gradient(90deg, #ffffffb2, #ffffff);
+  background: linear-gradient(90deg, var(--components_UI_AudioPlayer_2354_0), var(--components_UI_AudioPlayer_2354_1));
   height: 8px;
   transition: width 0.1s linear;
   border-radius: 7px;
   position: absolute;
   left: 0;
   top: 0;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 10px var(--components_UI_AudioPlayer_2361_0);
 }
 
 /* 时间和音质显示 */
@@ -2376,7 +2376,7 @@ const getFirstChar = (text) => {
   width: 60px;
   line-height: 18px;
   letter-spacing: 0.42px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--components_UI_AudioPlayer_2379_0);
   font-family:
     'SF Pro', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', SimHei, Arial, Helvetica,
     sans-serif;
@@ -2396,7 +2396,7 @@ const getFirstChar = (text) => {
 }
 
 .clickable-time:hover {
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2399_0);
   transform: scale(1.05);
 }
 
@@ -2411,10 +2411,10 @@ const getFirstChar = (text) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff1a;
+  background: var(--components_UI_AudioPlayer_2414_0);
   border-radius: 4px;
   padding: 0 8px;
-  color: #ffffffb3;
+  color: var(--components_UI_AudioPlayer_2417_0);
   font-size: 10px;
   font-weight: 600;
   backdrop-filter: blur(10px);
@@ -2424,8 +2424,8 @@ const getFirstChar = (text) => {
 }
 
 .audio-quality-badge:hover {
-  background: #ffffff26;
-  color: #ffffff;
+  background: var(--components_UI_AudioPlayer_2427_0);
+  color: var(--components_UI_AudioPlayer_2428_0);
 }
 
 /* 控制按钮区域 */
@@ -2442,7 +2442,7 @@ const getFirstChar = (text) => {
 .ios-control-btn {
   background: none;
   border: none;
-  color: #ffffff92;
+  color: var(--components_UI_AudioPlayer_2445_0);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   display: flex;
@@ -2471,17 +2471,17 @@ const getFirstChar = (text) => {
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--components_UI_AudioPlayer_2474_0) 0%, transparent 70%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .ios-control-btn:hover {
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2480_0);
   transform: scale(1.1);
   box-shadow:
-    0 0 20px rgba(255, 255, 255, 0.2),
-    0 0 40px rgba(255, 255, 255, 0.1);
+    0 0 20px var(--components_UI_AudioPlayer_2483_0),
+    0 0 40px var(--components_UI_AudioPlayer_2484_0);
 }
 
 .ios-control-btn:hover::before {
@@ -2491,8 +2491,8 @@ const getFirstChar = (text) => {
 .ios-control-btn:active {
   transform: scale(0.95);
   box-shadow:
-    0 0 15px rgba(255, 255, 255, 0.3),
-    inset 0 0 10px rgba(255, 255, 255, 0.1);
+    0 0 15px var(--components_UI_AudioPlayer_2494_0),
+    inset 0 0 10px var(--components_UI_AudioPlayer_2495_0);
 }
 
 .ios-control-btn:disabled {
@@ -2550,12 +2550,12 @@ const getFirstChar = (text) => {
 /* 歌词面板样式 */
 .lyrics-panel {
   margin-top: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--components_UI_AudioPlayer_2553_0);
   border-radius: 12px;
   padding: 0.5rem;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--components_UI_AudioPlayer_2558_0);
 }
 
 /* 歌词滑动动画 */
@@ -2633,7 +2633,7 @@ const getFirstChar = (text) => {
 .loading-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--components_UI_AudioPlayer_2636_0);
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -2684,7 +2684,7 @@ const getFirstChar = (text) => {
   width: 60px;
   line-height: 18px;
   letter-spacing: 0.42px;
-  color: #ffffffb3;
+  color: var(--components_UI_AudioPlayer_2687_0);
   font-family:
     'SF Pro', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', SimHei, Arial, Helvetica,
     sans-serif;
@@ -2703,10 +2703,10 @@ const getFirstChar = (text) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff1a;
+  background: var(--components_UI_AudioPlayer_2706_0);
   border-radius: 4px;
   padding: 0 8px;
-  color: #ffffffb3;
+  color: var(--components_UI_AudioPlayer_2709_0);
   font-size: 10px;
   font-weight: 600;
   backdrop-filter: blur(10px);
@@ -2716,8 +2716,8 @@ const getFirstChar = (text) => {
 }
 
 .audio-quality:hover {
-  background: #ffffff26;
-  color: #ffffff;
+  background: var(--components_UI_AudioPlayer_2719_0);
+  color: var(--components_UI_AudioPlayer_2720_0);
 }
 
 .audio-quality:active {
@@ -2739,13 +2739,13 @@ const getFirstChar = (text) => {
   width: 39px;
   font-size: 25px;
   text-align: center;
-  color: #ffffff92;
+  color: var(--components_UI_AudioPlayer_2742_0);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .lyrics-btn:hover {
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2748_0);
   transform: scale(1.1);
 }
 
@@ -2753,7 +2753,7 @@ const getFirstChar = (text) => {
 .control-btn {
   line-height: 1;
   font-size: 24px;
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2756_0);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -2778,7 +2778,7 @@ const getFirstChar = (text) => {
 .play-pause-btn {
   line-height: 44px;
   font-size: 37px;
-  color: #ffffff;
+  color: var(--components_UI_AudioPlayer_2781_0);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -2823,28 +2823,28 @@ const getFirstChar = (text) => {
   left: 50%;
   transform: translateX(-50%);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15)),
-    rgba(128, 128, 128, 0.85);
+    linear-gradient(135deg, var(--components_UI_AudioPlayer_2826_0), var(--components_UI_AudioPlayer_2826_1)),
+    var(--components_UI_AudioPlayer_2827_0);
   border-radius: 12px;
   padding: 8px 0;
   backdrop-filter: blur(60px) saturate(2) brightness(1.1);
   -webkit-backdrop-filter: blur(60px) saturate(2) brightness(1.1);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--components_UI_AudioPlayer_2832_0);
   z-index: 9999;
   min-width: 120px;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.4),
-    0 12px 32px rgba(0, 0, 0, 0.3),
-    0 6px 16px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 0 30px rgba(255, 255, 255, 0.1);
+    0 20px 60px var(--components_UI_AudioPlayer_2836_0),
+    0 12px 32px var(--components_UI_AudioPlayer_2837_0),
+    0 6px 16px var(--components_UI_AudioPlayer_2838_0),
+    inset 0 1px 0 var(--components_UI_AudioPlayer_2839_0),
+    inset 0 -1px 0 var(--components_UI_AudioPlayer_2840_0),
+    0 0 0 1px var(--components_UI_AudioPlayer_2841_0),
+    0 0 30px var(--components_UI_AudioPlayer_2842_0);
 }
 
 .quality-option {
   padding: 8px 16px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--components_UI_AudioPlayer_2847_0);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   font-size: 12px;
@@ -2864,18 +2864,18 @@ const getFirstChar = (text) => {
   right: 0;
   bottom: 0;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  background: linear-gradient(135deg, var(--components_UI_AudioPlayer_2867_0), var(--components_UI_AudioPlayer_2867_1));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
 .quality-option:hover {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--components_UI_AudioPlayer_2873_0);
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--components_UI_AudioPlayer_2875_0);
   box-shadow:
-    0 4px 16px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 4px 16px var(--components_UI_AudioPlayer_2877_0),
+    inset 0 1px 0 var(--components_UI_AudioPlayer_2878_0);
 }
 
 .quality-option:hover::before {
@@ -2883,18 +2883,18 @@ const getFirstChar = (text) => {
 }
 
 .quality-option.active {
-  color: #007aff;
+  color: var(--components_UI_AudioPlayer_2886_0);
   background:
-    linear-gradient(135deg, rgba(0, 122, 255, 0.25), rgba(0, 122, 255, 0.15)),
-    rgba(0, 122, 255, 0.1);
-  border: 1px solid rgba(0, 122, 255, 0.6);
+    linear-gradient(135deg, var(--components_UI_AudioPlayer_2888_0), var(--components_UI_AudioPlayer_2888_1)),
+    var(--components_UI_AudioPlayer_2889_0);
+  border: 1px solid var(--components_UI_AudioPlayer_2890_0);
   font-weight: 600;
   transform: translateY(-2px);
   box-shadow:
-    0 6px 20px rgba(0, 122, 255, 0.4),
-    0 2px 8px rgba(0, 122, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 0 0 1px rgba(0, 122, 255, 0.2);
+    0 6px 20px var(--components_UI_AudioPlayer_2894_0),
+    0 2px 8px var(--components_UI_AudioPlayer_2895_0),
+    inset 0 1px 0 var(--components_UI_AudioPlayer_2896_0),
+    0 0 0 1px var(--components_UI_AudioPlayer_2897_0);
 }
 
 /* 音质下拉动画 - 向上弹出优化 */
@@ -2925,13 +2925,13 @@ const getFirstChar = (text) => {
 /* 毛玻璃效果增强 */
 @supports (backdrop-filter: blur(50px)) {
   .global-audio-player {
-    background: rgba(128, 128, 128, 0.25);
+    background: var(--components_UI_AudioPlayer_2928_0);
   }
 }
 
 @supports not (backdrop-filter: blur(50px)) {
   .global-audio-player {
-    background: rgba(128, 128, 128, 0.8);
+    background: var(--components_UI_AudioPlayer_2934_0);
   }
 }
 </style>

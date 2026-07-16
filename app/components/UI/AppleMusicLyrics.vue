@@ -66,8 +66,8 @@ const props = defineProps({
   height: { type: String, default: '400px' },
   fontSize: { type: Number, default: 18 },
   lineHeight: { type: Number, default: 1.6 },
-  activeLineColor: { type: String, default: '#ffffff' },
-  inactiveLineColor: { type: String, default: 'rgba(255, 255, 255, 0.6)' },
+  activeLineColor: { type: String, default: 'var(--components_UI_AppleMusicLyrics_69_0)' },
+  inactiveLineColor: { type: String, default: 'var(--components_UI_AppleMusicLyrics_70_0)' },
   backgroundColor: { type: String, default: 'transparent' },
 
   // 交互配置
@@ -173,13 +173,13 @@ watch(
 }
 
 .lyric-line:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--components_UI_AppleMusicLyrics_176_0);
 }
 
 .lyric-line.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--components_UI_AppleMusicLyrics_180_0);
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px var(--components_UI_AppleMusicLyrics_182_0);
 }
 
 .main-lyric {
@@ -194,12 +194,12 @@ watch(
   font-size: 0.85em;
   opacity: 0.8;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--components_UI_AppleMusicLyrics_197_0);
   margin-top: 4px;
 }
 
 .lyric-line.active .translation-lyric {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--components_UI_AppleMusicLyrics_202_0);
 }
 
 .placeholder {
@@ -208,19 +208,19 @@ watch(
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_UI_AppleMusicLyrics_211_0);
   font-size: 16px;
 }
 
 .placeholder.error {
-  color: #ff6b6b;
+  color: var(--components_UI_AppleMusicLyrics_216_0);
 }
 
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-top: 2px solid rgba(255, 255, 255, 0.6);
+  border: 2px solid var(--components_UI_AppleMusicLyrics_222_0);
+  border-top: 2px solid var(--components_UI_AppleMusicLyrics_223_0);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 12px;
@@ -249,18 +249,18 @@ watch(
 
 .custom-lyric-player::before {
   top: 0;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+  background: linear-gradient(to bottom, var(--components_UI_AppleMusicLyrics_252_0), transparent);
 }
 
 .custom-lyric-player::after {
   bottom: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  background: linear-gradient(to top, var(--components_UI_AppleMusicLyrics_257_0), transparent);
 }
 
 /* 深色主题适配 */
 @media (prefers-color-scheme: dark) {
   .placeholder {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--components_UI_AppleMusicLyrics_263_0);
   }
 }
 

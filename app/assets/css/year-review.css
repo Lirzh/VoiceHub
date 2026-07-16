@@ -97,19 +97,19 @@
 
 /* Gradients */
 .bg-gradient-intro {
-  background: linear-gradient(135deg, #111827 0%, #000000 50%, #111827 100%);
+  background: linear-gradient(135deg, var(--assets_css_year-review_100_0) 0%, var(--assets_css_year-review_100_1) 50%, var(--assets_css_year-review_100_0) 100%);
 }
 
 .bg-gradient-text-intro {
-  background-image: linear-gradient(to right, #ffffff, #e5e7eb, #6b7280);
+  background-image: linear-gradient(to right, var(--assets_css_year-review_104_0), var(--assets_css_year-review_104_1), var(--assets_css_year-review_104_2));
 }
 
 .bg-gradient-artist {
-  background: linear-gradient(to bottom right, #e9d5ff, #f472b6, #fb923c);
+  background: linear-gradient(to bottom right, var(--assets_css_year-review_108_0), var(--assets_css_year-review_108_1), var(--assets_css_year-review_108_2));
 }
 
 .bg-gradient-numbers {
-  background-image: linear-gradient(to bottom, #60a5fa, #1d4ed8);
+  background-image: linear-gradient(to bottom, var(--assets_css_year-review_112_0), var(--assets_css_year-review_112_1));
 }
 
 /* Slide Transitions */

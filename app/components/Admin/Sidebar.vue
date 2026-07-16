@@ -2,7 +2,7 @@
 <template>
   <aside
     :class="[
-      'fixed inset-y-0 left-0 z-50 w-64 bg-[#09090b] border-r border-zinc-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0',
+      'fixed inset-y-0 left-0 z-50 w-64 bg-[var(--components_Admin_Sidebar_5_0)] border-r border-zinc-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0',
       isOpen ? 'translate-x-0' : '-translate-x-full'
     ]"
   >
@@ -60,7 +60,7 @@
                 <!-- 选中状态指示器 -->
                 <div
                   v-if="activeTab === item.id"
-                  class="ml-auto w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(96,165,250,0.6)]"
+                  class="ml-auto w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_8px_var(--components_Admin_Sidebar_63_0)]"
                 />
               </button>
             </template>
@@ -249,10 +249,10 @@ const getRoleDisplayName = (role) => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_Sidebar_252_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_Sidebar_256_0);
 }
 </style>

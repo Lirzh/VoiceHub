@@ -319,7 +319,7 @@
                     class="flex items-center gap-1.5 text-emerald-500 font-black uppercase text-[10px] tracking-widest"
                   >
                     <div
-                      class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                      class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_var(--components_Admin_UserManager_322_0)]"
                     />
                     正常
                   </div>
@@ -429,7 +429,7 @@
                   class="flex items-center gap-1.5 text-emerald-500 font-black uppercase text-[10px] tracking-widest"
                 >
                   <div
-                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                    class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_var(--components_Admin_UserManager_432_0)]"
                   />
                   正常
                 </div>
@@ -2785,12 +2785,12 @@ onBeforeUnmount(() => {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #4a5568;
+  background: var(--components_Admin_UserManager_2788_0);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #718096;
+  background: var(--components_Admin_UserManager_2793_0);
 }
 
 /* 确保模态框中的表格在移动端可以滚动 */
@@ -2805,7 +2805,7 @@ onBeforeUnmount(() => {
 .tree-branch {
   margin-left: 1rem;
   padding-left: 0.75rem;
-  border-left: 1px solid rgba(63, 63, 70, 0.55);
+  border-left: 1px solid var(--components_Admin_UserManager_2808_0);
 }
 
 .tree-toggle {
@@ -2815,14 +2815,14 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #71717a;
+  color: var(--components_Admin_UserManager_2818_0);
   border-radius: 0.375rem;
   transition: color 0.2s ease, background-color 0.2s ease;
 }
 
 .tree-toggle:hover {
-  color: #60a5fa;
-  background: rgba(39, 39, 42, 0.8);
+  color: var(--components_Admin_UserManager_2824_0);
+  background: var(--components_Admin_UserManager_2825_0);
 }
 
 .tree-label {
@@ -2834,7 +2834,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.375rem;
   border-radius: 0.5rem;
-  color: #a1a1aa;
+  color: var(--components_Admin_UserManager_2837_0);
   font-size: 0.75rem;
   font-weight: 700;
   text-align: left;
@@ -2842,18 +2842,18 @@ onBeforeUnmount(() => {
 }
 
 .tree-label:hover {
-  color: #e4e4e7;
-  background: rgba(39, 39, 42, 0.7);
+  color: var(--components_Admin_UserManager_2845_0);
+  background: var(--components_Admin_UserManager_2846_0);
 }
 
 .tree-label-active {
-  color: #60a5fa;
-  background: rgba(37, 99, 235, 0.16);
+  color: var(--components_Admin_UserManager_2850_0);
+  background: var(--components_Admin_UserManager_2851_0);
 }
 
 .tree-count {
   flex-shrink: 0;
-  color: #3f3f46;
+  color: var(--components_Admin_UserManager_2856_0);
   font-size: 0.6875rem;
   font-weight: 900;
 }
@@ -2881,6 +2881,6 @@ onBeforeUnmount(() => {
 }
 
 .tree-user:hover {
-  background: rgba(39, 39, 42, 0.7);
+  background: var(--components_Admin_UserManager_2884_0);
 }
 </style>

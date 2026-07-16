@@ -1074,8 +1074,8 @@ onMounted(() => {
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #3b82f6;
+  border: 2px solid var(--components_Admin_ApiKeyManager_1077_0);
+  border-top-color: var(--components_Admin_ApiKeyManager_1078_0);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -1093,11 +1093,11 @@ onMounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_ApiKeyManager_1096_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_ApiKeyManager_1100_0);
 }
 
 /* 模态框动画 */

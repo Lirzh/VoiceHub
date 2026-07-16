@@ -56,14 +56,14 @@ defineProps({
 
 .progress-bar {
   height: 8px;
-  background-color: #e9ecef;
+  background-color: var(--components_UI_ProgressBar_59_0);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background-color: #3490dc;
+  background-color: var(--components_UI_ProgressBar_66_0);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -71,14 +71,14 @@ defineProps({
 .progress-fill.indeterminate {
   width: 30% !important;
   animation: progress-indeterminate 1.5s ease-in-out infinite;
-  background-image: linear-gradient(to right, #3490dc, #38c172, #3490dc);
+  background-image: linear-gradient(to right, var(--components_UI_ProgressBar_74_0), var(--components_UI_ProgressBar_74_1), var(--components_UI_ProgressBar_74_0));
   background-size: 200% 100%;
 }
 
 .progress-sub-message {
   margin-top: 5px;
   font-size: 12px;
-  color: #6c757d;
+  color: var(--components_UI_ProgressBar_81_0);
 }
 
 @keyframes progress-indeterminate {

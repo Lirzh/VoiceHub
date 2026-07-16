@@ -511,7 +511,7 @@ const updateLayoutCache = () => {
     el.style.transformOrigin = '0 0'
     el.style.zIndex = '100'
     el.style.borderRadius = '12px'
-    el.style.boxShadow = '0 16px 36px rgba(0,0,0,0.4)'
+    el.style.boxShadow = '0 16px 36px var(--components_UI_LyricsModal_514_0)'
     // 确保硬件加速
     el.style.transform = 'translate3d(0, 0, 0)'
     el.style.willChange = 'transform, border-radius'
@@ -1108,7 +1108,7 @@ const drawSpectrum = () => {
 
   const step = Math.floor(data.length / 2 / barCount)
 
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
+  ctx.fillStyle = 'var(--components_UI_LyricsModal_1111_0)'
 
   for (let i = 0; i < barCount; i++) {
     const dataIndex = i * step
@@ -1186,7 +1186,7 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.95);
+  background: var(--components_UI_LyricsModal_1189_0);
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -1197,8 +1197,8 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #000000;
-  color: #ffffff;
+  background: var(--components_UI_LyricsModal_1200_0);
+  color: var(--components_UI_LyricsModal_1201_0);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1225,9 +1225,9 @@ onUnmounted(() => {
   z-index: 0;
   opacity: 0;
   background:
-    radial-gradient(circle at 30% 30%, rgba(84, 130, 255, 0.32), transparent 34%),
-    radial-gradient(circle at 70% 40%, rgba(255, 88, 126, 0.25), transparent 32%),
-    linear-gradient(135deg, #14141c 0%, #090910 100%);
+    radial-gradient(circle at 30% 30%, var(--components_UI_LyricsModal_1228_0), transparent 34%),
+    radial-gradient(circle at 70% 40%, var(--components_UI_LyricsModal_1229_0), transparent 32%),
+    linear-gradient(135deg, var(--components_UI_LyricsModal_1230_0) 0%, var(--components_UI_LyricsModal_1230_1) 100%);
   background-size: 180% 180%;
   transition: opacity 0.5s ease;
 }
@@ -1277,7 +1277,7 @@ onUnmounted(() => {
 .background-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.5) 100%);
+  background: radial-gradient(circle at center, var(--components_UI_LyricsModal_1280_0) 0%, var(--components_UI_LyricsModal_1280_1) 100%);
   z-index: 1;
 }
 
@@ -1287,7 +1287,7 @@ onUnmounted(() => {
   top: 2rem;
   right: 2rem;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_UI_LyricsModal_1290_0);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -1295,7 +1295,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--components_UI_LyricsModal_1298_0);
   cursor: pointer;
   transition: all 0.2s ease;
   backdrop-filter: blur(12px);
@@ -1324,7 +1324,7 @@ onUnmounted(() => {
 }
 
 .close-button:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--components_UI_LyricsModal_1327_0);
   transform: scale(1.05);
   color: white;
 }
@@ -1375,7 +1375,7 @@ onUnmounted(() => {
   height: 100%;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 32px var(--components_UI_LyricsModal_1378_0);
   transform: scale(0.85);
   transition:
     transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -1385,7 +1385,7 @@ onUnmounted(() => {
 
 .song-cover.playing {
   transform: scale(1);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 48px var(--components_UI_LyricsModal_1388_0);
 }
 
 .song-cover:hover {
@@ -1409,11 +1409,11 @@ onUnmounted(() => {
 .default-cover {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #333, #555);
+  background: linear-gradient(135deg, var(--components_UI_LyricsModal_1412_0), var(--components_UI_LyricsModal_1412_1));
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--components_UI_LyricsModal_1416_0);
 }
 
 .song-info-container {
@@ -1425,7 +1425,7 @@ onUnmounted(() => {
   font-size: 2.2rem;
   font-weight: 700;
   margin: 0 0 0.5rem 0;
-  color: #ffffff;
+  color: var(--components_UI_LyricsModal_1428_0);
   line-height: 1.2;
   letter-spacing: -0.02em;
   white-space: normal;
@@ -1436,7 +1436,7 @@ onUnmounted(() => {
 
 .song-artist {
   font-size: 1.4rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--components_UI_LyricsModal_1439_0);
   font-weight: 500;
   margin: 0;
   letter-spacing: -0.01em;
@@ -1492,9 +1492,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--components_UI_LyricsModal_1495_0);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--components_UI_LyricsModal_1497_0);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -1508,7 +1508,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--components_UI_LyricsModal_1511_0);
   background: transparent;
   cursor: pointer;
   font-size: 0.82rem;
@@ -1517,12 +1517,12 @@ onUnmounted(() => {
 }
 
 .switcher-button:hover {
-  color: #ffffff;
+  color: var(--components_UI_LyricsModal_1520_0);
 }
 
 .switcher-button.active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.18);
+  color: var(--components_UI_LyricsModal_1524_0);
+  background: var(--components_UI_LyricsModal_1525_0);
 }
 
 .comments-display-area {
@@ -1539,8 +1539,8 @@ onUnmounted(() => {
   transform: translateX(-50%);
   padding: 0.55rem 1rem;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(0, 0, 0, 0.18);
+  color: var(--components_UI_LyricsModal_1542_0);
+  background: var(--components_UI_LyricsModal_1543_0);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   font-size: 1.05rem;
@@ -1596,7 +1596,7 @@ onUnmounted(() => {
 .time-display {
   font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--components_UI_LyricsModal_1599_0);
   min-width: 45px;
   text-align: center;
   font-weight: 500;
@@ -1607,7 +1607,7 @@ onUnmounted(() => {
   flex: 1;
   min-width: 0;
   height: 5px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--components_UI_LyricsModal_1610_0);
   border-radius: 3px;
   position: relative;
   cursor: pointer;
@@ -1620,7 +1620,7 @@ onUnmounted(() => {
 
 .progress-fill {
   height: 100%;
-  background: #ffffff;
+  background: var(--components_UI_LyricsModal_1623_0);
   border-radius: 3px;
   pointer-events: none;
 }
@@ -1630,12 +1630,12 @@ onUnmounted(() => {
   top: 50%;
   width: 14px;
   height: 14px;
-  background: #ffffff;
+  background: var(--components_UI_LyricsModal_1633_0);
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(0);
   transition: transform 0.1s ease;
   pointer-events: none;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 5px var(--components_UI_LyricsModal_1638_0);
 }
 
 .progress-bar:hover .progress-thumb {
@@ -1672,7 +1672,7 @@ onUnmounted(() => {
 .control-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--components_UI_LyricsModal_1675_0);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
@@ -1699,8 +1699,8 @@ onUnmounted(() => {
 
 .secondary-btn.active {
   opacity: 1;
-  color: #ffffff;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+  color: var(--components_UI_LyricsModal_1702_0);
+  text-shadow: 0 0 8px var(--components_UI_LyricsModal_1703_0);
 }
 
 .play-pause-btn {
@@ -1723,7 +1723,7 @@ onUnmounted(() => {
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
+  border: 3px solid var(--components_UI_LyricsModal_1726_0);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1750,7 +1750,7 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_UI_LyricsModal_1753_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1760,7 +1760,7 @@ onUnmounted(() => {
 }
 
 .toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--components_UI_LyricsModal_1763_0);
 }
 
 .lyric-settings-content {
@@ -1775,7 +1775,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--components_UI_LyricsModal_1778_0);
   font-size: 0.9rem;
 }
 
@@ -1783,7 +1783,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_UI_LyricsModal_1786_0);
   border-radius: 6px;
   padding: 2px;
 }
@@ -1801,14 +1801,14 @@ onUnmounted(() => {
 }
 
 .setting-item button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--components_UI_LyricsModal_1804_0);
   border-radius: 4px;
 }
 
 .setting-item input[type='checkbox'] {
   width: 16px;
   height: 16px;
-  accent-color: #fa2d48;
+  accent-color: var(--components_UI_LyricsModal_1811_0);
 }
 
 /* 音质菜单动画 */
@@ -1820,14 +1820,14 @@ onUnmounted(() => {
   transform: translateX(-50%) scale(0.9);
   margin-bottom: 12px; /* 底部间距 */
   margin-top: 0;
-  background: rgba(245, 245, 245, 0.9);
+  background: var(--components_UI_LyricsModal_1823_0);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 12px;
   padding: 4px;
   min-width: 100px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 40px var(--components_UI_LyricsModal_1829_0);
+  border: 1px solid var(--components_UI_LyricsModal_1830_0);
   z-index: 99999; /* 提高层级 */
   display: flex;
   flex-direction: column;
@@ -1865,7 +1865,7 @@ onUnmounted(() => {
   width: 100%;
   text-align: center;
   background: transparent;
-  color: #333; /* 深色文字 */
+  color: var(--components_UI_LyricsModal_1868_0); /* 深色文字 */
   padding: 8px 12px; /* 减小内边距 */
   border-radius: 8px;
   font-size: 0.85rem; /* 稍微减小字体 */
@@ -1878,14 +1878,14 @@ onUnmounted(() => {
 }
 
 .badge-quality-option:hover {
-  background: rgba(0, 0, 0, 0.05);
+  background: var(--components_UI_LyricsModal_1881_0);
 }
 
 .badge-quality-option.active {
-  color: #007aff; /* 蓝色字 */
-  background: #ffffff;
+  color: var(--components_UI_LyricsModal_1885_0); /* 蓝色字 */
+  background: var(--components_UI_LyricsModal_1886_0);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px var(--components_UI_LyricsModal_1888_0);
 }
 
 .mobile-pagination-dots {
@@ -1905,7 +1905,7 @@ onUnmounted(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--components_UI_LyricsModal_1908_0);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
@@ -1915,8 +1915,8 @@ onUnmounted(() => {
   width: 20px;
   height: 5px;
   border-radius: 3px;
-  background: #ffffff;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  background: var(--components_UI_LyricsModal_1918_0);
+  box-shadow: 0 0 10px var(--components_UI_LyricsModal_1919_0);
 }
 
 .mobile-quality-badge {
@@ -1926,15 +1926,15 @@ onUnmounted(() => {
   justify-content: center;
   padding: 4px 10px;
   margin-top: 12px;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--components_UI_LyricsModal_1929_0);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--components_UI_LyricsModal_1933_0);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--components_UI_LyricsModal_1937_0);
   transition: all 0.2s ease;
   user-select: none; /* 禁止选择 */
   -webkit-user-select: none;
@@ -1942,7 +1942,7 @@ onUnmounted(() => {
 }
 
 .mobile-quality-badge:active {
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--components_UI_LyricsModal_1945_0);
   transform: scale(0.96);
 }
 
@@ -2162,11 +2162,11 @@ onUnmounted(() => {
 
   .progress-bar {
     height: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--components_UI_LyricsModal_2165_0);
   }
 
   .progress-fill {
-    background: #ffffff;
+    background: var(--components_UI_LyricsModal_2169_0);
   }
 
   .progress-thumb {
@@ -2177,7 +2177,7 @@ onUnmounted(() => {
 
   .time-display {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--components_UI_LyricsModal_2180_0);
   }
 
   .control-buttons {
@@ -2192,7 +2192,7 @@ onUnmounted(() => {
   }
 
   .control-btn {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--components_UI_LyricsModal_2195_0);
     /* 增加点击区域 */
     min-width: 44px;
     min-height: 44px;
@@ -2202,7 +2202,7 @@ onUnmounted(() => {
   }
 
   .play-pause-btn {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--components_UI_LyricsModal_2205_0);
     width: 64px;
     height: 64px;
     border-radius: 50%;
@@ -2216,7 +2216,7 @@ onUnmounted(() => {
 
   .play-pause-btn:active {
     transform: scale(0.92);
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--components_UI_LyricsModal_2219_0);
   }
 
   .badge-quality-menu {
@@ -2239,7 +2239,7 @@ onUnmounted(() => {
   .toolbar-btn {
     width: 36px;
     height: 36px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--components_UI_LyricsModal_2242_0);
   }
 
   .comment-current-lyric {
@@ -2296,7 +2296,7 @@ onUnmounted(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     letter-spacing: -0.01em;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 1px 4px var(--components_UI_LyricsModal_2299_0);
     line-height: 1.2;
     display: block;
     width: 100%;
@@ -2304,7 +2304,7 @@ onUnmounted(() => {
 
   .mini-artist {
     font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--components_UI_LyricsModal_2307_0);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

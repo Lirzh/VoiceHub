@@ -239,7 +239,7 @@
                       :class="[
                         'w-full bg-zinc-950 border rounded-xl px-4 py-3 text-lg font-black tracking-[0.5em] text-center focus:outline-none transition-all',
                         emailCodeError
-                          ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
+                          ? 'border-rose-500 shadow-[0_0_15px_var(--pages_notification-settings_242_0)]'
                           : 'border-zinc-800 focus:border-blue-500/30'
                       ]"
                       @input="handleEmailCodeInput"
@@ -370,7 +370,7 @@
                         :class="[
                           'w-full bg-zinc-950 border rounded-xl px-4 py-3 text-lg font-black tracking-[0.5em] text-center focus:outline-none transition-all',
                           verificationCodeError
-                            ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
+                            ? 'border-rose-500 shadow-[0_0_15px_var(--pages_notification-settings_373_0)]'
                             : 'border-zinc-800 focus:border-blue-500/30'
                         ]"
                         @input="handleVerificationCodeInput"

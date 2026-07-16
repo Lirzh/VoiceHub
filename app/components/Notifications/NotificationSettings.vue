@@ -209,7 +209,7 @@ input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 18px;
   height: 18px;
-  background: #2563eb; /* blue-600 */
+  background: var(--components_Notifications_NotificationSettings_212_0); /* blue-600 */
   border-radius: 50%;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -218,7 +218,7 @@ input[type='range']::-webkit-slider-thumb {
 input[type='range']::-moz-range-thumb {
   width: 18px;
   height: 18px;
-  background: #2563eb;
+  background: var(--components_Notifications_NotificationSettings_221_0);
   border-radius: 50%;
   cursor: pointer;
   border: none;

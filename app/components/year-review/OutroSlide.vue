@@ -56,13 +56,13 @@ defineEmits(['share'])
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #000;
+  background-color: var(--components_year-review_OutroSlide_59_0);
 }
 
 .bg-gradient {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at center, #1f2937, #000, #000);
+  background: radial-gradient(circle at center, var(--components_year-review_OutroSlide_65_0), var(--components_year-review_OutroSlide_65_1), var(--components_year-review_OutroSlide_65_1));
   opacity: 0.5;
 }
 
@@ -75,7 +75,7 @@ defineEmits(['share'])
 }
 
 .label {
-  color: #6b7280;
+  color: var(--components_year-review_OutroSlide_78_0);
   font-size: 0.875rem;
   letter-spacing: 0.5em;
   text-transform: uppercase;
@@ -92,7 +92,7 @@ defineEmits(['share'])
   font-size: 6rem;
   font-weight: 900;
   line-height: 1;
-  background-image: linear-gradient(to bottom, #fff, #1f2937);
+  background-image: linear-gradient(to bottom, var(--components_year-review_OutroSlide_95_0), var(--components_year-review_OutroSlide_95_1));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -104,12 +104,12 @@ defineEmits(['share'])
   left: 0;
   width: 100%;
   height: 4px;
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(to right, transparent, var(--components_year-review_OutroSlide_107_0), transparent);
 }
 
 .text-intro {
   font-size: 1.125rem;
-  color: #9ca3af;
+  color: var(--components_year-review_OutroSlide_112_0);
   margin-bottom: 3rem;
 }
 
@@ -132,8 +132,8 @@ defineEmits(['share'])
   width: 100%;
   padding: 1rem 2rem;
   border-radius: 9999px;
-  background: #fff;
-  color: #000;
+  background: var(--components_year-review_OutroSlide_135_0);
+  color: var(--components_year-review_OutroSlide_136_0);
   font-weight: 700;
   font-size: 1.125rem;
   overflow: hidden;
@@ -150,7 +150,7 @@ defineEmits(['share'])
 .btn-bg {
   position: absolute;
   inset: 0;
-  background: #e5e7eb;
+  background: var(--components_year-review_OutroSlide_153_0);
   transform: translateY(100%);
   transition: transform 0.3s;
 }
@@ -171,9 +171,9 @@ defineEmits(['share'])
   width: 100%;
   padding: 1rem 2rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: var(--components_year-review_OutroSlide_174_0);
+  border: 1px solid var(--components_year-review_OutroSlide_175_0);
+  color: var(--components_year-review_OutroSlide_176_0);
   font-weight: 700;
   font-size: 1.125rem;
   backdrop-filter: blur(12px);
@@ -185,7 +185,7 @@ defineEmits(['share'])
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--components_year-review_OutroSlide_188_0);
 }
 
 .btn-secondary:active {

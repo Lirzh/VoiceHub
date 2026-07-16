@@ -138,7 +138,7 @@
                 :class="[
                   'w-1.5 h-1.5 rounded-full',
                   status.active
-                    ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]'
+                    ? 'bg-emerald-500 shadow-[0_0_10px_var(--components_Admin_OverviewDashboard_141_0)]'
                     : 'bg-zinc-600'
                 ]"
               />
@@ -437,10 +437,10 @@ onMounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_OverviewDashboard_440_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_OverviewDashboard_444_0);
 }
 </style>

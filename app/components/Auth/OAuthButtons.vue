@@ -44,16 +44,16 @@ const providerButtonClass = (key: string) => {
     'w-12 h-12 rounded-full border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-primary)] flex items-center justify-center cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm hover:bg-[var(--bg-tertiary)]'
 
   if (key === 'github') {
-    return `${baseClass} hover:bg-[#24292e] hover:text-white hover:border-[#24292e]`
+    return `${baseClass} hover:bg-[var(--components_Auth_OAuthButtons_47_0)] hover:text-white hover:border-[var(--components_Auth_OAuthButtons_47_0)]`
   }
   if (key === 'casdoor') {
-    return `${baseClass} hover:border-[#67c23a]`
+    return `${baseClass} hover:border-[var(--components_Auth_OAuthButtons_50_0)]`
   }
   if (key === 'google') {
-    return `${baseClass} hover:bg-white hover:text-black hover:border-[#dadce0]`
+    return `${baseClass} hover:bg-white hover:text-black hover:border-[var(--components_Auth_OAuthButtons_53_0)]`
   }
   if (key === 'oauth2') {
-    return `${baseClass} hover:bg-[#0f766e] hover:text-white hover:border-[#0f766e]`
+    return `${baseClass} hover:bg-[var(--components_Auth_OAuthButtons_56_0)] hover:text-white hover:border-[var(--components_Auth_OAuthButtons_56_0)]`
   }
 
   return `${baseClass} hover:border-blue-500/40 hover:text-blue-400`

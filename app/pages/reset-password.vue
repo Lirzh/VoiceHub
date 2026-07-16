@@ -480,7 +480,7 @@ const handleSubmit = async () => {
 .success-icon {
   width: 64px;
   height: 64px;
-  color: var(--success, #10b981);
+  color: var(--success, var(--pages_reset-password_483_0));
   margin-bottom: 20px;
 }
 

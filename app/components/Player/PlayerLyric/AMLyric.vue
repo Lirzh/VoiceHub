@@ -6,7 +6,7 @@
     }"
     :style="{
       '--amll-lp-color': 'rgb(var(--main-cover-color, 239 239 239))',
-      '--amll-lp-hover-bg-color': 'rgba(255,255,255,0.08)',
+      '--amll-lp-hover-bg-color': 'var(--components_Player_PlayerLyric_AMLyric_9_0)',
       '--amll-lyric-left-padding': settings.lyricAlignRight.value
         ? ''
         : `${settings.lyricHorizontalOffset.value}px`,
@@ -148,8 +148,8 @@ const jumpSeek = (line: LyricLineMouseEvent) => {
 :deep(.am-lyric .lyric-line.current),
 :deep(.am-lyric .lyric-line.is-current) {
   mix-blend-mode: plus-lighter;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.06);
+  color: var(--components_Player_PlayerLyric_AMLyric_151_0);
+  text-shadow: 0 2px 12px var(--components_Player_PlayerLyric_AMLyric_152_0);
   will-change: transform, opacity, color;
 }
 
@@ -160,8 +160,8 @@ const jumpSeek = (line: LyricLineMouseEvent) => {
   :deep(.am-lyric .is-active),
   :deep(.am-lyric .lyric-line.current),
   :deep(.am-lyric .lyric-line.is-current) {
-    color: #ffffff;
-    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+    color: var(--components_Player_PlayerLyric_AMLyric_163_0);
+    text-shadow: 0 4px 18px var(--components_Player_PlayerLyric_AMLyric_164_0);
   }
 }
 
@@ -176,7 +176,7 @@ const jumpSeek = (line: LyricLineMouseEvent) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--amll-lp-color, #efefef);
+  color: var(--amll-lp-color, var(--components_Player_PlayerLyric_AMLyric_179_0));
   gap: 16px;
   opacity: 0.8;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;

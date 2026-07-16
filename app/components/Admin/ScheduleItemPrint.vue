@@ -102,7 +102,7 @@ const handleImageError = (event) => {
   display: flex;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--components_Admin_ScheduleItemPrint_105_0);
   page-break-inside: avoid;
   break-inside: avoid;
 }
@@ -118,14 +118,14 @@ const handleImageError = (event) => {
 .sequence-number {
   width: 30px;
   height: 30px;
-  background: #f0f0f0;
+  background: var(--components_Admin_ScheduleItemPrint_121_0);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 14px;
-  color: #333;
+  color: var(--components_Admin_ScheduleItemPrint_128_0);
   flex-shrink: 0;
 }
 
@@ -145,12 +145,12 @@ const handleImageError = (event) => {
 .cover-placeholder {
   width: 100%;
   height: 100%;
-  background: #f5f5f5;
+  background: var(--components_Admin_ScheduleItemPrint_148_0);
   border-radius: 4px;
   display: none;
   align-items: center;
   justify-content: center;
-  color: #999;
+  color: var(--components_Admin_ScheduleItemPrint_153_0);
 }
 
 .cover-placeholder.show {
@@ -170,7 +170,7 @@ const handleImageError = (event) => {
 .song-title {
   font-weight: bold;
   font-size: 16px;
-  color: #333;
+  color: var(--components_Admin_ScheduleItemPrint_173_0);
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -184,10 +184,10 @@ const handleImageError = (event) => {
 .replay-badge-print {
   display: inline-block;
   padding: 1px 4px;
-  background: #e3f2fd;
-  border: 1px solid #2196f3;
+  background: var(--components_Admin_ScheduleItemPrint_187_0);
+  border: 1px solid var(--components_Admin_ScheduleItemPrint_188_0);
   border-radius: 3px;
-  color: #1976d2;
+  color: var(--components_Admin_ScheduleItemPrint_190_0);
   font-size: 10px;
   font-weight: bold;
   flex-shrink: 0;
@@ -197,9 +197,9 @@ const handleImageError = (event) => {
 .cross-semester-badge-print {
   display: inline-block;
   padding: 1px 4px;
-  background: #f5f5f5;
-  border: 1px solid #d9d9d9;
-  color: #666;
+  background: var(--components_Admin_ScheduleItemPrint_200_0);
+  border: 1px solid var(--components_Admin_ScheduleItemPrint_201_0);
+  color: var(--components_Admin_ScheduleItemPrint_202_0);
   font-size: 10px;
   border-radius: 2px;
   font-weight: normal;
@@ -210,7 +210,7 @@ const handleImageError = (event) => {
 
 .song-artist {
   font-size: 14px;
-  color: #666;
+  color: var(--components_Admin_ScheduleItemPrint_213_0);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,7 +221,7 @@ const handleImageError = (event) => {
   display: flex;
   align-items: center;
   font-size: 12px;
-  color: #666;
+  color: var(--components_Admin_ScheduleItemPrint_224_0);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -235,7 +235,7 @@ const handleImageError = (event) => {
 }
 
 .value {
-  color: #333;
+  color: var(--components_Admin_ScheduleItemPrint_238_0);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -243,8 +243,8 @@ const handleImageError = (event) => {
 /* 打印样式 */
 @media print {
   .schedule-item-print {
-    color: #000 !important;
-    background: #fff !important;
+    color: var(--components_Admin_ScheduleItemPrint_246_0) !important;
+    background: var(--components_Admin_ScheduleItemPrint_247_0) !important;
     width: 100% !important;
     max-width: none !important;
     box-sizing: border-box !important;
@@ -259,8 +259,8 @@ const handleImageError = (event) => {
   }
 
   .sequence-number {
-    background: #f0f0f0 !important;
-    color: #000 !important;
+    background: var(--components_Admin_ScheduleItemPrint_262_0) !important;
+    color: var(--components_Admin_ScheduleItemPrint_263_0) !important;
     width: 30px !important;
     height: 30px !important;
     flex-shrink: 0 !important;
@@ -278,7 +278,7 @@ const handleImageError = (event) => {
   }
 
   .song-title {
-    color: #000 !important;
+    color: var(--components_Admin_ScheduleItemPrint_281_0) !important;
     font-size: 16px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
@@ -288,11 +288,11 @@ const handleImageError = (event) => {
   .song-artist,
   .label,
   .value {
-    color: #333 !important;
+    color: var(--components_Admin_ScheduleItemPrint_291_0) !important;
   }
 
   .time-range {
-    color: #666 !important;
+    color: var(--components_Admin_ScheduleItemPrint_295_0) !important;
   }
 
   .requester-info,

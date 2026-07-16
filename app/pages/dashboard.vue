@@ -23,7 +23,7 @@
 
         <!-- 主内容区域 -->
         <main
-          class="flex-1 flex flex-col h-screen overflow-hidden lg:ml-64 relative bg-[#09090b] text-zinc-100"
+          class="flex-1 flex flex-col h-screen overflow-hidden lg:ml-64 relative bg-[var(--pages_dashboard_26_0)] text-zinc-100"
         >
           <header
             class="h-16 shrink-0 flex items-center justify-between px-4 md:px-8 border-b border-zinc-800 bg-zinc-950/60 backdrop-blur-xl z-30"
@@ -433,8 +433,8 @@ onUnmounted(() => {
 .admin-layout {
   display: flex;
   min-height: 100vh;
-  background: #0a0a0a;
-  color: #ffffff;
+  background: var(--pages_dashboard_436_0);
+  color: var(--pages_dashboard_437_0);
   position: relative;
 }
 
@@ -446,10 +446,10 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--pages_dashboard_449_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--pages_dashboard_453_0);
 }
 </style>

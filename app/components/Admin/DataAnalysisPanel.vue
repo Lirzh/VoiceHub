@@ -1118,15 +1118,15 @@ const formatDateShort = (dateStr) => {
   width: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--components_Admin_DataAnalysisPanel_1121_0);
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(79, 70, 229, 0.3);
+  background: var(--components_Admin_DataAnalysisPanel_1125_0);
   border-radius: 3px;
   transition: background 0.3s ease;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(79, 70, 229, 0.5);
+  background: var(--components_Admin_DataAnalysisPanel_1130_0);
 }
 </style>

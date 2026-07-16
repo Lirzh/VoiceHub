@@ -124,7 +124,7 @@ onMounted(async () => {
 <style scoped>
 .auth-layout {
   min-height: 100vh;
-  background: #0a0a0a;
+  background: var(--pages_change-password_127_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,9 +134,9 @@ onMounted(async () => {
 .auth-container {
   width: 100%;
   max-width: 1200px;
-  background: #111111;
+  background: var(--pages_change-password_137_0);
   border-radius: 24px;
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--pages_change-password_139_0);
   overflow: hidden;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -144,7 +144,7 @@ onMounted(async () => {
 }
 
 .info-section {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, var(--pages_change-password_147_0) 0%, var(--pages_change-password_147_1) 100%);
   padding: 60px 40px;
   display: flex;
   align-items: center;
@@ -160,7 +160,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="var(--pages_change-password_163_0)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
   opacity: 0.3;
 }
 
@@ -186,7 +186,7 @@ onMounted(async () => {
   font-size: 36px;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+  background: linear-gradient(135deg, var(--pages_change-password_189_0) 0%, var(--pages_change-password_189_1) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -208,7 +208,7 @@ onMounted(async () => {
 .welcome-message p,
 .security-message p {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--pages_change-password_211_0);
   margin: 0;
   line-height: 1.6;
 }
@@ -235,16 +235,16 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--pages_change-password_238_0);
   border-radius: 8px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--pages_change-password_241_0);
 }
 
 .tip-icon {
   width: 16px;
   height: 16px;
-  color: #10b981;
+  color: var(--pages_change-password_247_0);
   flex-shrink: 0;
 }
 
@@ -258,7 +258,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #111111;
+  background: var(--pages_change-password_261_0);
 }
 
 .form-container {
@@ -277,13 +277,13 @@ onMounted(async () => {
 .form-header h2 {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--pages_change-password_280_0);
   margin: 0 0 8px 0;
 }
 
 .form-header p {
   font-size: 16px;
-  color: #888888;
+  color: var(--pages_change-password_286_0);
   margin: 0;
 }
 
@@ -297,10 +297,10 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--pages_change-password_300_0);
+  border: 1px solid var(--pages_change-password_301_0);
   border-radius: 8px;
-  color: #cccccc;
+  color: var(--pages_change-password_303_0);
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
@@ -308,9 +308,9 @@ onMounted(async () => {
 }
 
 .back-link:hover {
-  background: #2a2a2a;
-  color: #ffffff;
-  border-color: #3a3a3a;
+  background: var(--pages_change-password_311_0);
+  color: var(--pages_change-password_312_0);
+  border-color: var(--pages_change-password_313_0);
 }
 
 .back-link svg {

@@ -1484,7 +1484,7 @@ const generateAndDownloadImage = async (sourceElement, filename, preProcessCallb
 
     const blob = await toBlob(imageContainer, {
       quality: 0.9,
-      backgroundColor: '#ffffff',
+      backgroundColor: 'var(--components_Admin_SchedulePrinter_1487_0)',
       width: targetWidth,
       height: contentHeight,
       pixelRatio: pixelRatio,
@@ -1739,19 +1739,19 @@ watch(
 /* 预览区域和打印样式的核心CSS - 保持原生CSS以确保精确控制 */
 
 .preview-content {
-  background: #ffffff;
+  background: var(--components_Admin_SchedulePrinter_1742_0);
   padding: 0;
   position: relative;
 }
 
 /* 打印页面样式 */
 .print-page {
-  background: #ffffff;
-  color: #000000;
+  background: var(--components_Admin_SchedulePrinter_1749_0);
+  color: var(--components_Admin_SchedulePrinter_1750_0);
   width: 100%;
   margin: 0 auto;
   padding: 30px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px var(--components_Admin_SchedulePrinter_1754_0);
   box-sizing: border-box;
   overflow: visible;
   position: relative;
@@ -1763,7 +1763,7 @@ watch(
   align-items: flex-start;
   margin-bottom: 32px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #e5e5e5;
+  border-bottom: 2px solid var(--components_Admin_SchedulePrinter_1766_0);
 }
 
 .logo-section {
@@ -1782,7 +1782,7 @@ watch(
 .logo-divider {
   width: 2px;
   height: 60px;
-  background: linear-gradient(to bottom, #ddd, #999, #ddd);
+  background: linear-gradient(to bottom, var(--components_Admin_SchedulePrinter_1785_0), var(--components_Admin_SchedulePrinter_1785_1), var(--components_Admin_SchedulePrinter_1785_0));
   border-radius: 1px;
   margin: 0 4px;
 }
@@ -1801,19 +1801,19 @@ watch(
   font-size: 24px;
   font-weight: normal;
   margin: 0 0 4px 0;
-  color: #000;
+  color: var(--components_Admin_SchedulePrinter_1804_0);
 }
 
 .title-section h2 {
   font-size: 18px;
   font-weight: 500;
   margin: 0;
-  color: #666;
+  color: var(--components_Admin_SchedulePrinter_1811_0);
 }
 
 .date-info {
   font-size: 14px;
-  color: #666;
+  color: var(--components_Admin_SchedulePrinter_1816_0);
   text-align: right;
   display: flex;
   align-items: flex-start;
@@ -1833,7 +1833,7 @@ watch(
 .no-data-message {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: var(--components_Admin_SchedulePrinter_1836_0);
   column-span: all;
 }
 
@@ -1841,7 +1841,7 @@ watch(
   width: 64px;
   height: 64px;
   margin: 0 auto 20px;
-  color: #ccc;
+  color: var(--components_Admin_SchedulePrinter_1844_0);
 }
 
 .no-data-icon svg {
@@ -1853,7 +1853,7 @@ watch(
   font-size: 18px;
   font-weight: 500;
   margin: 0 0 12px 0;
-  color: #333;
+  color: var(--components_Admin_SchedulePrinter_1856_0);
 }
 
 .no-data-message p {
@@ -1873,28 +1873,28 @@ watch(
   font-weight: bold;
   margin: 0 0 12px 0;
   padding: 8px 12px;
-  border-bottom: 2px solid #ddd;
-  background: #f8f9fa;
-  color: #333;
+  border-bottom: 2px solid var(--components_Admin_SchedulePrinter_1876_0);
+  background: var(--components_Admin_SchedulePrinter_1877_0);
+  color: var(--components_Admin_SchedulePrinter_1878_0);
   border-radius: 4px 4px 0 0;
 }
 
 .playtime-group .group-title {
-  background: #e3f2fd;
-  border-bottom-color: #2196f3;
-  color: #1565c0;
+  background: var(--components_Admin_SchedulePrinter_1883_0);
+  border-bottom-color: var(--components_Admin_SchedulePrinter_1884_0);
+  color: var(--components_Admin_SchedulePrinter_1885_0);
 }
 
 .date-group .group-title {
-  background: #f3e5f5;
-  border-bottom-color: #9c27b0;
-  color: #7b1fa2;
+  background: var(--components_Admin_SchedulePrinter_1889_0);
+  border-bottom-color: var(--components_Admin_SchedulePrinter_1890_0);
+  color: var(--components_Admin_SchedulePrinter_1891_0);
 }
 
 .group-count {
   font-size: 14px;
   font-weight: normal;
-  color: #666;
+  color: var(--components_Admin_SchedulePrinter_1897_0);
   margin-left: 8px;
 }
 
@@ -1911,16 +1911,16 @@ watch(
   font-weight: bold;
   margin: 0 0 8px 0;
   padding: 6px 10px;
-  background: #f0f8ff;
-  border-left: 3px solid #2196f3;
-  color: #1565c0;
+  background: var(--components_Admin_SchedulePrinter_1914_0);
+  border-left: 3px solid var(--components_Admin_SchedulePrinter_1915_0);
+  color: var(--components_Admin_SchedulePrinter_1916_0);
   border-radius: 0 4px 4px 0;
 }
 
 .playtime-count {
   font-size: 12px;
   font-weight: normal;
-  color: #666;
+  color: var(--components_Admin_SchedulePrinter_1923_0);
   margin-left: 6px;
 }
 
@@ -1937,9 +1937,9 @@ watch(
   justify-content: space-between;
   align-items: flex-start;
   padding-top: 16px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--components_Admin_SchedulePrinter_1940_0);
   font-size: 12px;
-  color: #666;
+  color: var(--components_Admin_SchedulePrinter_1942_0);
 }
 
 .footer-left {
@@ -1954,7 +1954,7 @@ watch(
 
 .remark-text {
   font-size: 11px;
-  color: #555;
+  color: var(--components_Admin_SchedulePrinter_1957_0);
   max-width: 400px;
   word-wrap: break-word;
   line-height: 1.3;

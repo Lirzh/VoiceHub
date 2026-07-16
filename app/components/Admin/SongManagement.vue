@@ -407,7 +407,7 @@
     >
       <div
         v-if="selectedSongs.length > 0"
-        class="sm:hidden fixed bottom-[70px] left-4 right-4 z-40 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-2 shadow-[0_8px_30px_rgb(0,0,0,0.5)] backdrop-blur-xl flex items-center justify-between"
+        class="sm:hidden fixed bottom-[70px] left-4 right-4 z-40 bg-zinc-900/95 border border-zinc-800 rounded-2xl p-2 shadow-[0_8px_30px_var(--components_Admin_SongManagement_410_0)] backdrop-blur-xl flex items-center justify-between"
       >
         <div class="px-3 flex flex-col">
           <span class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">已选择</span>
@@ -2290,10 +2290,10 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_SongManagement_2293_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_SongManagement_2297_0);
 }
 </style>

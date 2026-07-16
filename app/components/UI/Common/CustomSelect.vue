@@ -38,7 +38,7 @@
           v-if="isOpen"
           ref="dropdownRef"
           :style="dropdownStyle"
-          class="fixed z-[9999] p-1 bg-[#0c0c0e] border border-zinc-800 rounded-lg shadow-2xl backdrop-blur-xl"
+          class="fixed z-[9999] p-1 bg-[var(--components_UI_Common_CustomSelect_41_0)] border border-zinc-800 rounded-lg shadow-2xl backdrop-blur-xl"
         >
           <div class="max-h-[200px] overflow-y-auto custom-scrollbar">
             <button
@@ -230,10 +230,10 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_UI_Common_CustomSelect_233_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_UI_Common_CustomSelect_237_0);
 }
 </style>

@@ -338,7 +338,7 @@
 
           <div class="flex-1 flex flex-col items-center justify-center p-4">
             <div
-              class="w-full max-w-[320px] bg-[#0c0c0e] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative"
+              class="w-full max-w-[320px] bg-[var(--components_Admin_NotificationSender_341_0)] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl relative"
             >
               <!-- 顶部装饰 -->
               <div class="h-1.5 bg-blue-600 w-full" />
@@ -774,11 +774,11 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_NotificationSender_777_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_NotificationSender_781_0);
 }
 
 .fade-enter-active,

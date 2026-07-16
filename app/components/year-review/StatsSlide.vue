@@ -43,7 +43,7 @@ defineProps({
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #030712; /* gray-950 */
+  background-color: var(--components_year-review_StatsSlide_46_0); /* gray-950 */
 }
 
 .bg-gradient {
@@ -51,7 +51,7 @@ defineProps({
   inset: 0;
   background: radial-gradient(
     ellipse at top right,
-    rgba(30, 58, 138, 0.4),
+    var(--components_year-review_StatsSlide_54_0),
     transparent,
     transparent
   );
@@ -66,7 +66,7 @@ defineProps({
 
 .label {
   margin-bottom: 1rem;
-  color: #3b82f6; /* brand-blue */
+  color: var(--components_year-review_StatsSlide_69_0); /* brand-blue */
   font-weight: 700;
   letter-spacing: 0.05em;
   font-size: 1.125rem;
@@ -74,7 +74,7 @@ defineProps({
 
 .text-intro {
   font-size: 1.5rem;
-  color: #9ca3af;
+  color: var(--components_year-review_StatsSlide_77_0);
   margin-bottom: 0.5rem;
 }
 
@@ -91,16 +91,16 @@ defineProps({
   font-size: 10rem;
   font-weight: 900;
   line-height: 1;
-  background-image: linear-gradient(to bottom, #60a5fa, #1d4ed8);
+  background-image: linear-gradient(to bottom, var(--components_year-review_StatsSlide_94_0), var(--components_year-review_StatsSlide_94_1));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 30px rgba(37, 99, 235, 0.5));
+  filter: drop-shadow(0 0 30px var(--components_year-review_StatsSlide_98_0));
 }
 
 .suffix {
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--components_year-review_StatsSlide_103_0);
   font-weight: 500;
   margin-left: 0.5rem;
 }
@@ -109,8 +109,8 @@ defineProps({
   margin-top: 3rem;
   padding: 1.5rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--components_year-review_StatsSlide_112_0);
+  border: 1px solid var(--components_year-review_StatsSlide_113_0);
   backdrop-filter: blur(4px);
 }
 
@@ -122,19 +122,19 @@ defineProps({
 
 .text-base {
   font-size: 1.125rem;
-  color: #d1d5db;
+  color: var(--components_year-review_StatsSlide_125_0);
 }
 
 .highlight-green {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #4ade80;
+  color: var(--components_year-review_StatsSlide_131_0);
   margin: 0 0.25rem;
 }
 
 .text-sub {
   font-size: 1rem;
-  color: #9ca3af;
+  color: var(--components_year-review_StatsSlide_137_0);
 }
 
 @media (max-width: 768px) {

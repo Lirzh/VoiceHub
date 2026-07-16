@@ -29,7 +29,7 @@
             title="添加到歌单"
             @click="handleAddToPlaylistClick"
           >
-            <Icon :size="20" color="#ffffff" name="music" />
+            <Icon :size="20" color="var(--components_Songs_ScheduleList_32_0)" name="music" />
           </button>
         </div>
 
@@ -90,7 +90,7 @@
             type="button"
             @click="handleAddToPlaylistClick"
           >
-            <Icon :size="18" color="#ffffff" name="music" />
+            <Icon :size="18" color="var(--components_Songs_ScheduleList_93_0)" name="music" />
             <span>添加到歌单</span>
           </button>
         </div>
@@ -1696,27 +1696,27 @@ const vRipple = {
   align-items: center;
   margin-bottom: 1.5rem;
   padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(11, 90, 254, 0.1) 0%, rgba(33, 36, 45, 0.9) 100%);
+  background: linear-gradient(135deg, var(--components_Songs_ScheduleList_1699_0) 0%, var(--components_Songs_ScheduleList_1699_1) 100%);
   border-radius: 12px;
-  border: 1px solid rgba(11, 90, 254, 0.2);
+  border: 1px solid var(--components_Songs_ScheduleList_1701_0);
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--components_Songs_ScheduleList_1703_0);
 }
 
 .semester-label {
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_1707_0);
   font-size: 15px;
   font-weight: 500;
   margin-right: 0.75rem;
   white-space: nowrap;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px var(--components_Songs_ScheduleList_1712_0);
 }
 
 .semester-select {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, var(--components_Songs_ScheduleList_1716_0) 0%, var(--components_Songs_ScheduleList_1716_1) 100%);
+  border: 1px solid var(--components_Songs_ScheduleList_1717_0);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_1719_0);
   padding: 0.6rem 1rem;
   font-size: 14px;
   font-weight: 500;
@@ -1724,28 +1724,28 @@ const vRipple = {
   transition: all 0.3s ease;
   min-width: 180px;
   backdrop-filter: blur(5px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px var(--components_Songs_ScheduleList_1727_0);
 }
 
 .semester-select:hover {
-  background: linear-gradient(135deg, rgba(11, 90, 254, 0.2) 0%, rgba(255, 255, 255, 0.15) 100%);
-  border-color: rgba(11, 90, 254, 0.6);
+  background: linear-gradient(135deg, var(--components_Songs_ScheduleList_1731_0) 0%, var(--components_Songs_ScheduleList_1731_1) 100%);
+  border-color: var(--components_Songs_ScheduleList_1732_0);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(11, 90, 254, 0.2);
+  box-shadow: 0 4px 12px var(--components_Songs_ScheduleList_1734_0);
 }
 
 .semester-select:focus {
   outline: none;
-  border-color: #0b5afe;
+  border-color: var(--components_Songs_ScheduleList_1739_0);
   box-shadow:
-    0 0 0 3px rgba(11, 90, 254, 0.3),
-    0 4px 12px rgba(11, 90, 254, 0.2);
+    0 0 0 3px var(--components_Songs_ScheduleList_1741_0),
+    0 4px 12px var(--components_Songs_ScheduleList_1742_0);
   transform: translateY(-1px);
 }
 
 .semester-select option {
-  background: #1a1d24;
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_1747_0);
+  color: var(--components_Songs_ScheduleList_1748_0);
   padding: 0.5rem;
 }
 
@@ -1786,7 +1786,7 @@ const vRipple = {
   font-family: 'MiSans', sans-serif;
   font-weight: 400;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--components_Songs_ScheduleList_1789_0);
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 0.5rem;
@@ -1799,24 +1799,24 @@ const vRipple = {
 }
 
 .date-item:hover {
-  background: #21242d;
+  background: var(--components_Songs_ScheduleList_1802_0);
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px var(--components_Songs_ScheduleList_1804_0);
 }
 
 .date-item.active {
-  background: #21242d;
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_1808_0);
+  color: var(--components_Songs_ScheduleList_1809_0);
   font-weight: 600;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(11, 90, 254, 0.2);
-  border-left: 3px solid #0b5afe;
+  box-shadow: 0 4px 12px var(--components_Songs_ScheduleList_1812_0);
+  border-left: 3px solid var(--components_Songs_ScheduleList_1813_0);
 }
 
 .empty-dates {
   padding: 2rem 1rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_Songs_ScheduleList_1819_0);
   width: 100%;
   box-sizing: border-box;
   display: flex;
@@ -1837,9 +1837,9 @@ const vRipple = {
   width: 2px;
   background: linear-gradient(
     180deg,
-    rgba(217, 217, 217, 0) 0%,
-    rgba(217, 217, 217, 0.5) 50%,
-    rgba(217, 217, 217, 0) 100%
+    var(--components_Songs_ScheduleList_1840_0) 0%,
+    var(--components_Songs_ScheduleList_1841_0) 50%,
+    var(--components_Songs_ScheduleList_1842_0) 100%
   );
   margin: 0 1.5rem;
   position: relative;
@@ -1871,7 +1871,7 @@ const vRipple = {
   font-family: 'MiSans', sans-serif;
   font-weight: 600;
   font-size: 20px;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_1874_0);
   margin: 0;
 }
 
@@ -1880,9 +1880,9 @@ const vRipple = {
   padding: 3rem;
   text-align: center;
   border-radius: 10px;
-  background: #21242d;
+  background: var(--components_Songs_ScheduleList_1883_0);
   margin: 1rem 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_Songs_ScheduleList_1885_0);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1896,8 +1896,8 @@ const vRipple = {
   height: 40px;
   margin-bottom: 1rem;
   border-radius: 50%;
-  border: 3px solid rgba(11, 90, 254, 0.2);
-  border-top-color: #0b5afe;
+  border: 3px solid var(--components_Songs_ScheduleList_1899_0);
+  border-top-color: var(--components_Songs_ScheduleList_1900_0);
   animation: spin 1s linear infinite;
 }
 
@@ -1915,13 +1915,13 @@ const vRipple = {
   padding: 2rem;
   text-align: center;
   border-radius: 10px;
-  background: #21242d;
+  background: var(--components_Songs_ScheduleList_1918_0);
   margin: 1rem 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_Songs_ScheduleList_1920_0);
 }
 
 .error {
-  color: #ef4444;
+  color: var(--components_Songs_ScheduleList_1924_0);
 }
 
 .empty .icon {
@@ -1945,13 +1945,13 @@ const vRipple = {
   font-family: 'MiSans', sans-serif;
   font-weight: 600;
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_Songs_ScheduleList_1948_0);
   margin: 0 0 1rem 0;
 }
 
 .playtime-time {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--components_Songs_ScheduleList_1954_0);
   margin-left: 0.5rem;
 }
 
@@ -1965,7 +1965,7 @@ const vRipple = {
 .song-card {
   width: 320px;
   flex-shrink: 0;
-  background: #21242d;
+  background: var(--components_Songs_ScheduleList_1968_0);
   border-radius: 10px;
   overflow: hidden;
   position: relative;
@@ -1980,9 +1980,9 @@ const vRipple = {
   gap: 0.5rem;
   padding: 0.6rem 1.2rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid var(--components_Songs_ScheduleList_1983_0);
+  background: var(--components_Songs_ScheduleList_1984_0);
+  color: var(--components_Songs_ScheduleList_1985_0);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -1992,8 +1992,8 @@ const vRipple = {
 }
 
 .add-playlist-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--components_Songs_ScheduleList_1995_0);
+  border-color: var(--components_Songs_ScheduleList_1996_0);
 }
 
 .add-playlist-btn:active {
@@ -2012,7 +2012,7 @@ const vRipple = {
 .playlist-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: var(--components_Songs_ScheduleList_2015_0);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -2025,10 +2025,10 @@ const vRipple = {
   width: 100%;
   max-width: 580px;
   max-height: 85vh;
-  background: #1e1e24;
+  background: var(--components_Songs_ScheduleList_2028_0);
   border-radius: 20px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px var(--components_Songs_ScheduleList_2030_0);
+  border: 1px solid var(--components_Songs_ScheduleList_2031_0);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2038,11 +2038,11 @@ const vRipple = {
 /* 头部样式 */
 .playlist-modal-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--components_Songs_ScheduleList_2041_0);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(30, 30, 36, 0.95);
+  background: var(--components_Songs_ScheduleList_2045_0);
 }
 
 .header-title {
@@ -2059,7 +2059,7 @@ const vRipple = {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_2062_0);
   letter-spacing: 0.5px;
 }
 
@@ -2068,8 +2068,8 @@ const vRipple = {
   height: 32px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--components_Songs_ScheduleList_2071_0);
+  color: var(--components_Songs_ScheduleList_2072_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2078,8 +2078,8 @@ const vRipple = {
 }
 
 .playlist-modal-close:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_2081_0);
+  color: var(--components_Songs_ScheduleList_2082_0);
   transform: rotate(90deg);
 }
 
@@ -2088,7 +2088,7 @@ const vRipple = {
   flex: 1;
   overflow-y: auto;
   padding: 1.5rem;
-  background: #1e1e24;
+  background: var(--components_Songs_ScheduleList_2091_0);
 }
 
 /* 滚动条美化 */
@@ -2101,12 +2101,12 @@ const vRipple = {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--components_Songs_ScheduleList_2104_0);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--components_Songs_ScheduleList_2109_0);
 }
 
 /* 登录提示 */
@@ -2123,7 +2123,7 @@ const vRipple = {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
+  background: linear-gradient(135deg, var(--components_Songs_ScheduleList_2126_0) 0%, var(--components_Songs_ScheduleList_2126_1) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2132,7 +2132,7 @@ const vRipple = {
 }
 
 .login-hint {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--components_Songs_ScheduleList_2135_0);
   margin-bottom: 2rem;
   font-size: 15px;
 }
@@ -2150,10 +2150,10 @@ const vRipple = {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--components_Songs_ScheduleList_2153_0);
   border-radius: 12px;
   margin-bottom: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--components_Songs_ScheduleList_2156_0);
 }
 
 .user-avatar {
@@ -2161,11 +2161,11 @@ const vRipple = {
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  background: #2a2a32;
+  background: var(--components_Songs_ScheduleList_2164_0);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(102, 126, 234, 0.2);
+  border: 2px solid var(--components_Songs_ScheduleList_2168_0);
 }
 
 .user-avatar img {
@@ -2182,7 +2182,7 @@ const vRipple = {
 
 .user-name {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_2185_0);
   font-size: 15px;
 }
 
@@ -2205,10 +2205,10 @@ const vRipple = {
 
 /* 控制面板（歌单选择与创建） */
 .control-panel {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--components_Songs_ScheduleList_2208_0);
   border-radius: 16px;
   padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--components_Songs_ScheduleList_2211_0);
   margin-bottom: 1.5rem;
 }
 
@@ -2221,7 +2221,7 @@ const vRipple = {
 .section-label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--components_Songs_ScheduleList_2224_0);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -2256,9 +2256,9 @@ const vRipple = {
 .custom-select,
 .custom-input {
   width: 100%;
-  background: #141418;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_2259_0);
+  border: 1px solid var(--components_Songs_ScheduleList_2260_0);
+  color: var(--components_Songs_ScheduleList_2261_0);
   padding: 0.75rem 1rem;
   border-radius: 10px;
   font-size: 14px;
@@ -2277,24 +2277,24 @@ const vRipple = {
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--components_Songs_ScheduleList_2280_0);
 }
 
 .custom-select:focus,
 .custom-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  background: #1a1a20;
+  box-shadow: 0 0 0 3px var(--components_Songs_ScheduleList_2287_0);
+  background: var(--components_Songs_ScheduleList_2288_0);
 }
 
 .btn-icon {
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--components_Songs_ScheduleList_2295_0);
+  border: 1px solid var(--components_Songs_ScheduleList_2296_0);
+  color: var(--components_Songs_ScheduleList_2297_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2304,8 +2304,8 @@ const vRipple = {
 }
 
 .btn-icon:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_2307_0);
+  color: var(--components_Songs_ScheduleList_2308_0);
 }
 
 .btn-icon:disabled {
@@ -2326,7 +2326,7 @@ const vRipple = {
 .btn-text-danger {
   background: none;
   border: none;
-  color: rgba(239, 68, 68, 0.8);
+  color: var(--components_Songs_ScheduleList_2329_0);
   font-size: 12px;
   display: flex;
   align-items: center;
@@ -2338,15 +2338,15 @@ const vRipple = {
 }
 
 .btn-text-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: var(--components_Songs_ScheduleList_2341_0);
+  color: var(--components_Songs_ScheduleList_2342_0);
 }
 
 .divider {
   display: flex;
   align-items: center;
   margin: 1.25rem 0;
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--components_Songs_ScheduleList_2349_0);
   font-size: 12px;
 }
 
@@ -2355,7 +2355,7 @@ const vRipple = {
   content: '';
   flex: 1;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--components_Songs_ScheduleList_2358_0);
 }
 
 .divider span {
@@ -2379,7 +2379,7 @@ const vRipple = {
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--components_Songs_ScheduleList_2382_0);
   position: relative;
   transition: all 0.2s ease;
 }
@@ -2403,7 +2403,7 @@ const vRipple = {
 
 .checkbox-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--components_Songs_ScheduleList_2406_0);
 }
 
 /* 歌曲选择面板 */
@@ -2447,9 +2447,9 @@ const vRipple = {
 }
 
 .songs-list {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--components_Songs_ScheduleList_2450_0);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--components_Songs_ScheduleList_2452_0);
   max-height: 300px;
   overflow-y: auto;
   padding: 0.5rem;
@@ -2458,9 +2458,9 @@ const vRipple = {
 .empty-state {
   padding: 2rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--components_Songs_ScheduleList_2461_0);
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--components_Songs_ScheduleList_2463_0);
   border-radius: 12px;
 }
 
@@ -2481,19 +2481,19 @@ const vRipple = {
 }
 
 .song-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--components_Songs_ScheduleList_2484_0);
 }
 
 .song-item.selected {
-  background: rgba(11, 90, 254, 0.1);
-  border-color: rgba(11, 90, 254, 0.2);
+  background: var(--components_Songs_ScheduleList_2488_0);
+  border-color: var(--components_Songs_ScheduleList_2489_0);
 }
 
 .song-checkbox {
   width: 20px;
   height: 20px;
   border-radius: 6px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--components_Songs_ScheduleList_2496_0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2516,7 +2516,7 @@ const vRipple = {
 
 .song-name {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_2519_0);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -2527,7 +2527,7 @@ const vRipple = {
 
 .song-artist {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--components_Songs_ScheduleList_2530_0);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2537,8 +2537,8 @@ const vRipple = {
 /* 底部按钮栏 */
 .playlist-modal-footer {
   padding: 1.25rem 1.5rem;
-  background: rgba(30, 30, 36, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--components_Songs_ScheduleList_2540_0);
+  border-top: 1px solid var(--components_Songs_ScheduleList_2541_0);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
@@ -2564,14 +2564,14 @@ const vRipple = {
 
 .btn-primary {
   background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  color: var(--components_Songs_ScheduleList_2567_0);
+  box-shadow: 0 4px 12px var(--components_Songs_ScheduleList_2568_0);
 }
 
 .btn-primary:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 6px 16px var(--components_Songs_ScheduleList_2574_0);
 }
 
 .btn-primary:disabled {
@@ -2582,22 +2582,22 @@ const vRipple = {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_2585_0);
+  color: var(--components_Songs_ScheduleList_2586_0);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--components_Songs_ScheduleList_2590_0);
 }
 
 .btn-ghost {
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_Songs_ScheduleList_2595_0);
 }
 
 .btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_2599_0);
+  color: var(--components_Songs_ScheduleList_2600_0);
 }
 
 /* 动画定义 */
@@ -2630,9 +2630,9 @@ const vRipple = {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  border: 1px solid var(--components_Songs_ScheduleList_2633_0);
+  background: var(--components_Songs_ScheduleList_2634_0);
+  color: var(--components_Songs_ScheduleList_2635_0);
   cursor: pointer;
   margin-right: 0.5rem;
   backdrop-filter: blur(10px);
@@ -2641,7 +2641,7 @@ const vRipple = {
 
 .mobile-add-playlist-btn:active {
   transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--components_Songs_ScheduleList_2644_0);
 }
 
 /* 响应式调整 */
@@ -2721,7 +2721,7 @@ const vRipple = {
 
 .song-card-main {
   padding: 1rem;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 4px 4px var(--components_Songs_ScheduleList_2724_0);
   position: relative;
   height: 90px; /* 减小卡片高度 */
   display: flex; /* 使用flex布局 */
@@ -2738,7 +2738,7 @@ const vRipple = {
   position: relative;
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px var(--components_Songs_ScheduleList_2741_0);
 }
 
 .cover-image {
@@ -2756,8 +2756,8 @@ const vRipple = {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0043f8 0%, #0075f8 100%);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--components_Songs_ScheduleList_2759_0) 0%, var(--components_Songs_ScheduleList_2759_1) 100%);
+  color: var(--components_Songs_ScheduleList_2760_0);
   font-size: 28px;
   font-weight: bold;
   font-family: 'MiSans', sans-serif;
@@ -2773,7 +2773,7 @@ const vRipple = {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--components_Songs_ScheduleList_2776_0);
   opacity: 0;
   transition: opacity 0.2s ease;
   cursor: pointer;
@@ -2788,7 +2788,7 @@ const vRipple = {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: rgba(11, 90, 254, 0.8);
+  background: var(--components_Songs_ScheduleList_2791_0);
   border: none;
   display: flex;
   align-items: center;
@@ -2820,7 +2820,7 @@ const vRipple = {
   font-weight: 600;
   font-size: 16px;
   letter-spacing: 0.04em;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_2823_0);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: flex-start;
@@ -2843,10 +2843,10 @@ const vRipple = {
   align-items: center;
   justify-content: center;
   padding: 2px 6px;
-  background: rgba(11, 90, 254, 0.15);
-  border: 1px solid rgba(11, 90, 254, 0.3);
+  background: var(--components_Songs_ScheduleList_2846_0);
+  border: 1px solid var(--components_Songs_ScheduleList_2847_0);
   border-radius: 4px;
-  color: #0b5afe;
+  color: var(--components_Songs_ScheduleList_2849_0);
   font-size: 12px;
   font-weight: 500;
   flex-shrink: 0;
@@ -2857,8 +2857,8 @@ const vRipple = {
 }
 
 .replay-badge:hover {
-  background: rgba(11, 90, 254, 0.25);
-  border-color: rgba(11, 90, 254, 0.5);
+  background: var(--components_Songs_ScheduleList_2860_0);
+  border-color: var(--components_Songs_ScheduleList_2861_0);
 }
 
 .song-meta {
@@ -2872,14 +2872,14 @@ const vRipple = {
   font-family: 'MiSans', sans-serif;
   font-weight: normal;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--components_Songs_ScheduleList_2875_0);
   text-align: left;
 }
 
 /* 重播申请人数样式 */
 .replay-requester {
   /* 使用和普通投稿人相同的颜色 */
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--components_Songs_ScheduleList_2882_0);
   font-weight: normal;
   cursor: help;
 }
@@ -2905,21 +2905,21 @@ const vRipple = {
   font-family: 'MiSans', sans-serif;
   font-weight: 600;
   font-size: 20px;
-  color: #0b5afe;
+  color: var(--components_Songs_ScheduleList_2908_0);
   text-shadow:
-    0px 20px 30px rgba(0, 114, 248, 0.5),
-    0px 8px 15px rgba(0, 114, 248, 0.5),
-    0px 4px 10px rgba(0, 179, 248, 0.3),
-    0px 2px 10px rgba(0, 179, 248, 0.2),
-    inset 3px 3px 10px rgba(255, 255, 255, 0.4),
-    inset -1px -1px 15px rgba(255, 255, 255, 0.4);
+    0px 20px 30px var(--components_Songs_ScheduleList_2910_0),
+    0px 8px 15px var(--components_Songs_ScheduleList_2911_0),
+    0px 4px 10px var(--components_Songs_ScheduleList_2912_0),
+    0px 2px 10px var(--components_Songs_ScheduleList_2913_0),
+    inset 3px 3px 10px var(--components_Songs_ScheduleList_2914_0),
+    inset -1px -1px 15px var(--components_Songs_ScheduleList_2915_0);
 }
 
 .vote-count .label {
   font-family: 'MiSans', sans-serif;
   font-weight: 600;
   font-size: 12px;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_2922_0);
   opacity: 0.4;
 }
 
@@ -2967,15 +2967,15 @@ const vRipple = {
   .nav-capsule {
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--components_Songs_ScheduleList_2970_0);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--components_Songs_ScheduleList_2974_0);
     padding: 4px;
     flex: 1;
     max-width: none;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 20px var(--components_Songs_ScheduleList_2978_0);
   }
 
   .nav-btn {
@@ -2986,14 +2986,14 @@ const vRipple = {
     justify-content: center;
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--components_Songs_ScheduleList_2989_0);
     border-radius: 16px;
     transition: all 0.2s ease;
   }
 
   .nav-btn:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    color: #0b5afe;
+    background: var(--components_Songs_ScheduleList_2995_0);
+    color: var(--components_Songs_ScheduleList_2996_0);
   }
 
   .nav-btn:disabled {
@@ -3014,16 +3014,16 @@ const vRipple = {
   .date-text {
     font-size: 15px;
     font-weight: 600;
-    color: #ffffff;
+    color: var(--components_Songs_ScheduleList_3017_0);
     white-space: nowrap;
     text-shadow:
-      0 0 10px rgba(255, 255, 255, 0.2),
-      0 0 20px rgba(11, 90, 254, 0.15);
+      0 0 10px var(--components_Songs_ScheduleList_3020_0),
+      0 0 20px var(--components_Songs_ScheduleList_3021_0);
   }
 
   .dropdown-icon {
     opacity: 0.5;
-    color: #ffffff;
+    color: var(--components_Songs_ScheduleList_3026_0);
   }
 
   .mobile-action-btn {
@@ -3032,17 +3032,17 @@ const vRipple = {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #0b5afe 0%, #0043f8 100%);
+    background: linear-gradient(135deg, var(--components_Songs_ScheduleList_3035_0) 0%, var(--components_Songs_ScheduleList_3035_1) 100%);
     border: none;
     border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(11, 90, 254, 0.4);
+    box-shadow: 0 4px 15px var(--components_Songs_ScheduleList_3038_0);
     transition: all 0.2s ease;
     flex-shrink: 0;
   }
 
   .mobile-action-btn:active {
     transform: scale(0.92);
-    box-shadow: 0 2px 8px rgba(11, 90, 254, 0.4);
+    box-shadow: 0 2px 8px var(--components_Songs_ScheduleList_3045_0);
   }
 
   /* 移除旧样式 */
@@ -3100,14 +3100,14 @@ const vRipple = {
   .playtime-header h4 {
     font-size: 13px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--components_Songs_ScheduleList_3103_0);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
   .playtime-time {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--components_Songs_ScheduleList_3110_0);
   }
 
   /* 歌曲卡片 - 无边框卡片设计 */
@@ -3119,38 +3119,38 @@ const vRipple = {
 
   .song-card {
     width: 100%;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--components_Songs_ScheduleList_3122_0);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border-radius: 18px;
     overflow: hidden;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--components_Songs_ScheduleList_3128_0);
+    box-shadow: 0 4px 15px var(--components_Songs_ScheduleList_3129_0);
   }
 
   .song-card.playing {
-    background: rgba(11, 90, 254, 0.18);
-    border-color: rgba(11, 90, 254, 0.5);
-    box-shadow: 0 0 20px rgba(11, 90, 254, 0.3);
+    background: var(--components_Songs_ScheduleList_3133_0);
+    border-color: var(--components_Songs_ScheduleList_3134_0);
+    box-shadow: 0 0 20px var(--components_Songs_ScheduleList_3135_0);
   }
 
   .song-card.playing .song-title {
-    color: #0b5afe;
-    text-shadow: 0 0 10px rgba(11, 90, 254, 0.4);
+    color: var(--components_Songs_ScheduleList_3139_0);
+    text-shadow: 0 0 10px var(--components_Songs_ScheduleList_3140_0);
   }
 
   .song-card:active {
     transform: scale(0.98);
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--components_Songs_ScheduleList_3145_0);
+    border-color: var(--components_Songs_ScheduleList_3146_0);
   }
 
   .song-card.played {
     opacity: 0.8;
     filter: grayscale(0.35);
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--components_Songs_ScheduleList_3152_0);
+    border-color: var(--components_Songs_ScheduleList_3153_0);
   }
 
   .song-card-main {
@@ -3182,7 +3182,7 @@ const vRipple = {
     height: 48px;
     aspect-ratio: 1;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px var(--components_Songs_ScheduleList_3185_0);
   }
 
   .text-cover {
@@ -3213,13 +3213,13 @@ const vRipple = {
     font-weight: 600;
     margin-bottom: 2px;
     line-height: 1.4;
-    color: #ffffff;
+    color: var(--components_Songs_ScheduleList_3216_0);
     letter-spacing: 0.01em;
   }
 
   .requester {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--components_Songs_ScheduleList_3222_0);
     font-weight: 400;
   }
 
@@ -3227,7 +3227,7 @@ const vRipple = {
   .vote-count .count {
     font-size: 22px;
     font-weight: 800;
-    color: #0b5afe;
+    color: var(--components_Songs_ScheduleList_3230_0);
     font-family: 'MiSans-Bold', sans-serif;
     line-height: 1;
   }
@@ -3235,7 +3235,7 @@ const vRipple = {
   .vote-count .label {
     font-size: 11px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--components_Songs_ScheduleList_3238_0);
     margin-top: 2px;
   }
 
@@ -3263,18 +3263,18 @@ const vRipple = {
 
   /* 日期选择弹窗 */
   .date-picker-content {
-    background: #1a1a1f;
+    background: var(--components_Songs_ScheduleList_3266_0);
     border-radius: 20px 20px 0 0;
     width: 100%;
     max-width: 100%;
     max-height: 70vh;
     border: none;
-    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 -10px 40px var(--components_Songs_ScheduleList_3272_0);
   }
 
   .date-picker-header {
     padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--components_Songs_ScheduleList_3277_0);
   }
 
   .date-picker-header h3 {
@@ -3286,7 +3286,7 @@ const vRipple = {
     width: 32px;
     height: 32px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--components_Songs_ScheduleList_3289_0);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3300,20 +3300,20 @@ const vRipple = {
     padding: 14px 16px;
     border-radius: 12px;
     margin-bottom: 6px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--components_Songs_ScheduleList_3303_0);
     border: none;
     font-size: 14px;
   }
 
   .date-picker-item:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--components_Songs_ScheduleList_3309_0);
     transform: none;
   }
 
   .date-picker-item.active {
-    background: rgba(11, 90, 254, 0.15);
+    background: var(--components_Songs_ScheduleList_3314_0);
     border-left: none;
-    color: #0b5afe;
+    color: var(--components_Songs_ScheduleList_3316_0);
   }
 }
 
@@ -3387,7 +3387,7 @@ const vRipple = {
 .ripple-effect {
   position: absolute;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--components_Songs_ScheduleList_3390_0);
   transform: scale(0);
   animation: ripple 0.6s linear;
   pointer-events: none;
@@ -3420,7 +3420,7 @@ const vRipple = {
   display: none;
   text-align: center;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--components_Songs_ScheduleList_3423_0);
   margin-bottom: 0.5rem;
 }
 
@@ -3429,7 +3429,7 @@ const vRipple = {
   display: none;
   width: 100%;
   height: 2px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--components_Songs_ScheduleList_3432_0);
   margin-top: 0.5rem;
   border-radius: 1px;
   overflow: hidden;
@@ -3438,7 +3438,7 @@ const vRipple = {
 .scroll-indicator {
   height: 100%;
   width: 20%;
-  background-color: rgba(11, 90, 254, 0.6);
+  background-color: var(--components_Songs_ScheduleList_3441_0);
   border-radius: 1px;
   animation: scroll-hint 1.5s infinite;
 }
@@ -3461,10 +3461,10 @@ const vRipple = {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  background: #21242d;
+  background: var(--components_Songs_ScheduleList_3464_0);
   border-radius: 10px;
   padding: 0.75rem 1rem;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 4px 6px var(--components_Songs_ScheduleList_3467_0);
   width: 100%;
   position: relative;
   z-index: 10;
@@ -3472,9 +3472,9 @@ const vRipple = {
 }
 
 .date-nav-btn {
-  background: rgba(11, 90, 254, 0.1);
-  border: 1px solid rgba(11, 90, 254, 0.2);
-  color: #ffffff;
+  background: var(--components_Songs_ScheduleList_3475_0);
+  border: 1px solid var(--components_Songs_ScheduleList_3476_0);
+  color: var(--components_Songs_ScheduleList_3477_0);
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -3491,14 +3491,14 @@ const vRipple = {
 }
 
 .date-nav-btn:hover:not(:disabled) {
-  background: rgba(11, 90, 254, 0.2);
+  background: var(--components_Songs_ScheduleList_3494_0);
 }
 
 .current-date-mobile {
   font-family: 'MiSans', sans-serif;
   font-weight: 600;
   font-size: 16px;
-  color: #ffffff;
+  color: var(--components_Songs_ScheduleList_3501_0);
   text-align: center;
   flex: 1;
   white-space: pre-line;
@@ -3517,7 +3517,7 @@ const vRipple = {
 }
 
 .current-date-mobile:hover {
-  color: #0b5afe;
+  color: var(--components_Songs_ScheduleList_3520_0);
 }
 
 /* 日期选择器弹窗样式 */
@@ -3539,7 +3539,7 @@ const vRipple = {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--components_Songs_ScheduleList_3542_0);
   backdrop-filter: blur(3px);
 }
 
@@ -3548,10 +3548,10 @@ const vRipple = {
   width: 85%;
   max-width: 350px;
   max-height: 70vh;
-  background: #1a1d24;
+  background: var(--components_Songs_ScheduleList_3551_0);
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px var(--components_Songs_ScheduleList_3553_0);
+  border: 1px solid var(--components_Songs_ScheduleList_3554_0);
   overflow: hidden;
   animation: scale-in 0.2s ease;
   display: flex;
@@ -3563,7 +3563,7 @@ const vRipple = {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--components_Songs_ScheduleList_3566_0);
 }
 
 .date-picker-header h3 {
@@ -3575,7 +3575,7 @@ const vRipple = {
 .close-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--components_Songs_ScheduleList_3578_0);
   font-size: 22px;
   cursor: pointer;
   padding: 0 5px;
@@ -3594,20 +3594,20 @@ const vRipple = {
   margin-bottom: 0.5rem;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--components_Songs_ScheduleList_3597_0);
   position: relative;
   overflow: hidden;
   white-space: pre-line;
 }
 
 .date-picker-item:hover {
-  background: rgba(11, 90, 254, 0.1);
+  background: var(--components_Songs_ScheduleList_3604_0);
   transform: translateY(-2px);
 }
 
 .date-picker-item.active {
-  background: rgba(11, 90, 254, 0.2);
-  border-left: 3px solid #0b5afe;
+  background: var(--components_Songs_ScheduleList_3609_0);
+  border-left: 3px solid var(--components_Songs_ScheduleList_3610_0);
 }
 
 /* 过渡动画 */
@@ -3639,33 +3639,33 @@ const vRipple = {
   width: 24px;
   height: 22px;
   margin-left: 6px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  border: 1px solid var(--components_Songs_ScheduleList_3642_0);
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.08);
-  color: #60a5fa;
+  background: var(--components_Songs_ScheduleList_3644_0);
+  color: var(--components_Songs_ScheduleList_3645_0);
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 0 0 0 rgba(96, 165, 250, 0);
+  box-shadow: 0 0 0 0 var(--components_Songs_ScheduleList_3648_0);
   flex-shrink: 0;
 }
 
 .submission-note-trigger:hover {
-  background: rgba(59, 130, 246, 0.18);
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 6px 12px rgba(96, 165, 250, 0.15);
+  background: var(--components_Songs_ScheduleList_3653_0);
+  border-color: var(--components_Songs_ScheduleList_3654_0);
+  box-shadow: 0 6px 12px var(--components_Songs_ScheduleList_3655_0);
 }
 
 .submission-note-modal {
   width: 100%;
   max-width: 400px;
-  background: rgba(24, 24, 27, 0.85);
+  background: var(--components_Songs_ScheduleList_3661_0);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--components_Songs_ScheduleList_3664_0);
   border-radius: 20px;
   padding: 24px;
-  color: #f3f4f6;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  color: var(--components_Songs_ScheduleList_3667_0);
+  box-shadow: 0 25px 50px -12px var(--components_Songs_ScheduleList_3668_0);
 }
 
 .submission-note-header {
@@ -3678,27 +3678,27 @@ const vRipple = {
 .submission-note-header h4 {
   font-size: 18px;
   font-weight: 600;
-  color: #f3f4f6;
+  color: var(--components_Songs_ScheduleList_3681_0);
   margin: 0;
 }
 
 .submission-note-header button {
   border: none;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--components_Songs_ScheduleList_3687_0);
   border-radius: 50%;
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a1a1aa;
+  color: var(--components_Songs_ScheduleList_3694_0);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .submission-note-header button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #f4f4f5;
+  background: var(--components_Songs_ScheduleList_3700_0);
+  color: var(--components_Songs_ScheduleList_3701_0);
 }
 
 .submission-note-meta {
@@ -3711,8 +3711,8 @@ const vRipple = {
 
 .song-title-tag {
   font-size: 13px;
-  color: #9ca3af;
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--components_Songs_ScheduleList_3714_0);
+  background: var(--components_Songs_ScheduleList_3715_0);
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -3724,20 +3724,20 @@ const vRipple = {
 }
 
 .visibility-public {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: var(--components_Songs_ScheduleList_3727_0);
+  color: var(--components_Songs_ScheduleList_3728_0);
+  border: 1px solid var(--components_Songs_ScheduleList_3729_0);
 }
 
 .visibility-private {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  background: var(--components_Songs_ScheduleList_3733_0);
+  color: var(--components_Songs_ScheduleList_3734_0);
+  border: 1px solid var(--components_Songs_ScheduleList_3735_0);
 }
 
 .submission-note-content-box {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--components_Songs_ScheduleList_3739_0);
+  border: 1px solid var(--components_Songs_ScheduleList_3740_0);
   border-radius: 12px;
   padding: 16px;
   max-height: 300px;
@@ -3747,7 +3747,7 @@ const vRipple = {
 .submission-note-content {
   font-size: 14px;
   line-height: 1.7;
-  color: #e4e4e7;
+  color: var(--components_Songs_ScheduleList_3750_0);
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;

@@ -31,7 +31,7 @@ defineProps({
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: radial-gradient(circle at center, #111827, #000000);
+  background: radial-gradient(circle at center, var(--components_year-review_IntroSlide_34_0), var(--components_year-review_IntroSlide_34_1));
 }
 
 .blob {
@@ -46,7 +46,7 @@ defineProps({
   left: -10%;
   width: 500px;
   height: 500px;
-  background: rgba(139, 92, 246, 0.4); /* brand-purple */
+  background: var(--components_year-review_IntroSlide_49_0); /* brand-purple */
   animation: spin 20s linear infinite;
 }
 
@@ -55,7 +55,7 @@ defineProps({
   right: -10%;
   width: 600px;
   height: 600px;
-  background: rgba(244, 114, 182, 0.2); /* brand-pink */
+  background: var(--components_year-review_IntroSlide_58_0); /* brand-pink */
   animation: reverse-spin 25s linear infinite;
 }
 
@@ -73,7 +73,7 @@ defineProps({
   transform: translate(-50%, -50%);
   font-size: 14rem;
   font-weight: 900;
-  color: rgba(255, 255, 255, 0.03);
+  color: var(--components_year-review_IntroSlide_76_0);
   pointer-events: none;
   user-select: none;
   line-height: 1;
@@ -82,7 +82,7 @@ defineProps({
 .sub-title {
   font-size: 1.5rem;
   font-weight: 300;
-  color: #9ca3af;
+  color: var(--components_year-review_IntroSlide_85_0);
   margin-bottom: 1rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -91,12 +91,12 @@ defineProps({
 .main-title {
   font-size: 5rem;
   font-weight: 900;
-  background-image: linear-gradient(to right, #ffffff, #e5e7eb, #6b7280);
+  background-image: linear-gradient(to right, var(--components_year-review_IntroSlide_94_0), var(--components_year-review_IntroSlide_94_1), var(--components_year-review_IntroSlide_94_2));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   margin-bottom: 2rem;
-  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 25px 25px var(--components_year-review_IntroSlide_99_0));
 }
 
 @media (max-width: 768px) {

@@ -37,13 +37,13 @@ defineProps({
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background-color: #1a0b2e;
+  background-color: var(--components_year-review_ArtistSlide_40_0);
 }
 
 .bg-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, #000, transparent, transparent);
+  background: linear-gradient(to top, var(--components_year-review_ArtistSlide_46_0), transparent, transparent);
   opacity: 0.8;
   z-index: 10;
 }
@@ -53,7 +53,7 @@ defineProps({
   top: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, #581c87, #000);
+  background: linear-gradient(to bottom, var(--components_year-review_ArtistSlide_56_0), var(--components_year-review_ArtistSlide_56_1));
   opacity: 0.5;
   animation: pulse 8s infinite;
 }
@@ -69,19 +69,19 @@ defineProps({
 }
 
 .label {
-  color: #d8b4fe; /* purple-300 */
+  color: var(--components_year-review_ArtistSlide_72_0); /* purple-300 */
   letter-spacing: 0.3em;
   text-transform: uppercase;
   margin-bottom: 1.5rem;
   font-size: 0.875rem;
   font-weight: 700;
-  border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+  border-bottom: 1px solid var(--components_year-review_ArtistSlide_78_0);
   padding-bottom: 0.5rem;
 }
 
 .text-intro {
   font-size: 1.5rem;
-  color: #d1d5db;
+  color: var(--components_year-review_ArtistSlide_84_0);
   font-weight: 300;
   margin-bottom: 3rem;
 }
@@ -98,7 +98,7 @@ defineProps({
   transform: translate(-50%, -50%);
   width: 120%;
   height: 120%;
-  background: rgba(168, 85, 247, 0.2);
+  background: var(--components_year-review_ArtistSlide_101_0);
   filter: blur(60px);
   border-radius: 50%;
 }
@@ -109,18 +109,18 @@ defineProps({
   font-weight: 900;
   font-style: italic;
   letter-spacing: -0.05em;
-  background-image: linear-gradient(to bottom right, #e9d5ff, #f472b6, #fb923c);
+  background-image: linear-gradient(to bottom right, var(--components_year-review_ArtistSlide_112_0), var(--components_year-review_ArtistSlide_112_1), var(--components_year-review_ArtistSlide_112_2));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 25px 25px rgba(0, 0, 0, 0.15));
+  filter: drop-shadow(0 25px 25px var(--components_year-review_ArtistSlide_116_0));
   word-break: break-word;
   padding: 0 0.5rem;
 }
 
 .text-desc {
   margin-top: 3rem;
-  color: #9ca3af;
+  color: var(--components_year-review_ArtistSlide_123_0);
   max-width: 24rem;
   margin-left: auto;
   margin-right: auto;

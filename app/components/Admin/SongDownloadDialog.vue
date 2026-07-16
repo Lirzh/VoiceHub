@@ -49,7 +49,7 @@
                     >
                     <div
                       v-if="selectedQuality === option.value"
-                      class="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+                      class="w-1.5 h-1.5 bg-blue-500 rounded-full shadow-[0_0_8px_var(--components_Admin_SongDownloadDialog_52_0)]"
                     />
                   </div>
                   <span class="text-[10px] text-zinc-500 relative z-10">{{
@@ -1995,11 +1995,11 @@ onUnmounted(() => {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_SongDownloadDialog_1998_0);
   border-radius: 10px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_SongDownloadDialog_2002_0);
 }
 
 .fade-enter-active,

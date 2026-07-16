@@ -861,10 +861,10 @@ const cancelForm = () => {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--components_Admin_RequestTimeManager_864_0);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--components_Admin_RequestTimeManager_868_0);
 }
 </style>
