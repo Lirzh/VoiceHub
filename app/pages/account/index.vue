@@ -1,214 +1,163 @@
 <template>
-  <div class="min-h-screen bg-[var(--pages_account_index_bg-page)] text-[var(--pages_account_index_text-secondary)] pb-24">
-    <!-- 顶部导航栏 -->
-    <div
-      class="sticky top-0 z-30 bg-[var(--pages_account_index_bg-page)]/80 backdrop-blur-xl px-4 py-4 mb-8"
-    >
-      <div class="max-w-[1200px] mx-auto flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <button
-            class="p-2 hover:bg-[var(--pages_account_index_bg-section)] rounded-xl transition-all text-[var(--pages_account_index_text-tertiary)] hover:text-[var(--pages_account_index_text-primary)]"
-            @click="goBack"
-          >
+  <div class="account-page">
+    <div class="top-nav">
+      <div class="nav-container">
+        <div class="nav-left">
+          <button class="btn-back" @click="goBack">
             <ArrowLeft :size="20" />
           </button>
-          <div>
-            <h1 class="text-xl font-black text-[var(--pages_account_index_text-primary)] tracking-tight">账号管理</h1>
-            <p class="text-[10px] text-[var(--pages_account_index_text-quaternary)] font-medium uppercase tracking-widest mt-0.5">
-              Account Management
-            </p>
+          <div class="nav-title">
+            <h1 class="title-main">账号管理</h1>
+            <p class="title-sub">Account Management</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="max-w-[1200px] mx-auto px-4">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- 左侧：用户信息概览 (PC端占据 4/12) -->
-        <div class="lg:col-span-4 space-y-6">
-          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col items-center text-center">
-            <div class="relative group">
-              <div
-                class="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-4xl font-black shadow-2xl shadow-blue-900/20 mb-6 group-hover:scale-105 transition-transform duration-500"
-              >
+    <div class="page-container">
+      <div class="content-grid">
+        <div class="left-section">
+          <section class="user-card">
+            <div class="avatar-wrapper">
+              <div class="avatar">
                 <img
                   v-if="auth.user.value?.avatar && !avatarError"
                   :src="auth.user.value.avatar"
-                  class="w-full h-full object-cover"
+                  class="avatar-image"
                   @error="avatarError = true"
                 >
                 <span v-else>{{ userInitials }}</span>
               </div>
-              <div
-                class="absolute -bottom-1 -right-1 p-2 bg-[var(--pages_account_index_bg-section)] rounded-full text-blue-500 shadow-xl"
-              >
+              <div class="avatar-badge">
                 <User :size="16" />
               </div>
             </div>
 
-            <div class="space-y-2">
-              <h2 class="text-2xl font-black text-[var(--pages_account_index_text-primary)] tracking-tight">
-                {{ auth.user.value?.name || auth.user.value?.username }}
-              </h2>
-              <p class="text-sm font-medium text-[var(--pages_account_index_text-quaternary)]">@{{ auth.user.value?.username }}</p>
+            <div class="user-info">
+              <h2 class="user-name">{{ auth.user.value?.name || auth.user.value?.username }}</h2>
+              <p class="user-username">@{{ auth.user.value?.username }}</p>
             </div>
 
-            <div class="flex flex-wrap justify-center gap-2 mt-6">
-              <span
-                class="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-wider rounded-full"
-              >
-                {{ roleName }}
-              </span>
-              <span
-                v-if="auth.user.value?.grade"
-                class="px-3 py-1 bg-[var(--pages_account_index_bg-tag)] text-[var(--pages_account_index_text-tertiary)] text-[10px] font-black uppercase tracking-wider rounded-full"
-              >
-                {{ auth.user.value?.grade }}
-              </span>
-              <span
-                v-if="auth.user.value?.class"
-                class="px-3 py-1 bg-[var(--pages_account_index_bg-tag)] text-[var(--pages_account_index_text-tertiary)] text-[10px] font-black uppercase tracking-wider rounded-full"
-              >
-                {{ auth.user.value?.class }}
-              </span>
+            <div class="user-tags">
+              <span class="tag role-tag">{{ roleName }}</span>
+              <span v-if="auth.user.value?.grade" class="tag">{{ auth.user.value?.grade }}</span>
+              <span v-if="auth.user.value?.class" class="tag">{{ auth.user.value?.class }}</span>
             </div>
           </section>
         </div>
 
-        <!-- 右侧：详细设置 -->
-        <div class="lg:col-span-8 space-y-8">
-          <!-- 第三方登录绑定 -->
-          <section v-if="hasOAuthProviders" class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
-            <div class="flex items-center gap-3 pb-5 mb-6">
-              <div class="p-2.5 bg-purple-500/10 rounded-xl">
-                <LinkIcon :size="20" class="text-purple-500" />
+        <div class="right-section">
+          <section v-if="hasOAuthProviders" class="section-card">
+            <div class="section-header">
+              <div class="section-icon purple-icon">
+                <LinkIcon :size="20" />
               </div>
-              <div>
-                <h2 class="text-base font-black text-[var(--pages_account_index_text-primary)]">第三方账号绑定</h2>
-                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-0.5">绑定社交账号以便更快捷地登录系统</p>
+              <div class="section-title">
+                <h2>第三方账号绑定</h2>
+                <p>绑定社交账号以便更快捷地登录系统</p>
               </div>
             </div>
             <AuthOAuthBindingCard />
           </section>
 
-          <!-- 个人 API Key -->
-          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-6">
-              <div class="flex items-center gap-3">
-                <div class="p-2.5 bg-emerald-500/10 rounded-xl">
-                  <KeyRound :size="20" class="text-emerald-500" />
-                </div>
-                <div>
-                  <h2 class="text-base font-black text-[var(--pages_account_index_text-primary)]">个人 API Key</h2>
-                  <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-0.5">用于个人集成和投稿</p>
-                </div>
+          <section class="section-card">
+            <div class="section-header api-header">
+              <div class="section-icon emerald-icon">
+                <KeyRound :size="20" />
+              </div>
+              <div class="section-title">
+                <h2>个人 API Key</h2>
+                <p>用于个人集成和投稿</p>
               </div>
               <button
-                class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+                class="btn-primary"
                 :disabled="apiKeyLoading || apiKeyCreating"
                 @click="createPersonalApiKey"
               >
-                <RefreshCw v-if="apiKeyCreating" :size="14" class="animate-spin" />
+                <RefreshCw v-if="apiKeyCreating" :size="14" class="icon-spin" />
                 <Plus v-else :size="14" />
                 创建 API Key
               </button>
             </div>
 
-            <div v-if="apiKeyLoading" class="flex items-center justify-center gap-2 py-8 text-xs text-[var(--pages_account_index_text-quaternary)] text-center">
-              <RefreshCw :size="16" class="animate-spin" />
+            <div v-if="apiKeyLoading" class="loading-state">
+              <RefreshCw :size="16" class="icon-spin" />
               <span>正在加载 API Key...</span>
             </div>
 
-            <div
-              v-else-if="personalApiKeys.length === 0"
-              class="rounded-2xl bg-[var(--pages_account_index_bg-dashed)] px-5 py-8 text-center"
-            >
-              <KeyRound :size="28" class="mx-auto text-[var(--pages_account_index_text-icon)] mb-3" />
-              <p class="text-sm font-bold text-[var(--pages_account_index_text-secondary)]">还没有个人 API Key</p>
-              <p class="text-xs text-[var(--pages_account_index_text-disabled)] mt-2 leading-relaxed">
-                创建后可用于个人侧的集成与投稿。
-              </p>
+            <div v-else-if="personalApiKeys.length === 0" class="empty-state">
+              <KeyRound :size="28" class="empty-icon" />
+              <p class="empty-title">还没有个人 API Key</p>
+              <p class="empty-desc">创建后可用于个人侧的集成与投稿。</p>
             </div>
 
-            <div v-else class="space-y-3">
-              <div
-                v-for="key in personalApiKeys"
-                :key="key.id"
-                class="rounded-2xl border border-[var(--pages_account_index_border-primary)]/70 bg-[var(--pages_account_index_bg-dashed)] p-4"
-              >
-                <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                  <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                      <h3 class="text-sm font-black text-[var(--pages_account_index_text-primary)]">{{ key.name }}</h3>
-                      <span
-                        class="px-2 py-0.5 rounded text-[10px] font-black border"
-                        :class="getApiKeyStatusClass(key.status)"
-                      >
+            <div v-else class="api-key-list">
+              <div v-for="key in personalApiKeys" :key="key.id" class="api-key-card">
+                <div class="api-key-header">
+                  <div class="api-key-info">
+                    <div class="api-key-name-row">
+                      <h3 class="api-key-name">{{ key.name }}</h3>
+                      <span :class="['status-tag', `status-${key.status}`]">
                         {{ getApiKeyStatusLabel(key.status) }}
                       </span>
                     </div>
-                    <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">{{ key.description || '暂无描述' }}</p>
+                    <p class="api-key-desc">{{ key.description || '暂无描述' }}</p>
                   </div>
                   <button
-                    class="inline-flex items-center justify-center gap-2 px-3 py-2 border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/15 text-xs font-bold rounded-xl transition-all disabled:opacity-50"
+                    class="btn-danger"
                     :disabled="apiKeyDeletingId === key.id"
                     @click="deletePersonalApiKey(key)"
                   >
-                    <RefreshCw v-if="apiKeyDeletingId === key.id" :size="13" class="animate-spin" />
+                    <RefreshCw v-if="apiKeyDeletingId === key.id" :size="13" class="icon-spin" />
                     <Trash2 v-else :size="13" />
                     删除
                   </button>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
-                  <div class="space-y-1">
-                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">Key 前缀</p>
-                    <p class="font-mono text-xs text-blue-400">{{ key.keyPrefix }}...</p>
+                <div class="api-key-details">
+                  <div class="detail-item">
+                    <p class="detail-label">Key 前缀</p>
+                    <p class="detail-value prefix">{{ key.keyPrefix }}...</p>
                   </div>
-                  <div class="space-y-1">
-                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">创建时间</p>
-                    <p class="text-xs text-[var(--pages_account_index_text-tertiary)]">{{ formatDate(key.createdAt) }}</p>
+                  <div class="detail-item">
+                    <p class="detail-label">创建时间</p>
+                    <p class="detail-value">{{ formatDate(key.createdAt) }}</p>
                   </div>
-                  <div class="space-y-1">
-                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">最后使用</p>
-                    <p class="text-xs text-[var(--pages_account_index_text-tertiary)]">{{ key.lastUsedAt ? formatDate(key.lastUsedAt) : '从未使用' }}</p>
+                  <div class="detail-item">
+                    <p class="detail-label">最后使用</p>
+                    <p class="detail-value">{{ key.lastUsedAt ? formatDate(key.lastUsedAt) : '从未使用' }}</p>
                   </div>
-                  <div class="space-y-1">
-                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">调用次数</p>
-                    <button
-                      class="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors disabled:cursor-default disabled:opacity-60"
-                      @click="openPersonalApiKeyLogs(key)"
-                    >
+                  <div class="detail-item">
+                    <p class="detail-label">调用次数</p>
+                    <button class="btn-ghost" @click="openPersonalApiKeyLogs(key)">
                       {{ key.usageCount || 0 }}
                     </button>
                   </div>
-                  <div class="space-y-1">
-                    <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">过期时间</p>
-                    <p class="text-xs text-[var(--pages_account_index_text-tertiary)]">{{ key.expiresAt ? formatDate(key.expiresAt) : '永不过期' }}</p>
+                  <div class="detail-item">
+                    <p class="detail-label">过期时间</p>
+                    <p class="detail-value">{{ key.expiresAt ? formatDate(key.expiresAt) : '永不过期' }}</p>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          <!-- 修改密码 -->
-          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
-            <div class="flex items-center gap-3 pb-5 mb-6">
-              <div class="p-2.5 bg-blue-500/10 rounded-xl">
-                <Lock :size="20" class="text-blue-500" />
+          <section class="section-card">
+            <div class="section-header">
+              <div class="section-icon blue-icon">
+                <Lock :size="20" />
               </div>
-              <div>
-                <h2 class="text-base font-black text-[var(--pages_account_index_text-primary)]">修改密码</h2>
-                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-0.5">为了您的账号安全，建议定期更换高强度密码</p>
+              <div class="section-title">
+                <h2>修改密码</h2>
+                <p>为了您的账号安全，建议定期更换高强度密码</p>
               </div>
             </div>
-            <div class="max-w-md">
+            <div class="form-container">
               <AuthChangePasswordForm />
             </div>
           </section>
 
-          <!-- 双重认证 -->
-          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
+          <section class="section-card">
             <AuthTwoFactorSetup :initial-enabled="auth.user.value?.has2FA" />
           </section>
         </div>
@@ -229,38 +178,31 @@
 
     <Teleport to="body">
       <Transition name="modal">
-        <div
-          v-if="createdApiKey"
-          class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-        >
-          <div class="w-full max-w-xl bg-[var(--pages_account_index_bg-section)] rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 flex items-center justify-between">
-              <div>
-                <h3 class="text-lg font-black text-[var(--pages_account_index_text-primary)]">API Key 创建成功</h3>
-                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">完整 Key 只会显示这一次</p>
+        <div v-if="createdApiKey" class="modal-overlay">
+          <div class="modal-card api-created-modal">
+            <div class="modal-header">
+              <div class="modal-title">
+                <h3>API Key 创建成功</h3>
+                <p>完整 Key 只会显示这一次</p>
               </div>
-              <button class="text-[var(--pages_account_index_text-quaternary)] hover:text-[var(--pages_account_index_text-secondary)] transition-colors" @click="closeCreatedApiKey">
+              <button class="btn-close" @click="closeCreatedApiKey">
                 <X :size="20" />
               </button>
             </div>
 
-            <div class="p-6 space-y-5">
-              <div class="flex items-start gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-amber-400">
-                <AlertTriangle :size="18" class="shrink-0 mt-0.5" />
-                <p class="text-xs font-bold leading-relaxed">
-                  请现在复制并保存。关闭窗口后，VoiceHub 不会再次显示完整 Key。
-                </p>
+            <div class="modal-body">
+              <div class="alert-warning">
+                <AlertTriangle :size="18" />
+                <p>请现在复制并保存。关闭窗口后，VoiceHub 不会再次显示完整 Key。</p>
               </div>
 
-              <div class="space-y-2">
-                <p class="text-[10px] font-black text-[var(--pages_account_index_text-disabled)] uppercase tracking-widest">完整 Key</p>
-                <div class="flex items-stretch gap-2">
-                  <div class="flex-1 min-w-0 rounded-xl border border-[var(--pages_account_index_border-primary)] bg-[var(--pages_account_index_bg-page)] px-4 py-3 font-mono text-xs text-blue-400 break-all select-all">
-                    {{ createdApiKey.apiKey }}
-                  </div>
+              <div class="api-key-display">
+                <p class="display-label">完整 Key</p>
+                <div class="display-row">
+                  <div class="api-key-value">{{ createdApiKey.apiKey }}</div>
                   <button
-                    class="w-12 rounded-xl flex items-center justify-center transition-all"
-                    :class="apiKeyCopied ? 'bg-emerald-600 text-white' : 'bg-[var(--pages_account_index_bg-card)] hover:bg-[var(--pages_account_index_bg-button-secondary-hover)] text-[var(--pages_account_index_text-button-secondary)]'"
+                    class="btn-copy"
+                    :class="{ copied: apiKeyCopied }"
                     @click="copyApiKey(createdApiKey.apiKey)"
                   >
                     <Check v-if="apiKeyCopied" :size="16" />
@@ -270,11 +212,8 @@
               </div>
             </div>
 
-            <div class="p-6">
-              <button
-                class="w-full py-3 bg-[var(--pages_account_index_bg-page)] border border-[var(--pages_account_index_border-primary)] hover:border-[var(--pages_account_index_border-button-hover)] text-[var(--pages_account_index_text-secondary)] text-xs font-black rounded-xl transition-all"
-                @click="closeCreatedApiKey"
-              >
+            <div class="modal-footer">
+              <button class="btn-secondary" @click="closeCreatedApiKey">
                 我已保存，关闭
               </button>
             </div>
@@ -285,89 +224,71 @@
 
     <Teleport to="body">
       <Transition name="modal">
-        <div
-          v-if="showApiKeyLogsModal"
-          class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-        >
-          <div class="w-full max-w-4xl bg-[var(--pages_account_index_bg-section)] rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 flex items-start justify-between gap-4">
-              <div>
-                <h3 class="text-lg font-black text-[var(--pages_account_index_text-primary)]">调用记录</h3>
-                <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">
-                  {{ selectedApiKeyForLogs?.name || '个人 API Key' }} · 共 {{ apiKeyLogsPagination.total }} 条
-                </p>
+        <div v-if="showApiKeyLogsModal" class="modal-overlay">
+          <div class="modal-card logs-modal">
+            <div class="modal-header">
+              <div class="modal-title">
+                <h3>调用记录</h3>
+                <p>{{ selectedApiKeyForLogs?.name || '个人 API Key' }} · 共 {{ apiKeyLogsPagination.total }} 条</p>
               </div>
-              <button class="text-[var(--pages_account_index_text-quaternary)] hover:text-[var(--pages_account_index_text-secondary)] transition-colors" @click="closePersonalApiKeyLogs">
+              <button class="btn-close" @click="closePersonalApiKeyLogs">
                 <X :size="20" />
               </button>
             </div>
 
-            <div class="p-6">
-              <div v-if="apiKeyLogsLoading" class="flex items-center justify-center gap-2 py-10 text-xs text-[var(--pages_account_index_text-quaternary)]">
-                <RefreshCw :size="16" class="animate-spin" />
+            <div class="modal-body">
+              <div v-if="apiKeyLogsLoading" class="loading-state">
+                <RefreshCw :size="16" class="icon-spin" />
                 <span>正在加载调用记录...</span>
               </div>
 
-              <div v-else-if="apiKeyLogs.length === 0" class="py-10 text-center">
-                <p class="text-sm font-bold text-[var(--pages_account_index_text-secondary)]">暂无调用记录</p>
-                <p class="text-xs text-[var(--pages_account_index_text-disabled)] mt-2">这个令牌还没有产生过 API 调用。</p>
+              <div v-else-if="apiKeyLogs.length === 0" class="empty-state">
+                <p class="empty-title">暂无调用记录</p>
+                <p class="empty-desc">这个令牌还没有产生过 API 调用。</p>
               </div>
 
-              <div v-else class="space-y-4">
-                <div class="overflow-hidden rounded-2xl border border-[var(--pages_account_index_border-primary)]">
-                  <div class="max-h-[60vh] overflow-auto">
-                    <table class="min-w-full text-left">
-                      <thead class="sticky top-0 bg-[var(--pages_account_index_bg-table-header)] backdrop-blur">
-                        <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--pages_account_index_text-quaternary)]">
-                          <th class="px-4 py-3">时间</th>
-                          <th class="px-4 py-3">方法</th>
-                          <th class="px-4 py-3">接口</th>
-                          <th class="px-4 py-3">状态</th>
-                          <th class="px-4 py-3">IP</th>
-                          <th class="px-4 py-3">耗时</th>
-                          <th class="px-4 py-3">错误</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="log in apiKeyLogs" :key="log.id" class="last:border-0">
-                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ formatDate(log.createdAt) }}</td>
-                          <td class="px-4 py-3">
-                            <span
-                              class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black border"
-                              :class="getApiMethodClass(log.method)"
-                            >
-                              {{ log.method }}
-                            </span>
-                          </td>
-                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-secondary)] break-all">{{ log.endpoint }}</td>
-                          <td class="px-4 py-3 text-xs font-bold" :class="getApiStatusClass(log.statusCode)">
-                            {{ log.statusCode }}
-                          </td>
-                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ log.ipAddress }}</td>
-                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ log.responseTimeMs }} ms</td>
-                          <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-quaternary)] break-all">
-                            {{ log.errorMessage || '无' }}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+              <div v-else>
+                <div class="logs-table-wrapper">
+                  <table class="logs-table">
+                    <thead>
+                      <tr>
+                        <th>时间</th>
+                        <th>方法</th>
+                        <th>接口</th>
+                        <th>状态</th>
+                        <th>IP</th>
+                        <th>耗时</th>
+                        <th>错误</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="log in apiKeyLogs" :key="log.id">
+                        <td>{{ formatDate(log.createdAt) }}</td>
+                        <td>
+                          <span :class="['method-tag', `method-${log.method}`]">{{ log.method }}</span>
+                        </td>
+                        <td>{{ log.endpoint }}</td>
+                        <td :class="['status-code', getStatusClass(log.statusCode)]">{{ log.statusCode }}</td>
+                        <td>{{ log.ipAddress }}</td>
+                        <td>{{ log.responseTimeMs }} ms</td>
+                        <td>{{ log.errorMessage || '无' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
-                <div class="flex items-center justify-between gap-3">
-                  <p class="text-xs text-[var(--pages_account_index_text-quaternary)]">
-                    第 {{ apiKeyLogsPagination.page }} / {{ apiKeyLogsPagination.totalPages || 1 }} 页
-                  </p>
-                  <div class="flex items-center gap-2">
+                <div class="pagination">
+                  <p class="pagination-info">第 {{ apiKeyLogsPagination.page }} / {{ apiKeyLogsPagination.totalPages || 1 }} 页</p>
+                  <div class="pagination-buttons">
                     <button
-                      class="px-3 py-2 rounded-xl border border-[var(--pages_account_index_border-primary)] text-xs font-bold text-[var(--pages_account_index_text-button-secondary)] disabled:opacity-40"
+                      class="btn-pagination"
                       :disabled="apiKeyLogsPagination.page <= 1 || apiKeyLogsLoading"
                       @click="changePersonalApiKeyLogsPage(apiKeyLogsPagination.page - 1)"
                     >
                       上一页
                     </button>
                     <button
-                      class="px-3 py-2 rounded-xl border border-[var(--pages_account_index_border-primary)] text-xs font-bold text-[var(--pages_account_index_text-button-secondary)] disabled:opacity-40"
+                      class="btn-pagination"
                       :disabled="apiKeyLogsPagination.page >= apiKeyLogsPagination.totalPages || apiKeyLogsLoading"
                       @click="changePersonalApiKeyLogsPage(apiKeyLogsPagination.page + 1)"
                     >
@@ -454,8 +375,6 @@ onMounted(() => {
     router.replace({ query: { ...route.query, message: undefined, error: undefined } })
   }
 })
-
-const sectionClass = 'bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl'
 
 const userInitials = computed(() => {
   const name = auth.user.value?.name || auth.user.value?.username || 'U'
@@ -662,28 +581,881 @@ const getApiKeyStatusLabel = (status) => {
   return map[status] || status
 }
 
-const getApiKeyStatusClass = (status) => {
-  const map = {
-    active: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    inactive: 'bg-[var(--pages_account_index_bg-card)] text-[var(--pages_account_index_text-quaternary)] border-[var(--pages_account_index_border-tag-status)]',
-    expired: 'bg-red-500/10 text-red-400 border-red-500/20'
-  }
-  return map[status] || 'bg-[var(--pages_account_index_bg-card)] text-[var(--pages_account_index_text-quaternary)] border-[var(--pages_account_index_border-tag-status)]'
-}
-
-const getApiMethodClass = (method) => {
-  const map = {
-    GET: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    POST: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    PUT: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    DELETE: 'bg-red-500/10 text-red-400 border-red-500/20'
-  }
-  return map[method] || 'bg-[var(--pages_account_index_bg-card)] text-[var(--pages_account_index_text-tertiary)] border-[var(--pages_account_index_border-tag-status)]'
-}
-
-const getApiStatusClass = (statusCode) => {
-  if (statusCode >= 200 && statusCode < 300) return 'text-emerald-400'
-  if (statusCode >= 300 && statusCode < 400) return 'text-amber-400'
-  return 'text-red-400'
+const getStatusClass = (statusCode) => {
+  if (statusCode >= 200 && statusCode < 300) return 'status-success'
+  if (statusCode >= 300 && statusCode < 400) return 'status-warning'
+  return 'status-error'
 }
 </script>
+
+<style scoped>
+.account-page {
+  min-height: 100vh;
+  background-color: var(--pages_account_index_bg-page);
+  color: var(--pages_account_index_text-secondary);
+  padding-bottom: 6rem;
+}
+
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: var(--pages_account_index_bg-page);
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(24px);
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.dark .top-nav {
+  background-color: rgba(17, 17, 17, 0.8);
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-back {
+  padding: 0.5rem;
+  border: 1px solid var(--pages_account_index_border-button-ghost);
+  background-color: var(--pages_account_index_bg-button-ghost);
+  color: var(--pages_account_index_text-button-ghost);
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-back:hover {
+  background-color: var(--pages_account_index_bg-button-ghost-hover);
+  color: var(--pages_account_index_text-primary);
+}
+
+.nav-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.title-main {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.title-sub {
+  font-size: 0.625rem;
+  color: var(--pages_account_index_text-quaternary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  margin: 0.125rem 0 0 0;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .content-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  .left-section {
+    grid-column: span 4;
+  }
+
+  .right-section {
+    grid-column: span 8;
+  }
+}
+
+.left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.right-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.user-card {
+  background-color: rgba(245, 245, 245, 0.4);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.dark .user-card {
+  background-color: rgba(26, 26, 26, 0.4);
+}
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.avatar {
+  width: 8rem;
+  height: 8rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 3rem;
+  font-weight: 900;
+  box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.2);
+  margin-bottom: 1.5rem;
+  transition: transform 0.5s;
+}
+
+.avatar-wrapper:hover .avatar {
+  transform: scale(1.05);
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-badge {
+  position: absolute;
+  bottom: -0.25rem;
+  right: -0.25rem;
+  padding: 0.5rem;
+  background-color: var(--pages_account_index_bg-section);
+  border-radius: 50%;
+  color: #3b82f6;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-name {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-primary);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.user-username {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--pages_account_index_text-quaternary);
+  margin: 0;
+}
+
+.user-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.tag {
+  padding: 0.25rem 0.75rem;
+  background-color: var(--pages_account_index_bg-tag);
+  color: var(--pages_account_index_text-tertiary);
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 9999px;
+}
+
+.role-tag {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.section-card {
+  background-color: rgba(245, 245, 245, 0.4);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.dark .section-card {
+  background-color: rgba(26, 26, 26, 0.4);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--pages_account_index_border-primary);
+}
+
+.api-header {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.section-icon {
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+}
+
+.purple-icon {
+  background-color: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.emerald-icon {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.blue-icon {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.section-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title h2 {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-primary);
+  margin: 0;
+}
+
+.section-title p {
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-quaternary);
+  margin: 0.125rem 0 0 0;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #10b981;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #059669;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-quaternary);
+  text-align: center;
+}
+
+.empty-state {
+  border-radius: 1rem;
+  background-color: var(--pages_account_index_bg-dashed);
+  padding: 1.25rem 1.5rem;
+  text-align: center;
+}
+
+.empty-icon {
+  margin: 0 auto 0.75rem;
+  color: var(--pages_account_index_text-icon);
+}
+
+.empty-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--pages_account_index_text-secondary);
+  margin: 0;
+}
+
+.empty-desc {
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-disabled);
+  margin: 0.5rem 0 0 0;
+  line-height: 1.6;
+}
+
+.api-key-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.api-key-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(229, 231, 235, 0.7);
+  background-color: var(--pages_account_index_bg-dashed);
+  padding: 1rem;
+}
+
+.dark .api-key-card {
+  border-color: rgba(39, 39, 42, 0.7);
+}
+
+.api-key-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .api-key-header {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.api-key-info {
+  min-width: 0;
+}
+
+.api-key-name-row {
+  display: flex;
+  flex-wrap: items;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.api-key-name {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-primary);
+  margin: 0;
+}
+
+.status-tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  border: 1px solid;
+}
+
+.status-active {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.status-inactive {
+  background-color: var(--pages_account_index_bg-card);
+  color: var(--pages_account_index_text-quaternary);
+  border-color: var(--pages_account_index_border-tag-status);
+}
+
+.status-expired {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.api-key-desc {
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-quaternary);
+  margin: 0.25rem 0 0 0;
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.api-key-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .api-key-details {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  font-size: 0.625rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  margin: 0;
+}
+
+.detail-value {
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-tertiary);
+  margin: 0;
+}
+
+.detail-value.prefix {
+  font-family: monospace;
+  color: #60a5fa;
+}
+
+.btn-ghost {
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--pages_account_index_border-button-ghost);
+  background-color: var(--pages_account_index_bg-button-ghost);
+  color: var(--pages_account_index_text-button-ghost);
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  background-color: var(--pages_account_index_bg-button-ghost-hover);
+}
+
+.btn-ghost:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.form-container {
+  max-width: 25rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  width: 100%;
+  background-color: var(--pages_account_index_bg-section);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.api-created-modal {
+  max-width: 36rem;
+}
+
+.logs-modal {
+  max-width: 56rem;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-title h3 {
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-primary);
+  margin: 0;
+}
+
+.modal-title p {
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-quaternary);
+  margin: 0.25rem 0 0 0;
+}
+
+.btn-close {
+  padding: 0.5rem;
+  border: 1px solid var(--pages_account_index_border-button-ghost);
+  background-color: var(--pages_account_index_bg-button-ghost);
+  color: var(--pages_account_index_text-button-ghost);
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-close:hover {
+  background-color: var(--pages_account_index_bg-button-ghost-hover);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.alert-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  background-color: rgba(245, 158, 11, 0.1);
+  padding: 1rem;
+  color: #fbbf24;
+}
+
+.alert-warning svg {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.alert-warning p {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.api-key-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.display-label {
+  font-size: 0.625rem;
+  font-weight: 900;
+  color: var(--pages_account_index_text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  margin: 0;
+}
+
+.display-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.api-key-value {
+  flex: 1;
+  min-width: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--pages_account_index_border-primary);
+  background-color: var(--pages_account_index_bg-page);
+  padding: 0.75rem 1rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #60a5fa;
+  word-break: break-all;
+  user-select: all;
+}
+
+.btn-copy {
+  width: 3rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pages_account_index_border-button-ghost);
+  background-color: var(--pages_account_index_bg-button-ghost);
+  color: var(--pages_account_index_text-button-ghost);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-copy:hover {
+  background-color: var(--pages_account_index_bg-button-ghost-hover);
+}
+
+.btn-copy.copied {
+  background-color: #10b981;
+  color: white;
+  border-color: #10b981;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--pages_account_index_border-button-secondary);
+  background-color: var(--pages_account_index_bg-button-secondary);
+  color: var(--pages_account_index_text-button-secondary);
+  font-size: 0.75rem;
+  font-weight: 900;
+  border-radius: 0.75rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  border-color: var(--pages_account_index_border-button-hover);
+  background-color: var(--pages_account_index_bg-button-secondary-hover);
+}
+
+.logs-table-wrapper {
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--pages_account_index_border-primary);
+}
+
+.logs-table {
+  min-width: 100%;
+  text-align: left;
+}
+
+.logs-table thead {
+  position: sticky;
+  top: 0;
+  background-color: var(--pages_account_index_bg-table-header);
+  backdrop-filter: blur(4px);
+}
+
+.logs-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: var(--pages_account_index_text-quaternary);
+}
+
+.logs-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+}
+
+.logs-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.logs-table tbody tr {
+  border-bottom: 1px solid var(--pages_account_index_border-row);
+}
+
+.logs-table td:first-child {
+  color: var(--pages_account_index_text-tertiary);
+  white-space: nowrap;
+}
+
+.logs-table td:nth-child(2) {
+  padding-right: 0.5rem;
+}
+
+.logs-table td:nth-child(3) {
+  color: var(--pages_account_index_text-secondary);
+  word-break: break-all;
+}
+
+.logs-table td:nth-child(4) {
+  font-weight: 700;
+}
+
+.logs-table td:nth-child(5),
+.logs-table td:nth-child(6) {
+  color: var(--pages_account_index_text-tertiary);
+  white-space: nowrap;
+}
+
+.logs-table td:nth-child(7) {
+  color: var(--pages_account_index_text-quaternary);
+  word-break: break-all;
+}
+
+.method-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  border: 1px solid;
+}
+
+.method-GET {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.method-POST {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.method-PUT {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.method-DELETE {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.status-code.status-success {
+  color: #34d399;
+}
+
+.status-code.status-warning {
+  color: #fbbf24;
+}
+
+.status-code.status-error {
+  color: #f87171;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.pagination-info {
+  font-size: 0.75rem;
+  color: var(--pages_account_index_text-quaternary);
+  margin: 0;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-pagination {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--pages_account_index_border-button-secondary);
+  background-color: var(--pages_account_index_bg-button-secondary);
+  color: var(--pages_account_index_text-button-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  border-color: var(--pages_account_index_border-button-hover);
+  background-color: var(--pages_account_index_bg-button-secondary-hover);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.modal-enter-active,
+.modal-leave-active {
+  transition: all 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .modal-card,
+.modal-leave-to .modal-card {
+  transform: scale(0.95);
+}
+</style>

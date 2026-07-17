@@ -225,10 +225,59 @@
   --pages_account_index_border-button-hover: #3f3f46; /* 按钮悬停边框 border-zinc-700 */
   --pages_account_index_border-tag-status: #3f3f4680; /* 状态标签边框 border-zinc-700/50 */
   --pages_account_index_border-button-secondary: #3f3f46; /* 次要按钮边框 border-zinc-700 */
+  --pages_account_index_bg-button-ghost: #27272a;           /* 幽灵按钮背景 bg-zinc-800 */
+  --pages_account_index_bg-button-ghost-hover: #3f3f46;     /* 幽灵按钮悬停 bg-zinc-700 */
+  --pages_account_index_text-button-ghost: #a1a1aa;         /* 幽灵按钮文字 text-zinc-400 */
+  --pages_account_index_border-button-ghost: #52525b;       /* 幽灵按钮边框 border-zinc-600 */
 
   --components_Admin_BatchUpdateModal_1446_0: #4a5568;
   --components_Admin_BatchUpdateModal_1450_0: #718096;
   --components_Admin_BlacklistManager_572_0: #27272a;
+  --pages_account_index_bg-button-primary: #059669;           /* 主要按钮背景 bg-emerald-600 */
+  --pages_account_index_bg-button-primary-hover: #047857;      /* 主要按钮悬停 bg-emerald-700 */
+  --pages_account_index_text-button-primary: #ffffff;          /* 主要按钮文字 text-white */
+  --pages_account_index_bg-button-danger: #ef444410;           /* 危险按钮背景 bg-red-500/10 */
+  --pages_account_index_bg-button-danger-hover: #ef444419;     /* 危险按钮悬停 bg-red-500/15 */
+  --pages_account_index_text-button-danger: #f87171;           /* 危险按钮文字 text-red-400 */
+  --pages_account_index_border-button-danger: #ef444420;       /* 危险按钮边框 border-red-500/20 */
+  --pages_account_index_bg-button-success: #059669;            /* 成功按钮背景 bg-emerald-600 */
+  --pages_account_index_text-button-success: #ffffff;          /* 成功按钮文字 text-white */
+  --pages_account_index_bg-avatar: linear-gradient(to bottom right, #2563eb, #4f46e5); /* 头像背景渐变 */
+  --pages_account_index_text-avatar: #ffffff;                  /* 头像文字 text-white */
+  --pages_account_index_shadow-avatar: rgba(37, 99, 235, 0.2); /* 头像阴影 shadow-blue-900/20 */
+  --pages_account_index_text-icon-blue: #60a5fa;               /* 蓝色图标文字 text-blue-400 */
+  --pages_account_index_text-icon-purple: #c084fc;             /* 紫色图标文字 text-purple-400 */
+  --pages_account_index_text-icon-emerald: #34d399;            /* 绿色图标文字 text-emerald-400 */
+  --pages_account_index_bg-icon-blue: #3b82f610;               /* 蓝色图标背景 bg-blue-500/10 */
+  --pages_account_index_bg-icon-purple: #a855f710;             /* 紫色图标背景 bg-purple-500/10 */
+  --pages_account_index_bg-icon-emerald: #10b98110;            /* 绿色图标背景 bg-emerald-500/10 */
+  --pages_account_index_text-tag-blue: #60a5fa;                /* 蓝色标签文字 text-blue-400 */
+  --pages_account_index_bg-tag-blue: #3b82f610;                /* 蓝色标签背景 bg-blue-500/10 */
+  --pages_account_index_text-key-prefix: #60a5fa;              /* API Key前缀文字 text-blue-400 */
+  --pages_account_index_bg-alert-warning: #f59e0b10;           /* 警告背景 bg-amber-500/10 */
+  --pages_account_index_border-alert-warning: #f59e0b20;       /* 警告边框 border-amber-500/20 */
+  --pages_account_index_text-alert-warning: #fbbf24;           /* 警告文字 text-amber-400 */
+  --pages_account_index_bg-tag-status-active: #10b98110;       /* 活跃状态标签背景 bg-emerald-500/10 */
+  --pages_account_index_text-tag-status-active: #34d399;       /* 活跃状态标签文字 text-emerald-400 */
+  --pages_account_index_border-tag-status-active: #10b98120;   /* 活跃状态标签边框 border-emerald-500/20 */
+  --pages_account_index_bg-tag-status-expired: #ef444410;      /* 过期状态标签背景 bg-red-500/10 */
+  --pages_account_index_text-tag-status-expired: #f87171;      /* 过期状态标签文字 text-red-400 */
+  --pages_account_index_border-tag-status-expired: #ef444420;  /* 过期状态标签边框 border-red-500/20 */
+  --pages_account_index_bg-tag-method-get: #10b98110;          /* GET方法标签背景 */
+  --pages_account_index_text-tag-method-get: #34d399;          /* GET方法标签文字 */
+  --pages_account_index_border-tag-method-get: #10b98120;      /* GET方法标签边框 */
+  --pages_account_index_bg-tag-method-post: #3b82f610;         /* POST方法标签背景 */
+  --pages_account_index_text-tag-method-post: #60a5fa;         /* POST方法标签文字 */
+  --pages_account_index_border-tag-method-post: #3b82f620;     /* POST方法标签边框 */
+  --pages_account_index_bg-tag-method-put: #f59e0b10;          /* PUT方法标签背景 */
+  --pages_account_index_text-tag-method-put: #fbbf24;          /* PUT方法标签文字 */
+  --pages_account_index_border-tag-method-put: #f59e0b20;      /* PUT方法标签边框 */
+  --pages_account_index_bg-tag-method-delete: #ef444410;       /* DELETE方法标签背景 */
+  --pages_account_index_text-tag-method-delete: #f87171;       /* DELETE方法标签文字 */
+  --pages_account_index_border-tag-method-delete: #ef444420;   /* DELETE方法标签边框 */
+  --pages_account_index_text-api-status-success: #34d399;      /* API成功状态文字 text-emerald-400 */
+  --pages_account_index_text-api-status-warning: #fbbf24;      /* API警告状态文字 text-amber-400 */
+  --pages_account_index_text-api-status-error: #f87171;        /* API错误状态文字 text-red-400 */
   --components_Admin_CardCodesManager_805_0: #3f3f46;
   --components_Admin_CardCodesManager_813_0: #3f3f46;
   --components_Admin_DataAnalysisPanel_1121_0: rgba(255, 255, 255, 0.05);
@@ -394,6 +443,61 @@
   --components_Auth_ChangePasswordForm_text-placeholder: #52525b;
   --components_Auth_ChangePasswordForm_border: #27272a;
   --components_Auth_ChangePasswordForm_border-focus: rgba(59, 130, 246, 0.2);
+  --components_Auth_ChangePasswordForm_text-icon-focus: #60a5fa;           /* 图标聚焦颜色 text-blue-400 */
+  --components_Auth_ChangePasswordForm_border-error: #f43f5e;              /* 错误边框 border-rose-500 */
+  --components_Auth_ChangePasswordForm_border-error-focus: rgba(59, 130, 246, 0.3); /* 错误聚焦边框 border-blue-500/30 */
+  --components_Auth_ChangePasswordForm_text-error: #f43f5e;                /* 错误文字 text-rose-500 */
+  --components_Auth_ChangePasswordForm_bg-error: #f43f5e10;                /* 错误背景 bg-rose-500/10 */
+  --components_Auth_ChangePasswordForm_border-error-box: #f43f5e20;        /* 错误提示边框 border-rose-500/20 */
+  --components_Auth_ChangePasswordForm_text-success: #34d399;              /* 成功文字 text-emerald-400 */
+  --components_Auth_ChangePasswordForm_bg-success: #10b98110;              /* 成功背景 bg-emerald-500/10 */
+  --components_Auth_ChangePasswordForm_border-success-box: #10b98120;      /* 成功提示边框 border-emerald-500/20 */
+  --components_Auth_ChangePasswordForm_bg-button-primary: #2563eb;         /* 主要按钮背景 bg-blue-600 */
+  --components_Auth_ChangePasswordForm_bg-button-primary-hover: #3b82f6;   /* 主要按钮悬停 bg-blue-500 */
+  --components_Auth_ChangePasswordForm_text-button-primary: #ffffff;       /* 主要按钮文字 text-white */
+  --components_Auth_ChangePasswordForm_shadow-button-primary: rgba(37, 99, 235, 0.2); /* 按钮阴影 shadow-blue-900/20 */
+  --components_Auth_ChangePasswordForm_bg-strength-weak: #f43f5e;          /* 密码强度-弱 bg-rose-500 */
+  --components_Auth_ChangePasswordForm_text-strength-weak: #f43f5e;        /* 密码强度文字-弱 text-rose-500 */
+  --components_Auth_ChangePasswordForm_bg-strength-medium: #f59e0b;        /* 密码强度-中等 bg-amber-500 */
+  --components_Auth_ChangePasswordForm_text-strength-medium: #f59e0b;      /* 密码强度文字-中等 text-amber-500 */
+  --components_Auth_ChangePasswordForm_bg-strength-strong: #3b82f6;        /* 密码强度-强 bg-blue-500 */
+  --components_Auth_ChangePasswordForm_text-strength-strong: #3b82f6;      /* 密码强度文字-强 text-blue-500 */
+  --components_Auth_ChangePasswordForm_bg-strength-very-strong: #10b981;   /* 密码强度-极强 bg-emerald-500 */
+  --components_Auth_ChangePasswordForm_text-strength-very-strong: #10b981; /* 密码强度文字-极强 text-emerald-500 */
+  /* ── 双重认证组件 (components/Auth/TwoFactorSetup.vue) ── */
+  --components_Auth_TwoFactorSetup_bg-card: rgba(17, 17, 17, 0.5);       /* 卡片背景 bg-zinc-950/50 */
+  --components_Auth_TwoFactorSetup_border: #27272a;                       /* 边框 border-zinc-800 */
+  --components_Auth_TwoFactorSetup_text-primary: #f4f4f5;                 /* 主文字 text-zinc-100 */
+  --components_Auth_TwoFactorSetup_text-secondary: #71717a;               /* 次要文字 text-zinc-500 */
+  --components_Auth_TwoFactorSetup_bg-status-enabled: #22c55e10;          /* 已启用状态背景 bg-green-500/10 */
+  --components_Auth_TwoFactorSetup_text-status-enabled: #4ade80;          /* 已启用状态文字 text-green-500 */
+  --components_Auth_TwoFactorSetup_bg-status-disabled: #27272a;           /* 未启用状态背景 bg-zinc-800 */
+  --components_Auth_TwoFactorSetup_text-status-disabled: #71717a;         /* 未启用状态文字 text-zinc-500 */
+  --components_Auth_TwoFactorSetup_bg-button-primary: #2563eb;            /* 主要按钮背景 bg-blue-600 */
+  --components_Auth_TwoFactorSetup_bg-button-primary-hover: #3b82f6;      /* 主要按钮悬停 bg-blue-500 */
+  --components_Auth_TwoFactorSetup_text-button-primary: #ffffff;          /* 主要按钮文字 text-white */
+  --components_Auth_TwoFactorSetup_bg-button-danger: #ef444410;           /* 危险按钮背景 bg-red-500/10 */
+  --components_Auth_TwoFactorSetup_bg-button-danger-hover: #ef444420;     /* 危险按钮悬停 bg-red-500/20 */
+  --components_Auth_TwoFactorSetup_text-button-danger: #ef4444;           /* 危险按钮文字 text-red-500 */
+  --components_Auth_TwoFactorSetup_border-button-danger: #ef444420;       /* 危险按钮边框 border-red-500/20 */
+  --components_Auth_TwoFactorSetup_bg-modal: rgba(17, 17, 17, 0.3);       /* 弹窗背景 bg-zinc-950/30 */
+  --components_Auth_TwoFactorSetup_text-close: #71717a;                   /* 关闭按钮文字 text-zinc-500 */
+  --components_Auth_TwoFactorSetup_text-close-hover: #d4d4d8;             /* 关闭按钮悬停文字 text-zinc-300 */
+  --components_Auth_TwoFactorSetup_bg-placeholder: #f5f5f5;               /* 占位背景 bg-zinc-100 */
+  --components_Auth_TwoFactorSetup_text-placeholder: #a1a1aa;             /* 占位文字 text-zinc-400 */
+  --components_Auth_TwoFactorSetup_text-label: #71717a;                   /* 标签文字 text-zinc-500 */
+  --components_Auth_TwoFactorSetup_bg-code: #18181b;                      /* 代码背景 bg-zinc-900 */
+  --components_Auth_TwoFactorSetup_text-code: #d4d4d8;                    /* 代码文字 text-zinc-300 */
+  --components_Auth_TwoFactorSetup_border-code: #27272a;                  /* 代码边框 border-zinc-800 */
+  --components_Auth_TwoFactorSetup_bg-copy: #18181b;                      /* 复制按钮背景 bg-zinc-900 */
+  --components_Auth_TwoFactorSetup_bg-copy-hover: #27272a;                /* 复制按钮悬停 bg-zinc-800 */
+  --components_Auth_TwoFactorSetup_text-copy: #a1a1aa;                    /* 复制按钮文字 text-zinc-400 */
+  --components_Auth_TwoFactorSetup_bg-input: #18181b;                     /* 输入框背景 bg-zinc-900 */
+  --components_Auth_TwoFactorSetup_border-input: #27272a;                 /* 输入框边框 border-zinc-800 */
+  --components_Auth_TwoFactorSetup_text-input: #f4f4f5;                   /* 输入框文字 text-zinc-100 */
+  --components_Auth_TwoFactorSetup_text-input-placeholder: #52525b;       /* 输入框占位文字 text-zinc-600 */
+  --components_Auth_TwoFactorSetup_border-input-focus: #3b82f6;           /* 输入框聚焦边框 border-blue-500 */
+  --components_Auth_TwoFactorSetup_shadow-input-focus: rgba(59, 130, 246, 0.2); /* 输入框聚焦阴影 */
   --components_Auth_ChangePasswordForm_text-label: #52525b;
   --components_Auth_ChangePasswordForm_text-icon: #52525b;
   --components_Auth_OAuthButtons_47_0: #24292e;
