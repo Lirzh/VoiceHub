@@ -383,6 +383,19 @@
   --components_Admin_OverviewDashboard_141_0: rgba(16,185,129,0.7);
   --components_Admin_OverviewDashboard_440_0: #27272a;
   --components_Admin_OverviewDashboard_444_0: #3f3f46;
+  --components_Admin_OverviewDashboard_bg-card: #18181b;              /* 卡片背景 bg-zinc-900 */
+  --components_Admin_OverviewDashboard_border-card: #27272a;           /* 卡片边框 border-zinc-800 */
+  --components_Admin_OverviewDashboard_border-card-hover: #3f3f46;     /* 卡片悬停边框 border-zinc-700 */
+  --components_Admin_OverviewDashboard_text-label: #a1a1aa;            /* 标签文字 text-zinc-400 */
+  --components_Admin_OverviewDashboard_text-value: #fafafa;            /* 值文字 text-zinc-50 */
+  --components_Admin_OverviewDashboard_text-secondary: #71717a;        /* 次要文字 text-zinc-500 */
+  --components_Admin_OverviewDashboard_text-tertiary: #52525b;         /* 三级文字 text-zinc-600 */
+  --components_Admin_OverviewDashboard_text-hover: #60a5fa;            /* 悬停文字 text-blue-400 */
+  --components_Admin_OverviewDashboard_bg-item-hover: #27272a;         /* 项目悬停背景 bg-zinc-800 */
+  --components_Admin_OverviewDashboard_shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.3); /* 卡片阴影 */
+  --components_Admin_OverviewDashboard_bg-quick-secondary: #27272a;     /* 次要按钮背景 bg-zinc-800 */
+  --components_Admin_OverviewDashboard_text-quick-secondary: #a1a1aa;   /* 次要按钮文字 text-zinc-400 */
+  --components_Admin_OverviewDashboard_bg-quick-secondary-hover: #3f3f46; /* 次要按钮悬停 bg-zinc-700 */
   --components_Admin_RequestTimeManager_864_0: #27272a;
   --components_Admin_RequestTimeManager_868_0: #3f3f46;
   --components_Admin_ScheduleForm_3_0: rgba(0,0,0,0.2);

@@ -463,7 +463,7 @@ onMounted(() => {
 }
 
 .stat-card {
-  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, #ffffff);
   border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
   border-radius: 1rem;
   padding: 1.5rem;
@@ -562,7 +562,7 @@ onMounted(() => {
 }
 
 .activity-panel {
-  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, #ffffff);
   border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
   border-radius: 1.5rem;
   overflow: hidden;
@@ -578,7 +578,7 @@ onMounted(() => {
 }
 
 .status-panel {
-  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, #ffffff);
   border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
   border-radius: 1rem;
   overflow: hidden;
@@ -594,7 +594,7 @@ onMounted(() => {
 }
 
 .quick-actions-panel {
-  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, #ffffff);
   border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
   border-radius: 1.5rem;
   overflow: hidden;
@@ -883,13 +883,13 @@ onMounted(() => {
 }
 
 .quick-action-secondary {
-  background-color: rgba(28, 28, 30, 0.05);
+  background-color: var(--components_Admin_OverviewDashboard_bg-quick-secondary, #f3f4f6);
   border-color: var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
-  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+  color: var(--components_Admin_OverviewDashboard_text-quick-secondary, #6b7280);
 }
 
 .quick-action-secondary:hover {
-  border-color: #9ca3af;
+  border-color: var(--components_Admin_OverviewDashboard_bg-quick-secondary-hover, #e5e7eb);
   color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
 }
 

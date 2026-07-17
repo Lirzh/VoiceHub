@@ -332,7 +332,7 @@
   --components_Admin_OverviewDashboard_141_0: rgba(16,185,129,0.7);
   --components_Admin_OverviewDashboard_440_0: #f3f4f6;
   --components_Admin_OverviewDashboard_444_0: #e5e7eb;
-  --components_Admin_OverviewDashboard_bg-card: rgba(249, 250, 251, 0.8);    /* 卡片背景 */
+  --components_Admin_OverviewDashboard_bg-card: #ffffff;                        /* 卡片背景 bg-white */
   --components_Admin_OverviewDashboard_border-card: #e5e7eb;                  /* 卡片边框 */
   --components_Admin_OverviewDashboard_border-card-hover: #d1d5db;            /* 卡片悬停边框 */
   --components_Admin_OverviewDashboard_text-label: #6b7280;                   /* 标签文字 */
@@ -342,6 +342,9 @@
   --components_Admin_OverviewDashboard_text-hover: #2563eb;                   /* 悬停文字 */
   --components_Admin_OverviewDashboard_bg-item-hover: #f3f4f6;                /* 项目悬停背景 */
   --components_Admin_OverviewDashboard_shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.05); /* 卡片阴影 */
+  --components_Admin_OverviewDashboard_bg-quick-secondary: #f3f4f6;          /* 次要按钮背景 bg-gray-100 */
+  --components_Admin_OverviewDashboard_text-quick-secondary: #6b7280;         /* 次要按钮文字 text-gray-500 */
+  --components_Admin_OverviewDashboard_bg-quick-secondary-hover: #e5e7eb;     /* 次要按钮悬停 bg-gray-200 */
   --components_Admin_RequestTimeManager_864_0: #f3f4f6;
   --components_Admin_RequestTimeManager_868_0: #e5e7eb;
   --components_Admin_ScheduleForm_3_0: rgba(0,0,0,0.05);
