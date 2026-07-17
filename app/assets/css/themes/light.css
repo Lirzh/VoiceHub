@@ -615,11 +615,11 @@
   --components_Player_PlayerLyric_AMLyric_164_0: rgba(0, 0, 0, 0.15);
   --components_Player_PlayerLyric_AMLyric_179_0: #efefef;
   --components_Player_PlayerLyric_DefaultLyric_827_0: #fff;
-  --components_SiteFooter_100_0: rgba(255, 255, 255, 0.1);
-  --components_SiteFooter_113_0: rgba(255, 255, 255, 0.6);
-  --components_SiteFooter_121_0: rgba(255, 255, 255, 0.4);
-  --components_SiteFooter_131_0: rgba(255, 255, 255, 0.8);
-  --components_SiteFooter_143_0: rgba(0, 0, 0, 0.8);
+  --components_SiteFooter_100_0: #e5e7eb;          /* 底部边框 border-gray-200 */
+  --components_SiteFooter_113_0: #6b7280;          /* 文字 text-gray-500 */
+  --components_SiteFooter_121_0: #d1d5db;          /* 分隔线 border-gray-300 */
+  --components_SiteFooter_131_0: #3b82f6;          /* 悬停蓝色 text-blue-500 */
+  --components_SiteFooter_143_0: #2563eb;          /* ICP/voicehub悬停 text-blue-600 */
   --components_Songs_AlbumDetailsModal_628_0: rgba(255, 255, 255, 0.1);
   --components_Songs_AlbumDetailsModal_633_0: rgba(255, 255, 255, 0.2);
   --components_Songs_BilibiliEpisodesModal_384_0: rgba(255, 255, 255, 0.1);
