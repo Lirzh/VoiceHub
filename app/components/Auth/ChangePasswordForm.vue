@@ -1,26 +1,18 @@
 <template>
-  <div class="space-y-6">
-    <form class="space-y-5" @submit.prevent="handleChangePassword">
-      <div v-if="!isFirstLogin" class="space-y-2">
-        <label
-          for="current-password"
-          class="text-xs font-black text-[var(--components_Auth_ChangePasswordForm_text-label)] uppercase tracking-widest ml-1"
-          >当前密码</label
-        >
-        <div class="relative group">
-          <div
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] group-focus-within:text-blue-500 transition-colors"
-          >
+  <div class="password-form-container">
+    <form class="password-form" @submit.prevent="handleChangePassword">
+      <div v-if="!isFirstLogin" class="form-group">
+        <label for="current-password" class="form-label">当前密码</label>
+        <div class="input-wrapper">
+          <div class="input-icon">
             <Lock :size="18" />
           </div>
           <input
             id="current-password"
             v-model="currentPassword"
             :class="[
-              inputClass,
-              error
-                ? 'border-rose-500 shadow-[0_0_15px_var(--components_Auth_ChangePasswordForm_22_0)]'
-                : 'border-[var(--components_Auth_ChangePasswordForm_border)] focus:border-blue-500/30'
+              formInput,
+              error ? 'input-error' : ''
             ]"
             :type="showCurrentPassword ? 'text' : 'password'"
             placeholder="请输入当前密码"
@@ -28,7 +20,7 @@
             @input="error = ''"
           >
           <button
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] hover:text-[var(--components_Auth_ChangePasswordForm_text-icon)] transition-colors"
+            class="toggle-password"
             type="button"
             @click="showCurrentPassword = !showCurrentPassword"
           >
@@ -38,26 +30,18 @@
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label
-          for="new-password"
-          class="text-xs font-black text-[var(--components_Auth_ChangePasswordForm_text-label)] uppercase tracking-widest ml-1"
-          >新密码</label
-        >
-        <div class="relative group">
-          <div
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] group-focus-within:text-blue-500 transition-colors"
-          >
+      <div class="form-group">
+        <label for="new-password" class="form-label">新密码</label>
+        <div class="input-wrapper">
+          <div class="input-icon">
             <KeyRound :size="18" />
           </div>
           <input
             id="new-password"
             v-model="newPassword"
             :class="[
-              inputClass,
-              error
-                ? 'border-rose-500 shadow-[0_0_15px_var(--components_Auth_ChangePasswordForm_59_0)]'
-                : 'border-[var(--components_Auth_ChangePasswordForm_border)] focus:border-blue-500/30'
+              formInput,
+              error ? 'input-error' : ''
             ]"
             :type="showNewPassword ? 'text' : 'password'"
             placeholder="请输入新密码"
@@ -68,7 +52,7 @@
             "
           >
           <button
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] hover:text-[var(--components_Auth_ChangePasswordForm_text-icon)] transition-colors"
+            class="toggle-password"
             type="button"
             @click="showNewPassword = !showNewPassword"
           >
@@ -78,20 +62,18 @@
         </div>
 
         <!-- 密码强度指示器 -->
-        <div v-if="newPassword" class="px-1 pt-1 space-y-2">
-          <div class="h-1 w-full bg-[var(--components_Auth_ChangePasswordForm_border)] rounded-full overflow-hidden">
+        <div v-if="newPassword" class="password-strength">
+          <div class="strength-bar">
             <div
-              class="h-full transition-all duration-500"
+              class="strength-fill"
               :class="passwordStrength.colorClass"
               :style="{ width: passwordStrength.width }"
             />
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-[10px] font-black uppercase tracking-widest text-[var(--components_Auth_ChangePasswordForm_text-label)]"
-              >密码强度</span
-            >
+          <div class="strength-info">
+            <span class="strength-label">密码强度</span>
             <span
-              class="text-[10px] font-black uppercase tracking-widest"
+              class="strength-text"
               :class="passwordStrength.textColorClass"
             >
               {{ passwordStrength.text }}
@@ -100,26 +82,18 @@
         </div>
       </div>
 
-      <div class="space-y-2">
-        <label
-          for="confirm-password"
-          class="text-xs font-black text-[var(--components_Auth_ChangePasswordForm_text-label)] uppercase tracking-widest ml-1"
-          >确认新密码</label
-        >
-        <div class="relative group">
-          <div
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] group-focus-within:text-blue-500 transition-colors"
-          >
+      <div class="form-group">
+        <label for="confirm-password" class="form-label">确认新密码</label>
+        <div class="input-wrapper">
+          <div class="input-icon">
             <CheckCircle2 :size="18" />
           </div>
           <input
             id="confirm-password"
             v-model="confirmPassword"
             :class="[
-              inputClass,
-              error || (confirmPassword && newPassword !== confirmPassword)
-                ? 'border-rose-500 shadow-[0_0_15px_var(--components_Auth_ChangePasswordForm_121_0)]'
-                : 'border-[var(--components_Auth_ChangePasswordForm_border)] focus:border-blue-500/30'
+              formInput,
+              error || (confirmPassword && newPassword !== confirmPassword) ? 'input-error' : ''
             ]"
             :type="showConfirmPassword ? 'text' : 'password'"
             placeholder="请再次输入新密码"
@@ -127,7 +101,7 @@
             @input="error = ''"
           >
           <button
-            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--components_Auth_ChangePasswordForm_text-label)] hover:text-[var(--components_Auth_ChangePasswordForm_text-icon)] transition-colors"
+            class="toggle-password"
             type="button"
             @click="showConfirmPassword = !showConfirmPassword"
           >
@@ -137,44 +111,35 @@
         </div>
 
         <!-- 密码匹配提示 -->
-        <div v-if="confirmPassword" class="px-1">
-          <div
-            v-if="newPassword !== confirmPassword"
-            class="flex items-center gap-1.5 text-rose-500"
-          >
+        <div v-if="confirmPassword" class="password-match">
+          <div v-if="newPassword !== confirmPassword" class="match-error">
             <XCircle :size="12" />
-            <span class="text-[10px] font-bold">密码不匹配</span>
+            <span>密码不匹配</span>
           </div>
-          <div v-else class="flex items-center gap-1.5 text-emerald-500">
+          <div v-else class="match-success">
             <CheckCircle2 :size="12" />
-            <span class="text-[10px] font-bold">密码匹配</span>
+            <span>密码匹配</span>
           </div>
         </div>
       </div>
 
       <!-- 状态消息 -->
-      <div
-        v-if="error"
-        class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center gap-3"
-      >
-        <AlertCircle :size="16" class="text-rose-500 shrink-0" />
-        <span class="text-xs text-rose-500 font-medium">{{ error }}</span>
+      <div v-if="error" class="alert-box alert-error">
+        <AlertCircle :size="16" />
+        <span>{{ error }}</span>
       </div>
 
-      <div
-        v-if="success"
-        class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3"
-      >
-        <CheckCircle2 :size="16" class="text-emerald-500 shrink-0" />
-        <span class="text-xs text-emerald-500 font-medium">{{ success }}</span>
+      <div v-if="success" class="alert-box alert-success">
+        <CheckCircle2 :size="16" />
+        <span>{{ success }}</span>
       </div>
 
       <button
         :disabled="loading || !isFormValid"
-        class="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-black rounded-xl shadow-lg shadow-blue-900/20 transition-all active:scale-[0.98] disabled:opacity-50"
+        class="submit-button"
         type="submit"
       >
-        <Loader2 v-if="loading" :size="18" class="animate-spin" />
+        <Loader2 v-if="loading" :size="18" class="icon-spin" />
         <span>{{ loading ? '处理中...' : isFirstLogin ? '设置初始密码' : '确认修改密码' }}</span>
       </button>
     </form>
@@ -212,14 +177,13 @@ const error = ref('')
 const success = ref('')
 const loading = ref(false)
 
-// 样式类
-const inputClass =
-  'w-full bg-[var(--components_Auth_ChangePasswordForm_bg-input,#27272a)] border rounded-xl pl-11 pr-11 py-3 text-sm text-[var(--components_Auth_ChangePasswordForm_text-input)] placeholder:text-[var(--components_Auth_ChangePasswordForm_text-placeholder)] focus:outline-none transition-all'
-
 // 密码显示状态
 const showCurrentPassword = ref(false)
 const showNewPassword = ref(false)
 const showConfirmPassword = ref(false)
+
+// 表单输入框基础样式
+const formInput = 'form-input'
 
 // 密码强度计算
 const passwordStrength = computed(() => {
@@ -236,29 +200,29 @@ const passwordStrength = computed(() => {
   if (score < 50) {
     return {
       width: `${score || 10}%`,
-      colorClass: 'bg-rose-500',
-      textColorClass: 'text-rose-500',
+      colorClass: 'strength-weak',
+      textColorClass: 'text-weak',
       text: '弱'
     }
   } else if (score < 75) {
     return {
       width: `${score}%`,
-      colorClass: 'bg-amber-500',
-      textColorClass: 'text-amber-500',
+      colorClass: 'strength-medium',
+      textColorClass: 'text-medium',
       text: '中等'
     }
   } else if (score < 100) {
     return {
       width: `${score}%`,
-      colorClass: 'bg-blue-500',
-      textColorClass: 'text-blue-500',
+      colorClass: 'strength-strong',
+      textColorClass: 'text-strong',
       text: '强'
     }
   } else {
     return {
       width: '100%',
-      colorClass: 'bg-emerald-500',
-      textColorClass: 'text-emerald-500',
+      colorClass: 'strength-very-strong',
+      textColorClass: 'text-very-strong',
       text: '极强'
     }
   }
@@ -361,3 +325,258 @@ const handleChangePassword = async () => {
   }
 }
 </script>
+
+<style scoped>
+.password-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--components_Auth_ChangePasswordForm_text-label, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-left: 0.25rem;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--components_Auth_ChangePasswordForm_text-label, #6b7280);
+  transition: color 0.2s;
+  pointer-events: none;
+}
+
+.input-wrapper:focus-within .input-icon {
+  color: var(--components_Auth_ChangePasswordForm_text-icon-focus, #3b82f6);
+}
+
+.form-input {
+  width: 100%;
+  background-color: var(--components_Auth_ChangePasswordForm_bg-input, #27272a);
+  border: 1px solid var(--components_Auth_ChangePasswordForm_border, #27272a);
+  border-radius: 0.75rem;
+  padding: 0.75rem 3rem;
+  font-size: 0.875rem;
+  color: var(--components_Auth_ChangePasswordForm_text-input, #e4e4e7);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.form-input::placeholder {
+  color: var(--components_Auth_ChangePasswordForm_text-placeholder, #52525b);
+}
+
+.form-input:focus {
+  border-color: var(--components_Auth_ChangePasswordForm_border-focus, rgba(59, 130, 246, 0.2));
+}
+
+.input-error {
+  border-color: var(--components_Auth_ChangePasswordForm_border-error, #f43f5e) !important;
+  box-shadow: 0 0 15px var(--components_Auth_ChangePasswordForm_22_0, rgba(244, 63, 94, 0.1));
+}
+
+.toggle-password {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem;
+  background: none;
+  border: none;
+  color: var(--components_Auth_ChangePasswordForm_text-label, #6b7280);
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: color 0.2s;
+}
+
+.toggle-password:hover {
+  color: var(--components_Auth_ChangePasswordForm_text-icon, #9ca3af);
+}
+
+/* 密码强度指示器 */
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.strength-bar {
+  height: 0.25rem;
+  width: 100%;
+  background-color: var(--components_Auth_ChangePasswordForm_border, #27272a);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.strength-weak {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-strength-weak, #f43f5e);
+}
+
+.strength-medium {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-strength-medium, #f59e0b);
+}
+
+.strength-strong {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-strength-strong, #3b82f6);
+}
+
+.strength-very-strong {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-strength-very-strong, #10b981);
+}
+
+.strength-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.strength-label {
+  font-size: 0.625rem;
+  font-weight: 900;
+  color: var(--components_Auth_ChangePasswordForm_text-label, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.strength-text {
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.text-weak {
+  color: var(--components_Auth_ChangePasswordForm_text-strength-weak, #f43f5e);
+}
+
+.text-medium {
+  color: var(--components_Auth_ChangePasswordForm_text-strength-medium, #f59e0b);
+}
+
+.text-strong {
+  color: var(--components_Auth_ChangePasswordForm_text-strength-strong, #3b82f6);
+}
+
+.text-very-strong {
+  color: var(--components_Auth_ChangePasswordForm_text-strength-very-strong, #10b981);
+}
+
+/* 密码匹配提示 */
+.password-match {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.match-error {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--components_Auth_ChangePasswordForm_text-error, #f43f5e);
+}
+
+.match-success {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--components_Auth_ChangePasswordForm_text-success, #10b981);
+}
+
+/* 提示框 */
+.alert-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.alert-error {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-error, #f43f5e10);
+  border: 1px solid var(--components_Auth_ChangePasswordForm_border-error-box, #f43f5e20);
+  color: var(--components_Auth_ChangePasswordForm_text-error, #f43f5e);
+}
+
+.alert-success {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-success, #10b98110);
+  border: 1px solid var(--components_Auth_ChangePasswordForm_border-success-box, #10b98120);
+  color: var(--components_Auth_ChangePasswordForm_text-success, #10b981);
+}
+
+/* 提交按钮 */
+.submit-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: var(--components_Auth_ChangePasswordForm_bg-button-primary, #2563eb);
+  color: var(--components_Auth_ChangePasswordForm_text-button-primary, #ffffff);
+  font-size: 0.875rem;
+  font-weight: 900;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 10px 15px -3px var(--components_Auth_ChangePasswordForm_shadow-button-primary, rgba(37, 99, 235, 0.2));
+}
+
+.submit-button:hover:not(:disabled) {
+  background-color: var(--components_Auth_ChangePasswordForm_bg-button-primary-hover, #3b82f6);
+}
+
+.submit-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

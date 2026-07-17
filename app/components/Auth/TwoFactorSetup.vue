@@ -1,17 +1,14 @@
 <template>
-  <div class="space-y-6">
+  <div class="twofactor-container">
     <!-- 状态显示 -->
-    <div class="flex items-center justify-between p-4 bg-zinc-950/50 rounded-xl border border-zinc-800">
-      <div class="flex items-center gap-3">
-        <div 
-          class="p-2 rounded-lg"
-          :class="isEnabled ? 'bg-green-500/10 text-green-500' : 'bg-zinc-800 text-zinc-500'"
-        >
+    <div class="status-card">
+      <div class="status-header">
+        <div class="status-icon" :class="isEnabled ? 'icon-enabled' : 'icon-disabled'">
           <ShieldCheck :size="20" />
         </div>
-        <div>
-          <h3 class="font-bold text-zinc-100">双重认证 (2FA)</h3>
-          <p class="text-xs text-zinc-500">
+        <div class="status-info">
+          <h3 class="status-title">双重认证 (2FA)</h3>
+          <p class="status-desc">
             {{ isEnabled ? '您的账户已开启双重认证保护' : '未开启，建议开启以提升账户安全性' }}
           </p>
         </div>
@@ -20,53 +17,53 @@
       <button
         v-if="!isEnabled"
         @click="startSetup"
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg transition-colors"
+        class="btn-primary"
       >
         开启
       </button>
       <button
         v-else
         @click="confirmDisable"
-        class="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 text-sm font-bold rounded-lg transition-colors"
+        class="btn-danger"
       >
         关闭
       </button>
     </div>
 
     <!-- 开启流程 -->
-    <div v-if="showSetup" class="bg-zinc-950/30 rounded-xl border border-zinc-800 p-6 space-y-6 animate-in fade-in slide-in-from-top-4">
-      <div class="flex items-start justify-between">
+    <div v-if="showSetup" class="setup-card">
+      <div class="setup-header">
         <div>
-          <h4 class="font-bold text-zinc-100 mb-1">设置双重认证</h4>
-          <p class="text-sm text-zinc-400">请使用 Google Authenticator 或其他验证器应用扫描下方二维码</p>
+          <h4 class="setup-title">设置双重认证</h4>
+          <p class="setup-desc">请使用 Google Authenticator 或其他验证器应用扫描下方二维码</p>
         </div>
-        <button @click="cancelSetup" class="text-zinc-500 hover:text-zinc-300">
+        <button @click="cancelSetup" class="btn-close">
           <X :size="20" />
         </button>
       </div>
 
-      <div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+      <div class="setup-content">
         <!-- 二维码区域 -->
-        <div class="flex-shrink-0 bg-white p-2 rounded-lg">
-          <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="2FA QR Code" class="w-48 h-48" />
-          <div v-else class="w-48 h-48 flex items-center justify-center bg-zinc-100 text-zinc-400">
-            <Loader2 class="animate-spin" />
+        <div class="qr-wrapper">
+          <div class="qr-bg">
+            <img v-if="qrCodeUrl" :src="qrCodeUrl" alt="2FA QR Code" class="qr-image" />
+            <div v-else class="qr-placeholder">
+              <Loader2 class="icon-spin" />
+            </div>
           </div>
         </div>
 
         <!-- 验证输入区域 -->
-        <div class="flex-1 space-y-4 w-full">
-          <div>
-            <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
-              手动输入密钥
-            </label>
-            <div class="flex items-center gap-2">
-              <code class="px-3 py-2 bg-zinc-900 rounded-lg text-zinc-300 font-mono text-sm border border-zinc-800 select-all">
+        <div class="input-section">
+          <div class="input-group">
+            <label class="input-label">手动输入密钥</label>
+            <div class="input-row">
+              <code class="code-display">
                 {{ secret }}
               </code>
               <button 
                 @click="copySecret"
-                class="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 transition-colors"
+                class="btn-icon"
                 title="复制密钥"
               >
                 <Copy :size="16" />
@@ -74,25 +71,23 @@
             </div>
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">
-              验证码
-            </label>
-            <div class="flex gap-2">
+          <div class="input-group">
+            <label class="input-label">验证码</label>
+            <div class="verify-row">
               <input
                 v-model="verificationCode"
                 type="text"
                 placeholder="请输入6位验证码"
                 maxlength="6"
-                class="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono text-center tracking-widest"
+                class="verify-input"
                 @keyup.enter="enable2FA"
               />
               <button
                 @click="enable2FA"
                 :disabled="loading || verificationCode.length !== 6"
-                class="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors flex items-center gap-2"
+                class="btn-submit"
               >
-                <Loader2 v-if="loading" class="animate-spin" :size="16" />
+                <Loader2 v-if="loading" class="icon-spin" :size="16" />
                 <span>验证并开启</span>
               </button>
             </div>
@@ -136,14 +131,6 @@ const qrCodeUrl = ref('')
 const secret = ref('')
 const verificationCode = ref('')
 const { showToast } = useToast()
-
-// 获取当前状态（可选，如果父组件没传可以通过API获取，这里暂时假设父组件会传或者初始化为false，
-// 实际生产中最好有一个 API check status，但为了简化，这里先依赖父组件或默认）
-// 修正：我们应该在组件挂载时检查状态，但目前没有专门的 check status API，
-// 通常这包含在 user profile 信息中。如果 user 对象里有 has2FA 字段最好。
-// 假设父组件通过 prop 传入，或者我们添加一个 check API。
-// 为了稳健，我们可以复用 generate 接口之前的逻辑，或者在 login 时返回的信息里带。
-// 这里的实现先依赖 props，如果需要更精确，可以加一个 api。
 
 const startSetup = async () => {
   try {
@@ -235,3 +222,299 @@ const disable2FA = async (password) => {
   }
 }
 </script>
+
+<style scoped>
+.twofactor-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 状态卡片 */
+.status-card {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-card, rgba(17, 17, 17, 0.5));
+  border: 1px solid var(--components_Auth_TwoFactorSetup_border, #27272a);
+  border-radius: 1rem;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-icon {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.icon-enabled {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-status-enabled, rgba(16, 185, 129, 0.1));
+  color: var(--components_Auth_TwoFactorSetup_text-status-enabled, #4ade80);
+}
+
+.icon-disabled {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-status-disabled, #27272a);
+  color: var(--components_Auth_TwoFactorSetup_text-status-disabled, #71717a);
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.status-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--components_Auth_TwoFactorSetup_text-primary, #f4f4f5);
+  margin: 0;
+}
+
+.status-desc {
+  font-size: 0.75rem;
+  color: var(--components_Auth_TwoFactorSetup_text-secondary, #71717a);
+  margin: 0.25rem 0 0 0;
+}
+
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-button-primary, #2563eb);
+  color: var(--components_Auth_TwoFactorSetup_text-button-primary, #ffffff);
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-button-primary-hover, #3b82f6);
+}
+
+.btn-danger {
+  padding: 0.5rem 1rem;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-button-danger, rgba(239, 68, 68, 0.1));
+  color: var(--components_Auth_TwoFactorSetup_text-button-danger, #ef4444);
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  border: 1px solid var(--components_Auth_TwoFactorSetup_border-button-danger, rgba(239, 68, 68, 0.2));
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-button-danger-hover, rgba(239, 68, 68, 0.15));
+}
+
+/* 设置面板 */
+.setup-card {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-modal, rgba(17, 17, 17, 0.3));
+  border: 1px solid var(--components_Auth_TwoFactorSetup_border, #27272a);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.setup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.setup-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--components_Auth_TwoFactorSetup_text-primary, #f4f4f5);
+  margin: 0 0 0.5rem 0;
+}
+
+.setup-desc {
+  font-size: 0.875rem;
+  color: var(--components_Auth_TwoFactorSetup_text-secondary, #71717a);
+  margin: 0;
+}
+
+.btn-close {
+  padding: 0.5rem;
+  color: var(--components_Auth_TwoFactorSetup_text-close, #71717a);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: var(--components_Auth_TwoFactorSetup_text-close-hover, #d4d4d8);
+}
+
+/* 内容区域 */
+.setup-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .setup-content {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+/* 二维码 */
+.qr-wrapper {
+  flex-shrink: 0;
+}
+
+.qr-bg {
+  background-color: #ffffff;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.qr-image {
+  width: 12rem;
+  height: 12rem;
+  display: block;
+}
+
+.qr-placeholder {
+  width: 12rem;
+  height: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-placeholder, #f5f5f5);
+  color: var(--components_Auth_TwoFactorSetup_text-placeholder, #a1a1aa);
+  border-radius: 0.5rem;
+}
+
+/* 输入区域 */
+.input-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.input-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--components_Auth_TwoFactorSetup_text-label, #71717a);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.code-display {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-code, #18181b);
+  border-radius: 0.5rem;
+  border: 1px solid var(--components_Auth_TwoFactorSetup_border-code, #27272a);
+  font-family: monospace;
+  font-size: 0.875rem;
+  color: var(--components_Auth_TwoFactorSetup_text-code, #d4d4d8);
+}
+
+.btn-icon {
+  padding: 0.75rem;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-copy, #18181b);
+  border-radius: 0.5rem;
+  border: none;
+  color: var(--components_Auth_TwoFactorSetup_text-copy, #a1a1aa);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-copy-hover, #27272a);
+  color: var(--components_Auth_TwoFactorSetup_text-close-hover, #d4d4d8);
+}
+
+.verify-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.verify-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-input, #18181b);
+  border: 1px solid var(--components_Auth_TwoFactorSetup_border-input, #27272a);
+  border-radius: 0.5rem;
+  color: var(--components_Auth_TwoFactorSetup_text-input, #f4f4f5);
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s;
+  text-align: center;
+  letter-spacing: 0.2em;
+  font-family: monospace;
+}
+
+.verify-input::placeholder {
+  color: var(--components_Auth_TwoFactorSetup_text-input-placeholder, #52525b);
+}
+
+.verify-input:focus {
+  border-color: var(--components_Auth_TwoFactorSetup_border-input-focus, #3b82f6);
+  box-shadow: 0 0 0 1px var(--components_Auth_TwoFactorSetup_shadow-input-focus, rgba(59, 130, 246, 0.2));
+}
+
+.btn-submit {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--components_Auth_TwoFactorSetup_bg-button-primary, #2563eb);
+  color: var(--components_Auth_TwoFactorSetup_text-button-primary, #ffffff);
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: var(--components_Auth_TwoFactorSetup_bg-button-primary-hover, #3b82f6);
+}
+
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

@@ -600,15 +600,14 @@ const getStatusClass = (statusCode) => {
   position: sticky;
   top: 0;
   z-index: 30;
-  background-color: var(--pages_account_index_bg-page);
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: var(--pages_account_index_bg-nav);
   backdrop-filter: blur(24px);
   padding: 1rem;
   margin-bottom: 2rem;
 }
 
 .dark .top-nav {
-  background-color: rgba(17, 17, 17, 0.8);
+  background-color: var(--pages_account_index_bg-nav);
 }
 
 .nav-container {
@@ -701,10 +700,10 @@ const getStatusClass = (statusCode) => {
 }
 
 .user-card {
-  background-color: rgba(245, 245, 245, 0.4);
+  background-color: var(--pages_account_index_bg-user-card, rgba(28, 28, 30, 0.6));
   border-radius: 1.5rem;
   padding: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--pages_account_index_shadow-card, 0 25px 50px -12px rgba(0, 0, 0, 0.5));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -712,7 +711,7 @@ const getStatusClass = (statusCode) => {
 }
 
 .dark .user-card {
-  background-color: rgba(26, 26, 26, 0.4);
+  background-color: var(--pages_account_index_bg-user-card, rgba(28, 28, 30, 0.6));
 }
 
 .avatar-wrapper {
@@ -724,14 +723,14 @@ const getStatusClass = (statusCode) => {
   height: 8rem;
   border-radius: 50%;
   overflow: hidden;
-  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  background: var(--pages_account_index_bg-avatar, linear-gradient(135deg, #3b82f6, #6366f1));
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 3rem;
   font-weight: 900;
-  box-shadow: 0 25px 50px -12px rgba(37, 99, 235, 0.2);
+  box-shadow: var(--pages_account_index_shadow-avatar, 0 25px 50px -12px rgba(59, 130, 246, 0.3));
   margin-bottom: 1.5rem;
   transition: transform 0.5s;
 }
@@ -753,8 +752,8 @@ const getStatusClass = (statusCode) => {
   padding: 0.5rem;
   background-color: var(--pages_account_index_bg-section);
   border-radius: 50%;
-  color: #3b82f6;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  color: var(--pages_account_index_text-icon-blue, #60a5fa);
+  box-shadow: var(--pages_account_index_shadow-badge, 0 10px 15px -3px rgba(0, 0, 0, 0.3));
 }
 
 .user-info {
@@ -798,19 +797,19 @@ const getStatusClass = (statusCode) => {
 }
 
 .role-tag {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background-color: var(--pages_account_index_bg-icon-blue, rgba(59, 130, 246, 0.1));
+  color: var(--pages_account_index_text-icon-blue, #60a5fa);
 }
 
 .section-card {
-  background-color: rgba(245, 245, 245, 0.4);
+  background-color: var(--pages_account_index_bg-section-card, rgba(28, 28, 30, 0.6));
   border-radius: 1.5rem;
   padding: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--pages_account_index_shadow-card, 0 25px 50px -12px rgba(0, 0, 0, 0.5));
 }
 
 .dark .section-card {
-  background-color: rgba(26, 26, 26, 0.4);
+  background-color: var(--pages_account_index_bg-section-card, rgba(28, 28, 30, 0.6));
 }
 
 .section-header {
@@ -833,18 +832,18 @@ const getStatusClass = (statusCode) => {
 }
 
 .purple-icon {
-  background-color: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
+  background-color: var(--pages_account_index_bg-icon-purple, rgba(168, 85, 247, 0.1));
+  color: var(--pages_account_index_text-icon-purple, #c084fc);
 }
 
 .emerald-icon {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981;
+  background-color: var(--pages_account_index_bg-icon-emerald, rgba(16, 185, 129, 0.1));
+  color: var(--pages_account_index_text-icon-emerald, #34d399);
 }
 
 .blue-icon {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background-color: var(--pages_account_index_bg-icon-blue, rgba(59, 130, 246, 0.1));
+  color: var(--pages_account_index_text-icon-blue, #60a5fa);
 }
 
 .section-title {
@@ -871,8 +870,8 @@ const getStatusClass = (statusCode) => {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background-color: #10b981;
-  color: white;
+  background-color: var(--pages_account_index_bg-button-primary, #10b981);
+  color: var(--pages_account_index_text-button-primary, #ffffff);
   font-size: 0.75rem;
   font-weight: 700;
   border-radius: 0.75rem;
@@ -882,7 +881,7 @@ const getStatusClass = (statusCode) => {
 }
 
 .btn-primary:hover {
-  background-color: #059669;
+  background-color: var(--pages_account_index_bg-button-primary-hover, #059669);
 }
 
 .btn-primary:disabled {
@@ -948,13 +947,13 @@ const getStatusClass = (statusCode) => {
 
 .api-key-card {
   border-radius: 1rem;
-  border: 1px solid rgba(229, 231, 235, 0.7);
+  border: 1px solid var(--pages_account_index_border-api-key, rgba(229, 231, 235, 0.7));
   background-color: var(--pages_account_index_bg-dashed);
   padding: 1rem;
 }
 
 .dark .api-key-card {
-  border-color: rgba(39, 39, 42, 0.7);
+  border-color: var(--pages_account_index_border-api-key-dark, rgba(44, 44, 46, 0.7));
 }
 
 .api-key-header {
@@ -998,9 +997,9 @@ const getStatusClass = (statusCode) => {
 }
 
 .status-active {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.2);
+  background-color: var(--pages_account_index_bg-icon-emerald, rgba(16, 185, 129, 0.1));
+  color: var(--pages_account_index_text-icon-emerald, #34d399);
+  border-color: var(--pages_account_index_border-icon-emerald, rgba(16, 185, 129, 0.2));
 }
 
 .status-inactive {
@@ -1010,9 +1009,9 @@ const getStatusClass = (statusCode) => {
 }
 
 .status-expired {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.2);
+  background-color: var(--pages_account_index_bg-button-danger, rgba(239, 68, 68, 0.1));
+  color: var(--pages_account_index_text-button-danger, #f87171);
+  border-color: var(--pages_account_index_border-button-danger, rgba(239, 68, 68, 0.2));
 }
 
 .api-key-desc {
@@ -1027,9 +1026,9 @@ const getStatusClass = (statusCode) => {
   justify-content: center;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
+  border: 1px solid var(--pages_account_index_border-button-danger, rgba(239, 68, 68, 0.2));
+  background-color: var(--pages_account_index_bg-button-danger, rgba(239, 68, 68, 0.1));
+  color: var(--pages_account_index_text-button-danger, #f87171);
   font-size: 0.75rem;
   font-weight: 700;
   border-radius: 0.75rem;
@@ -1038,7 +1037,7 @@ const getStatusClass = (statusCode) => {
 }
 
 .btn-danger:hover {
-  background-color: rgba(239, 68, 68, 0.15);
+  background-color: var(--pages_account_index_bg-button-danger-hover, rgba(239, 68, 68, 0.15));
 }
 
 .btn-danger:disabled {
@@ -1082,7 +1081,7 @@ const getStatusClass = (statusCode) => {
 
 .detail-value.prefix {
   font-family: monospace;
-  color: #60a5fa;
+  color: var(--pages_account_index_text-code, #60a5fa);
 }
 
 .btn-ghost {
@@ -1118,7 +1117,7 @@ const getStatusClass = (statusCode) => {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: var(--pages_account_index_bg-modal-overlay, rgba(0, 0, 0, 0.7));
   backdrop-filter: blur(4px);
 }
 
@@ -1126,7 +1125,7 @@ const getStatusClass = (statusCode) => {
   width: 100%;
   background-color: var(--pages_account_index_bg-section);
   border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--pages_account_index_shadow-modal, 0 25px 50px -12px rgba(0, 0, 0, 0.5));
   overflow: hidden;
 }
 
@@ -1189,10 +1188,10 @@ const getStatusClass = (statusCode) => {
   align-items: flex-start;
   gap: 0.75rem;
   border-radius: 1rem;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid var(--pages_account_index_border-warning, rgba(245, 158, 11, 0.2));
+  background-color: var(--pages_account_index_bg-warning, rgba(245, 158, 11, 0.1));
   padding: 1rem;
-  color: #fbbf24;
+  color: var(--pages_account_index_text-warning, #fbbf24);
 }
 
 .alert-warning svg {
@@ -1237,7 +1236,7 @@ const getStatusClass = (statusCode) => {
   padding: 0.75rem 1rem;
   font-family: monospace;
   font-size: 0.75rem;
-  color: #60a5fa;
+  color: var(--pages_account_index_text-code, #60a5fa);
   word-break: break-all;
   user-select: all;
 }
@@ -1260,9 +1259,9 @@ const getStatusClass = (statusCode) => {
 }
 
 .btn-copy.copied {
-  background-color: #10b981;
+  background-color: var(--pages_account_index_bg-button-success, #10b981);
   color: white;
-  border-color: #10b981;
+  border-color: var(--pages_account_index_bg-button-success, #10b981);
 }
 
 .modal-footer {
@@ -1367,39 +1366,39 @@ const getStatusClass = (statusCode) => {
 }
 
 .method-GET {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #34d399;
-  border-color: rgba(16, 185, 129, 0.2);
+  background-color: var(--pages_account_index_bg-icon-emerald, rgba(16, 185, 129, 0.1));
+  color: var(--pages_account_index_text-icon-emerald, #34d399);
+  border-color: var(--pages_account_index_border-icon-emerald, rgba(16, 185, 129, 0.2));
 }
 
 .method-POST {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
-  border-color: rgba(59, 130, 246, 0.2);
+  background-color: var(--pages_account_index_bg-icon-blue, rgba(59, 130, 246, 0.1));
+  color: var(--pages_account_index_text-icon-blue, #60a5fa);
+  border-color: var(--pages_account_index_border-icon-blue, rgba(59, 130, 246, 0.2));
 }
 
 .method-PUT {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.2);
+  background-color: var(--pages_account_index_bg-warning, rgba(245, 158, 11, 0.1));
+  color: var(--pages_account_index_text-warning, #fbbf24);
+  border-color: var(--pages_account_index_border-warning, rgba(245, 158, 11, 0.2));
 }
 
 .method-DELETE {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.2);
+  background-color: var(--pages_account_index_bg-button-danger, rgba(239, 68, 68, 0.1));
+  color: var(--pages_account_index_text-button-danger, #f87171);
+  border-color: var(--pages_account_index_border-button-danger, rgba(239, 68, 68, 0.2));
 }
 
 .status-code.status-success {
-  color: #34d399;
+  color: var(--pages_account_index_text-icon-emerald, #34d399);
 }
 
 .status-code.status-warning {
-  color: #fbbf24;
+  color: var(--pages_account_index_text-warning, #fbbf24);
 }
 
 .status-code.status-error {
-  color: #f87171;
+  color: var(--pages_account_index_text-button-danger, #f87171);
 }
 
 .pagination {

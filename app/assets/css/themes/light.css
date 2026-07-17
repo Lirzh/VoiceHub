@@ -504,39 +504,39 @@
   --components_Auth_ChangePasswordForm_bg-strength-very-strong: #10b981;   /* 密码强度-极强 bg-emerald-500 */
   --components_Auth_ChangePasswordForm_text-strength-very-strong: #10b981; /* 密码强度文字-极强 text-emerald-500 */
   /* ── 双重认证组件 (components/Auth/TwoFactorSetup.vue) ── */
-  --components_Auth_TwoFactorSetup_bg-card: rgba(17, 17, 17, 0.5);       /* 卡片背景 bg-zinc-950/50 */
-  --components_Auth_TwoFactorSetup_border: #27272a;                       /* 边框 border-zinc-800 */
-  --components_Auth_TwoFactorSetup_text-primary: #f4f4f5;                 /* 主文字 text-zinc-100 */
-  --components_Auth_TwoFactorSetup_text-secondary: #71717a;               /* 次要文字 text-zinc-500 */
-  --components_Auth_TwoFactorSetup_bg-status-enabled: #22c55e10;          /* 已启用状态背景 bg-green-500/10 */
-  --components_Auth_TwoFactorSetup_text-status-enabled: #4ade80;          /* 已启用状态文字 text-green-500 */
-  --components_Auth_TwoFactorSetup_bg-status-disabled: #27272a;           /* 未启用状态背景 bg-zinc-800 */
-  --components_Auth_TwoFactorSetup_text-status-disabled: #71717a;         /* 未启用状态文字 text-zinc-500 */
-  --components_Auth_TwoFactorSetup_bg-button-primary: #2563eb;            /* 主要按钮背景 bg-blue-600 */
-  --components_Auth_TwoFactorSetup_bg-button-primary-hover: #3b82f6;      /* 主要按钮悬停 bg-blue-500 */
-  --components_Auth_TwoFactorSetup_text-button-primary: #ffffff;          /* 主要按钮文字 text-white */
-  --components_Auth_TwoFactorSetup_bg-button-danger: #ef444410;           /* 危险按钮背景 bg-red-500/10 */
-  --components_Auth_TwoFactorSetup_bg-button-danger-hover: #ef444420;     /* 危险按钮悬停 bg-red-500/20 */
-  --components_Auth_TwoFactorSetup_text-button-danger: #ef4444;           /* 危险按钮文字 text-red-500 */
-  --components_Auth_TwoFactorSetup_border-button-danger: #ef444420;       /* 危险按钮边框 border-red-500/20 */
-  --components_Auth_TwoFactorSetup_bg-modal: rgba(17, 17, 17, 0.3);       /* 弹窗背景 bg-zinc-950/30 */
-  --components_Auth_TwoFactorSetup_text-close: #71717a;                   /* 关闭按钮文字 text-zinc-500 */
-  --components_Auth_TwoFactorSetup_text-close-hover: #d4d4d8;             /* 关闭按钮悬停文字 text-zinc-300 */
-  --components_Auth_TwoFactorSetup_bg-placeholder: #f5f5f5;               /* 占位背景 bg-zinc-100 */
-  --components_Auth_TwoFactorSetup_text-placeholder: #a1a1aa;             /* 占位文字 text-zinc-400 */
-  --components_Auth_TwoFactorSetup_text-label: #71717a;                   /* 标签文字 text-zinc-500 */
-  --components_Auth_TwoFactorSetup_bg-code: #18181b;                      /* 代码背景 bg-zinc-900 */
-  --components_Auth_TwoFactorSetup_text-code: #d4d4d8;                    /* 代码文字 text-zinc-300 */
-  --components_Auth_TwoFactorSetup_border-code: #27272a;                  /* 代码边框 border-zinc-800 */
-  --components_Auth_TwoFactorSetup_bg-copy: #18181b;                      /* 复制按钮背景 bg-zinc-900 */
-  --components_Auth_TwoFactorSetup_bg-copy-hover: #27272a;                /* 复制按钮悬停 bg-zinc-800 */
-  --components_Auth_TwoFactorSetup_text-copy: #a1a1aa;                    /* 复制按钮文字 text-zinc-400 */
-  --components_Auth_TwoFactorSetup_bg-input: #18181b;                     /* 输入框背景 bg-zinc-900 */
-  --components_Auth_TwoFactorSetup_border-input: #27272a;                 /* 输入框边框 border-zinc-800 */
-  --components_Auth_TwoFactorSetup_text-input: #f4f4f5;                   /* 输入框文字 text-zinc-100 */
-  --components_Auth_TwoFactorSetup_text-input-placeholder: #52525b;       /* 输入框占位文字 text-zinc-600 */
-  --components_Auth_TwoFactorSetup_border-input-focus: #3b82f6;           /* 输入框聚焦边框 border-blue-500 */
-  --components_Auth_TwoFactorSetup_shadow-input-focus: rgba(59, 130, 246, 0.2); /* 输入框聚焦阴影 */
+  --components_Auth_TwoFactorSetup_bg-card: rgba(249, 250, 251, 0.5);      /* 卡片背景 bg-gray-50/50 */
+  --components_Auth_TwoFactorSetup_border: #e5e7eb;                          /* 边框 border-gray-200 */
+  --components_Auth_TwoFactorSetup_text-primary: #18181b;                    /* 主文字 text-gray-900 */
+  --components_Auth_TwoFactorSetup_text-secondary: #6b7280;                  /* 次要文字 text-gray-500 */
+  --components_Auth_TwoFactorSetup_bg-status-enabled: rgba(16, 185, 129, 0.1); /* 已启用状态背景 bg-emerald-500/10 */
+  --components_Auth_TwoFactorSetup_text-status-enabled: #059669;             /* 已启用状态文字 text-emerald-600 */
+  --components_Auth_TwoFactorSetup_bg-status-disabled: #f3f4f6;              /* 未启用状态背景 bg-gray-100 */
+  --components_Auth_TwoFactorSetup_text-status-disabled: #9ca3af;            /* 未启用状态文字 text-gray-400 */
+  --components_Auth_TwoFactorSetup_bg-button-primary: #2563eb;               /* 主要按钮背景 bg-blue-600 */
+  --components_Auth_TwoFactorSetup_bg-button-primary-hover: #3b82f6;         /* 主要按钮悬停 bg-blue-500 */
+  --components_Auth_TwoFactorSetup_text-button-primary: #ffffff;             /* 主要按钮文字 text-white */
+  --components_Auth_TwoFactorSetup_bg-button-danger: rgba(239, 68, 68, 0.1); /* 危险按钮背景 bg-red-500/10 */
+  --components_Auth_TwoFactorSetup_bg-button-danger-hover: rgba(239, 68, 68, 0.15); /* 危险按钮悬停 bg-red-500/15 */
+  --components_Auth_TwoFactorSetup_text-button-danger: #dc2626;              /* 危险按钮文字 text-red-600 */
+  --components_Auth_TwoFactorSetup_border-button-danger: rgba(239, 68, 68, 0.2); /* 危险按钮边框 border-red-500/20 */
+  --components_Auth_TwoFactorSetup_bg-modal: rgba(249, 250, 251, 0.3);      /* 弹窗背景 bg-gray-50/30 */
+  --components_Auth_TwoFactorSetup_text-close: #6b7280;                      /* 关闭按钮文字 text-gray-500 */
+  --components_Auth_TwoFactorSetup_text-close-hover: #18181b;                /* 关闭按钮悬停文字 text-gray-900 */
+  --components_Auth_TwoFactorSetup_bg-placeholder: #f9fafb;                  /* 占位背景 bg-gray-50 */
+  --components_Auth_TwoFactorSetup_text-placeholder: #9ca3af;                /* 占位文字 text-gray-400 */
+  --components_Auth_TwoFactorSetup_text-label: #6b7280;                      /* 标签文字 text-gray-500 */
+  --components_Auth_TwoFactorSetup_bg-code: #f9fafb;                         /* 代码背景 bg-gray-50 */
+  --components_Auth_TwoFactorSetup_text-code: #374151;                       /* 代码文字 text-gray-700 */
+  --components_Auth_TwoFactorSetup_border-code: #e5e7eb;                     /* 代码边框 border-gray-200 */
+  --components_Auth_TwoFactorSetup_bg-copy: #f3f4f6;                         /* 复制按钮背景 bg-gray-100 */
+  --components_Auth_TwoFactorSetup_bg-copy-hover: #e5e7eb;                   /* 复制按钮悬停 bg-gray-200 */
+  --components_Auth_TwoFactorSetup_text-copy: #6b7280;                       /* 复制按钮文字 text-gray-500 */
+  --components_Auth_TwoFactorSetup_bg-input: #ffffff;                        /* 输入框背景 bg-white */
+  --components_Auth_TwoFactorSetup_border-input: #d1d5db;                    /* 输入框边框 border-gray-300 */
+  --components_Auth_TwoFactorSetup_text-input: #18181b;                      /* 输入框文字 text-gray-900 */
+  --components_Auth_TwoFactorSetup_text-input-placeholder: #9ca3af;          /* 输入框占位文字 text-gray-400 */
+  --components_Auth_TwoFactorSetup_border-input-focus: #2563eb;              /* 输入框聚焦边框 border-blue-600 */
+  --components_Auth_TwoFactorSetup_shadow-input-focus: rgba(37, 99, 235, 0.2); /* 输入框聚焦阴影 */
   --components_Auth_ChangePasswordForm_text-label: #6b7280;
   --components_Auth_ChangePasswordForm_text-icon: #9ca3af;
   --components_Auth_OAuthButtons_47_0: #f3f4f6;

@@ -198,19 +198,43 @@
   --components_Admin_BackupManager_1075_0: #2196f3;
 
   /* ── 账号管理页面 (pages/account/index.vue) ── */
-  --pages_account_index_bg-page: #111111;          /* 页面背景 bg-zinc-950 → --bg-primary */
-  --pages_account_index_bg-section: #1a1a1a;       /* 区块背景 bg-zinc-900 → --bg-secondary */
-  --pages_account_index_bg-card: #27272a;           /* 卡片背景 bg-zinc-800 */
-  --pages_account_index_bg-input: #27272a;          /* 输入框背景 bg-zinc-800 */
-  --pages_account_index_bg-button-secondary: #27272a; /* 次要按钮背景 bg-zinc-800 */
-  --pages_account_index_bg-button-secondary-hover: #3f3f46; /* 次要按钮悬停 bg-zinc-700 */
-  --pages_account_index_bg-tag: #27272a;            /* 标签背景 bg-zinc-800 */
-  --pages_account_index_bg-dashed: #11111140;       /* 虚线边框背景 bg-zinc-950/40 */
-  --pages_account_index_bg-icon: #3f3f46;           /* 图标容器背景 text-zinc-700 */
-  --pages_account_index_bg-table-header: #09090b;   /* 表头背景 bg-zinc-950/95 */
-  --pages_account_index_bg-table-row: #111111;      /* 表格行背景 bg-zinc-950 */
-  --pages_account_index_bg-table-row-alt: #18181b;  /* 交替行背景 bg-zinc-900 */
-  --pages_account_index_bg-close-btn: #18181b;      /* 关闭按钮背景 bg-zinc-900 */
+  --pages_account_index_bg-page: #0a0a0a;          /* 页面背景 */
+  --pages_account_index_bg-section: #141414;       /* 区块背景 */
+  --pages_account_index_bg-card: #1c1c1e;           /* 卡片背景 */
+  --pages_account_index_bg-input: #1c1c1e;          /* 输入框背景 */
+  --pages_account_index_bg-button-secondary: #2c2c2e; /* 次要按钮背景 */
+  --pages_account_index_bg-button-secondary-hover: #3a3a3c; /* 次要按钮悬停 */
+  --pages_account_index_bg-tag: #2c2c2e;            /* 标签背景 */
+  --pages_account_index_bg-dashed: rgba(20, 20, 20, 0.6); /* 虚线边框背景 */
+  --pages_account_index_bg-icon: #2c2c2e;           /* 图标容器背景 */
+  --pages_account_index_bg-table-header: #0f0f10;   /* 表头背景 */
+  --pages_account_index_bg-table-row: #0a0a0a;      /* 表格行背景 */
+  --pages_account_index_bg-table-row-alt: #141414;  /* 交替行背景 */
+  --pages_account_index_bg-close-btn: #1c1c1e;      /* 关闭按钮背景 */
+  --pages_account_index_bg-user-card: rgba(28, 28, 30, 0.6); /* 用户卡片背景 */
+  --pages_account_index_bg-section-card: rgba(28, 28, 30, 0.6); /* 区块卡片背景 */
+  --pages_account_index_bg-avatar: linear-gradient(135deg, #3b82f6, #6366f1); /* 头像背景渐变 */
+  --pages_account_index_text-primary: #f5f5f7;      /* 主文字 */
+  --pages_account_index_text-secondary: #ebebf0;    /* 次要文字 */
+  --pages_account_index_text-tertiary: #9898a0;     /* 三级文字 */
+  --pages_account_index_text-quaternary: #6e6e7a;   /* 四级文字 */
+  --pages_account_index_text-disabled: #48484f;     /* 禁用文字 */
+  --pages_account_index_text-label: #48484f;        /* 表单项标签 */
+  --pages_account_index_text-button-secondary: #e5e5ea; /* 次要按钮文字 */
+  --pages_account_index_text-icon: #48484f;         /* 图标文字 */
+  --pages_account_index_border-primary: #2c2c2e;    /* 边框 */
+  --pages_account_index_border-secondary: #2c2c2e;  /* 次要边框 */
+  --pages_account_index_border-row: #1c1c1e;        /* 表格行分割线 */
+  --pages_account_index_border-button-hover: #3a3a3c; /* 按钮悬停边框 */
+  --pages_account_index_border-tag-status: #3a3a3c80; /* 状态标签边框 */
+  --pages_account_index_border-button-secondary: #3a3a3c; /* 次要按钮边框 */
+  --pages_account_index_bg-button-ghost: #2c2c2e;           /* 幽灵按钮背景 */
+  --pages_account_index_bg-button-ghost-hover: #3a3a3c;     /* 幽灵按钮悬停 */
+  --pages_account_index_text-button-ghost: #9898a0;         /* 幽灵按钮文字 */
+  --pages_account_index_border-button-ghost: #48484f;       /* 幽灵按钮边框 */
+  --pages_account_index_shadow-card: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* 卡片阴影 */
+  --pages_account_index_shadow-avatar: 0 25px 50px -12px rgba(59, 130, 246, 0.3); /* 头像阴影 */
+  --pages_account_index_shadow-badge: 0 10px 15px -3px rgba(0, 0, 0, 0.3); /* 徽章阴影 */
   --pages_account_index_text-primary: #ffffff;      /* 主文字 text-zinc-100 */
   --pages_account_index_text-secondary: #e4e4e7;    /* 次要文字 text-zinc-200 */
   --pages_account_index_text-tertiary: #a1a1aa;     /* 三级文字 text-zinc-400 */
@@ -317,6 +341,35 @@
   --pages_account_index_text-api-status-success: #34d399;      /* API成功状态文字 text-emerald-400 */
   --pages_account_index_text-api-status-warning: #fbbf24;      /* API警告状态文字 text-amber-400 */
   --pages_account_index_text-api-status-error: #f87171;        /* API错误状态文字 text-red-400 */
+  --pages_account_index_bg-button-primary: #10b981;           /* 主要按钮背景 */
+  --pages_account_index_bg-button-primary-hover: #059669;      /* 主要按钮悬停 */
+  --pages_account_index_text-button-primary: #ffffff;          /* 主要按钮文字 */
+  --pages_account_index_bg-button-danger: #ef444410;           /* 危险按钮背景 */
+  --pages_account_index_bg-button-danger-hover: #ef444419;     /* 危险按钮悬停 */
+  --pages_account_index_text-button-danger: #f87171;           /* 危险按钮文字 */
+  --pages_account_index_border-button-danger: #ef444420;       /* 危险按钮边框 */
+  --pages_account_index_bg-button-success: #10b981;            /* 成功按钮背景 */
+  --pages_account_index_text-button-success: #ffffff;          /* 成功按钮文字 */
+  --pages_account_index_bg-avatar: linear-gradient(to bottom right, #3b82f6, #6366f1); /* 头像背景渐变 */
+  --pages_account_index_text-avatar: #ffffff;                  /* 头像文字 */
+  --pages_account_index_shadow-avatar: rgba(59, 130, 246, 0.3); /* 头像阴影 */
+  --pages_account_index_text-icon-blue: #60a5fa;               /* 蓝色图标文字 */
+  --pages_account_index_text-icon-purple: #c084fc;             /* 紫色图标文字 */
+  --pages_account_index_text-icon-emerald: #34d399;            /* 绿色图标文字 */
+  --pages_account_index_bg-icon-blue: #3b82f610;               /* 蓝色图标背景 */
+  --pages_account_index_bg-icon-purple: #a855f710;             /* 紫色图标背景 */
+  --pages_account_index_bg-icon-emerald: #10b98110;            /* 绿色图标背景 */
+  --pages_account_index_text-tag-blue: #3b82f6;                /* 蓝色标签文字 */
+  --pages_account_index_bg-warning: rgba(245, 158, 11, 0.1);   /* 警告背景 */
+  --pages_account_index_text-warning: #fbbf24;                 /* 警告文字 */
+  --pages_account_index_border-warning: rgba(245, 158, 11, 0.2); /* 警告边框 */
+  --pages_account_index_border-api-key: rgba(44, 44, 46, 0.7); /* API Key 卡片边框 */
+  --pages_account_index_border-api-key-dark: rgba(44, 44, 46, 0.7); /* API Key 卡片边框深色 */
+  --pages_account_index_border-icon-emerald: rgba(16, 185, 129, 0.2); /* 绿色图标边框 */
+  --pages_account_index_border-icon-blue: rgba(59, 130, 246, 0.2); /* 蓝色图标边框 */
+  --pages_account_index_text-code: #60a5fa;                    /* 代码文字 */
+  --pages_account_index_bg-modal-overlay: rgba(0, 0, 0, 0.7); /* 弹窗覆盖层背景 */
+  --pages_account_index_shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* 弹窗阴影 */
   --components_Admin_CardCodesManager_805_0: #3f3f46;
   --components_Admin_CardCodesManager_813_0: #3f3f46;
   --components_Admin_DataAnalysisPanel_1121_0: rgba(255, 255, 255, 0.05);
