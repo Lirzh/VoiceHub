@@ -1,23 +1,23 @@
 <template>
-  <div class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div class="overview-container">
     <!-- 统计卡片网格 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+    <div class="stat-grid">
       <div
         v-for="(stat, i) in statCards"
         :key="i"
-        class="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden group hover:border-zinc-700 transition-all shadow-lg shadow-black/20"
+        class="stat-card"
       >
-        <div class="flex justify-between items-start mb-4">
+        <div class="stat-header">
           <div
             :class="[
-              'p-3 rounded-xl border',
+              'stat-icon-box',
               stat.color === 'blue'
-                ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+                ? 'stat-icon-box-blue'
                 : stat.color === 'emerald'
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                  ? 'stat-icon-box-emerald'
                   : stat.color === 'pink'
-                    ? 'bg-pink-500/10 text-pink-500 border-pink-500/20'
-                    : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'
+                    ? 'stat-icon-box-pink'
+                    : 'stat-icon-box-zinc'
             ]"
           >
             <component :is="stat.icon" :size="24" />
@@ -25,8 +25,8 @@
           <div
             v-if="stat.trend"
             :class="[
-              'flex items-center gap-1 text-[11px] font-bold',
-              stat.trendDown ? 'text-red-400' : 'text-emerald-400'
+              'stat-trend',
+              stat.trendDown ? 'stat-trend-down' : 'stat-trend-up'
             ]"
           >
             <TrendingDown v-if="stat.trendDown" :size="12" />
@@ -34,24 +34,24 @@
             {{ stat.trend }}
           </div>
         </div>
-        <div>
-          <p class="text-zinc-500 text-sm font-medium">{{ stat.label }}</p>
-          <h4 class="text-3xl font-bold tracking-tight text-zinc-100">{{ stat.value }}</h4>
+        <div class="stat-content">
+          <p class="stat-label">{{ stat.label }}</p>
+          <h4 class="stat-value">{{ stat.value }}</h4>
         </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="main-grid">
       <!-- 最近活动 -->
       <div
-        class="lg:col-span-5 bg-zinc-900/40 border border-zinc-800 rounded-3xl overflow-hidden flex flex-col shadow-lg shadow-black/20"
+        class="activity-panel"
       >
-        <div class="px-6 py-5 border-b border-zinc-800 flex items-center justify-between">
-          <h3 class="text-lg font-bold flex items-center gap-2">
-            <Activity :size="18" class="text-blue-500" /> 最近活动
+        <div class="panel-header">
+          <h3 class="panel-title">
+            <Activity :size="18" class="panel-icon-blue" /> 最近活动
           </h3>
           <button
-            class="p-2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            class="panel-refresh"
             :class="{ 'animate-spin': loadingActivities }"
             @click="refreshActivities"
           >
@@ -59,46 +59,46 @@
           </button>
         </div>
         <div
-          class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1 min-h-[380px] max-h-[500px]"
+          class="panel-content"
         >
           <div
             v-if="loadingActivities && recentActivities.length === 0"
-            class="flex flex-col items-center justify-center h-full text-zinc-500 gap-3 py-20"
+            class="empty-state"
           >
             <RefreshCw :size="24" class="animate-spin" />
-            <span class="text-sm">加载中...</span>
+            <span>加载中...</span>
           </div>
           <div
             v-else-if="recentActivities.length === 0"
-            class="flex flex-col items-center justify-center h-full text-zinc-500 gap-3 py-20"
+            class="empty-state"
           >
             <Inbox :size="24" />
-            <span class="text-sm">暂无活动记录</span>
+            <span>暂无活动记录</span>
           </div>
           <template v-else>
             <div
               v-for="(activity, idx) in recentActivities"
               :key="idx"
-              class="flex items-start gap-4 p-4 rounded-2xl hover:bg-zinc-800/40 transition-all cursor-pointer group"
+              class="activity-item"
             >
               <div
                 :class="[
-                  'shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-sm',
+                  'activity-icon',
                   getActivityStyle(activity.type).bg
                 ]"
               >
                 <component :is="getActivityStyle(activity.type).icon" :size="18" />
               </div>
-              <div class="flex-1 min-w-0">
+              <div class="activity-info">
                 <h5
-                  class="font-bold text-sm text-zinc-200 group-hover:text-blue-400 transition-colors"
+                  class="activity-title"
                 >
                   {{ activity.title }}
                 </h5>
-                <p class="text-xs text-zinc-500 truncate mt-1">{{ activity.description }}</p>
-                <div class="flex items-center gap-1.5 mt-2">
-                  <Clock :size="10" class="text-zinc-600" />
-                  <span class="text-[10px] text-zinc-600 font-medium uppercase tracking-wider">{{
+                <p class="activity-description">{{ activity.description }}</p>
+                <div class="activity-time">
+                  <Clock :size="10" class="time-icon" />
+                  <span class="time-text">{{
                     formatTime(activity.createdAt)
                   }}</span>
                 </div>
@@ -110,50 +110,48 @@
 
       <!-- 系统状态 -->
       <div
-        class="lg:col-span-4 bg-zinc-900/40 border border-zinc-800 rounded-xl overflow-hidden flex flex-col shadow-lg shadow-black/20"
+        class="status-panel"
       >
-        <div class="px-6 py-5 border-b border-zinc-800 flex items-center justify-between">
-          <h3 class="text-lg font-bold flex items-center gap-2">
-            <ShieldCheck :size="18" class="text-emerald-500" /> 系统状态
+        <div class="panel-header">
+          <h3 class="panel-title">
+            <ShieldCheck :size="18" class="panel-icon-emerald" /> 系统状态
           </h3>
           <span
             :class="[
-              'px-3 py-1 text-[10px] font-black uppercase rounded-full border',
+              'status-badge',
               systemStatus.online
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                : 'bg-red-500/10 text-red-500 border-red-500/20'
+                ? 'status-badge-online'
+                : 'status-badge-offline'
             ]"
           >
             {{ systemStatus.online ? '在线' : '离线' }}
           </span>
         </div>
-        <div class="p-6 space-y-6">
+        <div class="status-content">
           <div
             v-for="(status, i) in statusItems"
             :key="i"
-            class="flex items-center justify-between group"
+            class="status-row"
           >
-            <div class="flex items-center gap-3">
+            <div class="status-left">
               <div
                 :class="[
-                  'w-1.5 h-1.5 rounded-full',
+                  'status-dot',
                   status.active
-                    ? 'bg-emerald-500 shadow-[0_0_10px_var(--components_Admin_OverviewDashboard_141_0)]'
-                    : 'bg-zinc-600'
+                    ? 'status-dot-active'
+                    : 'status-dot-inactive'
                 ]"
               />
-              <span class="text-xs font-semibold text-zinc-400">{{ status.label }}</span>
+              <span class="status-label">{{ status.label }}</span>
             </div>
-            <span class="text-xs font-bold text-zinc-200">{{ status.value }}</span>
+            <span class="status-value">{{ status.value }}</span>
           </div>
         </div>
-        <div class="mt-auto border-t border-zinc-800 px-6 py-4 flex flex-col items-center justify-center gap-1 text-center">
-          <span class="text-[10px] font-medium uppercase tracking-[0.3em] text-zinc-600">
-            实例 ID
-          </span>
+        <div class="status-footer">
+          <span class="footer-label">实例 ID</span>
           <button
             type="button"
-            class="max-w-full text-xs text-zinc-500 hover:text-zinc-300 transition-colors break-all leading-relaxed"
+            class="footer-button"
             :title="instanceId || '暂无实例 ID'"
             :disabled="!instanceId"
             @click="copyInstanceId"
@@ -165,28 +163,26 @@
 
       <!-- 快速操作 -->
       <div
-        class="lg:col-span-3 bg-zinc-900/40 border border-zinc-800 rounded-3xl overflow-hidden flex flex-col shadow-lg shadow-black/20"
+        class="quick-actions-panel"
       >
-        <div class="px-6 py-5 border-b border-zinc-800">
-          <h3 class="text-lg font-bold flex items-center gap-2">
-            <Zap :size="18" class="text-yellow-500" /> 快速操作
+        <div class="panel-header">
+          <h3 class="panel-title">
+            <Zap :size="18" class="panel-icon-yellow" /> 快速操作
           </h3>
         </div>
-        <div class="p-6 space-y-3">
+        <div class="quick-actions-content">
           <button
             v-for="(action, i) in quickActions"
             :key="i"
             :class="[
-              'w-full flex items-center gap-3 px-5 py-4 rounded-lg border font-bold text-sm transition-all text-left group',
-              action.primary
-                ? 'bg-blue-600 border-blue-500 text-white shadow-xl shadow-blue-900/20 hover:bg-blue-500'
-                : 'bg-zinc-950/40 border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+              'quick-action-button',
+              action.primary ? 'quick-action-primary' : 'quick-action-secondary'
             ]"
             @click="navigateTo(action.id)"
           >
             <component :is="action.icon" :size="18" />
             {{ action.label }}
-            <ExternalLink v-if="action.primary" :size="14" class="ml-auto opacity-50" />
+            <ExternalLink v-if="action.primary" :size="14" class="action-external" />
           </button>
         </div>
       </div>
@@ -430,6 +426,479 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.overview-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  animation: fadeIn 0.7s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .stat-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.stat-card {
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+  box-shadow: var(--components_Admin_OverviewDashboard_shadow-card, 0 10px 15px -3px rgba(0, 0, 0, 0.05));
+}
+
+.stat-card:hover {
+  border-color: var(--components_Admin_OverviewDashboard_border-card-hover, #d1d5db);
+}
+
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.stat-icon-box {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+}
+
+.stat-icon-box-blue {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.stat-icon-box-emerald {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.stat-icon-box-pink {
+  background-color: rgba(236, 72, 153, 0.1);
+  color: #ec4899;
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+.stat-icon-box-zinc {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: var(--components_Admin_OverviewDashboard_text-label, #6b7280);
+  border-color: rgba(107, 114, 128, 0.2);
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.stat-trend-up {
+  color: #10b981;
+}
+
+.stat-trend-down {
+  color: #ef4444;
+}
+
+.stat-content {
+  margin-top: 0;
+}
+
+.stat-label {
+  color: var(--components_Admin_OverviewDashboard_text-label, #6b7280);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.stat-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+  margin: 0;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .main-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+}
+
+.activity-panel {
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  border-radius: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--components_Admin_OverviewDashboard_shadow-card, 0 10px 15px -3px rgba(0, 0, 0, 0.05));
+}
+
+@media (min-width: 1024px) {
+  .activity-panel {
+    grid-column: span 5;
+  }
+}
+
+.status-panel {
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--components_Admin_OverviewDashboard_shadow-card, 0 10px 15px -3px rgba(0, 0, 0, 0.05));
+}
+
+@media (min-width: 1024px) {
+  .status-panel {
+    grid-column: span 4;
+  }
+}
+
+.quick-actions-panel {
+  background-color: var(--components_Admin_OverviewDashboard_bg-card, rgba(249, 250, 251, 0.8));
+  border: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  border-radius: 1.5rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--components_Admin_OverviewDashboard_shadow-card, 0 10px 15px -3px rgba(0, 0, 0, 0.05));
+}
+
+@media (min-width: 1024px) {
+  .quick-actions-panel {
+    grid-column: span 3;
+  }
+}
+
+.panel-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+  margin: 0;
+}
+
+.panel-icon-blue {
+  color: #3b82f6;
+}
+
+.panel-icon-emerald {
+  color: #10b981;
+}
+
+.panel-icon-yellow {
+  color: #eab308;
+}
+
+.panel-refresh {
+  padding: 0.5rem;
+  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.panel-refresh:hover {
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+  gap: 0.25rem;
+  min-height: 380px;
+  max-height: 500px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+  gap: 0.75rem;
+  padding: 5rem;
+}
+
+.empty-state span {
+  font-size: 0.875rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.activity-item:hover {
+  background-color: var(--components_Admin_OverviewDashboard_bg-item-hover, #f3f4f6);
+}
+
+.activity-icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+
+.activity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+  margin: 0;
+  transition: color 0.2s;
+}
+
+.activity-item:hover .activity-title {
+  color: var(--components_Admin_OverviewDashboard_text-hover, #2563eb);
+}
+
+.activity-description {
+  font-size: 0.75rem;
+  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+  margin: 0.25rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-time {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.time-icon {
+  color: var(--components_Admin_OverviewDashboard_text-tertiary, #6b7280);
+}
+
+.time-text {
+  font-size: 0.625rem;
+  color: var(--components_Admin_OverviewDashboard_text-tertiary, #6b7280);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-content {
+  padding: 1.5rem;
+  gap: 1.5rem;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+}
+
+.status-dot-active {
+  background-color: #10b981;
+  box-shadow: 0 0 10px var(--components_Admin_OverviewDashboard_141_0, rgba(16, 185, 129, 0.7));
+}
+
+.status-dot-inactive {
+  background-color: var(--components_Admin_OverviewDashboard_text-tertiary, #6b7280);
+}
+
+.status-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+}
+
+.status-value {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+}
+
+.status-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+
+.footer-label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: var(--components_Admin_OverviewDashboard_text-tertiary, #6b7280);
+}
+
+.footer-button {
+  max-width: 100%;
+  font-size: 0.75rem;
+  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+.footer-button:hover:not(:disabled) {
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+}
+
+.footer-button:disabled {
+  cursor: default;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+}
+
+.status-badge-online {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.status-badge-offline {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.quick-actions-content {
+  padding: 1.5rem;
+  gap: 0.75rem;
+}
+
+.quick-action-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-action-primary {
+  background-color: #2563eb;
+  border-color: #1d4ed8;
+  color: white;
+  box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.1);
+}
+
+.quick-action-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.quick-action-secondary {
+  background-color: rgba(28, 28, 30, 0.05);
+  border-color: var(--components_Admin_OverviewDashboard_border-card, #e5e7eb);
+  color: var(--components_Admin_OverviewDashboard_text-secondary, #9ca3af);
+}
+
+.quick-action-secondary:hover {
+  border-color: #9ca3af;
+  color: var(--components_Admin_OverviewDashboard_text-value, #18181b);
+}
+
+.action-external {
+  margin-left: auto;
+  opacity: 0.5;
+}
+
+/* 自定义滚动条样式 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }

@@ -17,39 +17,39 @@
         <!-- 移动端侧边栏遮罩 -->
         <div
           v-if="sidebarOpen"
-          class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          class="admin-overlay"
           @click="closeSidebar"
         />
 
         <!-- 主内容区域 -->
         <main
-          class="flex-1 flex flex-col h-screen overflow-hidden lg:ml-64 relative bg-[var(--pages_dashboard_26_0)] text-zinc-100"
+          class="admin-main"
         >
           <header
-            class="h-16 shrink-0 flex items-center justify-between px-4 md:px-8 border-b border-zinc-800 bg-zinc-950/60 backdrop-blur-xl z-30"
+            class="admin-header"
           >
-            <div class="flex items-center gap-3">
+            <div class="header-left">
               <button
-                class="lg:hidden p-2 text-zinc-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                class="header-menu-button"
                 @click="toggleSidebar"
               >
                 <Menu :size="20" />
               </button>
-              <h1 class="text-xl font-bold tracking-tight">{{ getPageTitle() }}</h1>
+              <h1 class="header-title">{{ getPageTitle() }}</h1>
             </div>
-            <div class="flex items-center gap-4">
+            <div class="header-right">
               <!-- 这里可以添加顶部操作按钮 -->
             </div>
           </header>
 
           <div
-            class="flex-1 custom-scrollbar p-4 md:p-8 overflow-y-auto"
+            class="admin-content"
           >
             <!-- 移动端返回顶部按钮 -->
             <button
               v-if="showBackToTop"
               aria-label="返回顶部"
-              class="fixed bottom-8 right-8 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all z-50"
+              class="back-to-top"
               @click="scrollToTop"
             >
               <ChevronUp :size="24" />
@@ -436,6 +436,129 @@ onUnmounted(() => {
   background: var(--pages_dashboard_436_0);
   color: var(--pages_dashboard_437_0);
   position: relative;
+}
+
+.admin-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--pages_dashboard_bg-overlay, rgba(0, 0, 0, 0.3));
+  backdrop-filter: blur(4px);
+  z-index: 40;
+  display: none;
+  transition: opacity 0.3s;
+}
+
+@media (max-width: 1023px) {
+  .admin-overlay {
+    display: block;
+  }
+}
+
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background-color: var(--pages_dashboard_bg-main, #f9fafb);
+  color: var(--pages_dashboard_text-primary, #18181b);
+}
+
+@media (min-width: 1024px) {
+  .admin-main {
+    margin-left: 16rem;
+  }
+}
+
+.admin-header {
+  height: 4rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--pages_dashboard_border-header, #e5e7eb);
+  background-color: var(--pages_dashboard_bg-header, rgba(255, 255, 255, 0.8));
+  backdrop-filter: blur(12px);
+  z-index: 30;
+}
+
+@media (min-width: 768px) {
+  .admin-header {
+    padding: 0 2rem;
+  }
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-menu-button {
+  padding: 0.5rem;
+  color: var(--pages_dashboard_text-menu-button, #6b7280);
+  background: none;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .header-menu-button {
+    display: block;
+  }
+}
+
+.header-menu-button:hover {
+  background-color: var(--pages_dashboard_bg-menu-button-hover, #f3f4f6);
+}
+
+.header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .admin-content {
+    padding: 2rem;
+  }
+}
+
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 0.75rem;
+  background-color: var(--pages_dashboard_bg-back-to-top, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 50;
+}
+
+.back-to-top:hover {
+  background-color: var(--pages_dashboard_bg-back-to-top-hover, #1d4ed8);
 }
 
 /* 自定义滚动条样式 */

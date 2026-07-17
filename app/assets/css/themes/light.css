@@ -330,6 +330,16 @@
   --components_Admin_OverviewDashboard_141_0: rgba(16,185,129,0.7);
   --components_Admin_OverviewDashboard_440_0: #f3f4f6;
   --components_Admin_OverviewDashboard_444_0: #e5e7eb;
+  --components_Admin_OverviewDashboard_bg-card: rgba(249, 250, 251, 0.8);    /* 卡片背景 */
+  --components_Admin_OverviewDashboard_border-card: #e5e7eb;                  /* 卡片边框 */
+  --components_Admin_OverviewDashboard_border-card-hover: #d1d5db;            /* 卡片悬停边框 */
+  --components_Admin_OverviewDashboard_text-label: #6b7280;                   /* 标签文字 */
+  --components_Admin_OverviewDashboard_text-value: #18181b;                   /* 值文字 */
+  --components_Admin_OverviewDashboard_text-secondary: #9ca3af;               /* 次要文字 */
+  --components_Admin_OverviewDashboard_text-tertiary: #6b7280;                /* 三级文字 */
+  --components_Admin_OverviewDashboard_text-hover: #2563eb;                   /* 悬停文字 */
+  --components_Admin_OverviewDashboard_bg-item-hover: #f3f4f6;                /* 项目悬停背景 */
+  --components_Admin_OverviewDashboard_shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.05); /* 卡片阴影 */
   --components_Admin_RequestTimeManager_864_0: #f3f4f6;
   --components_Admin_RequestTimeManager_868_0: #e5e7eb;
   --components_Admin_ScheduleForm_3_0: rgba(0,0,0,0.05);
@@ -408,10 +418,55 @@
   --components_Admin_ScheduleTablePrint_357_0: #d1d5db;
   --components_Admin_ScheduleTablePrint_360_0: #fafafa;
   --components_Admin_ScheduleTablePrint_365_0: #e3f2fd;
-  --components_Admin_Sidebar_5_0: #fafafa;
-  --components_Admin_Sidebar_63_0: rgba(59, 130, 246, 0.2);
-  --components_Admin_Sidebar_252_0: #f3f4f6;
-  --components_Admin_Sidebar_256_0: #e5e7eb;
+  --components_Admin_Sidebar_5_0: #ffffff;           /* 侧边栏背景 */
+  --components_Admin_Sidebar_63_0: rgba(59, 130, 246, 0.4);   /* 选中状态指示器阴影 */
+  --components_Admin_Sidebar_252_0: #f3f4f6;         /* 菜单悬停背景 */
+  --components_Admin_Sidebar_256_0: #e5e7eb;         /* 菜单边框 */
+  --components_Admin_Sidebar_bg: #ffffff;            /* 侧边栏背景 */
+  --components_Admin_Sidebar_border: #e5e7eb;        /* 侧边栏边框 */
+  --components_Admin_Sidebar_text-brand: #18181b;    /* 品牌文字 */
+  --components_Admin_Sidebar_text-brand-sub: #6b7280; /* 品牌副标题 */
+  --components_Admin_Sidebar_text-section: #9ca3af;  /* 分组标题 */
+  --components_Admin_Sidebar_text-menu: #6b7280;     /* 菜单文字 */
+  --components_Admin_Sidebar_text-menu-hover: #18181b; /* 菜单悬停文字 */
+  --components_Admin_Sidebar_text-menu-active: #2563eb; /* 菜单选中文字 */
+  --components_Admin_Sidebar_bg-menu-hover: #f3f4f6; /* 菜单悬停背景 */
+  --components_Admin_Sidebar_bg-menu-active: rgba(37, 99, 235, 0.1); /* 菜单选中背景 */
+  --components_Admin_Sidebar_border-menu-active: rgba(37, 99, 235, 0.2); /* 菜单选中边框 */
+  --components_Admin_Sidebar_text-icon: #6b7280;     /* 菜单图标文字 */
+  --components_Admin_Sidebar_text-icon-hover: #18181b; /* 菜单图标悬停 */
+  --components_Admin_Sidebar_text-icon-active: #3b82f6; /* 菜单图标选中 */
+  --components_Admin_Sidebar_bg-user-card: #f9fafb;   /* 用户卡片背景 */
+  --components_Admin_Sidebar_border-user-card: #e5e7eb; /* 用户卡片边框 */
+  --components_Admin_Sidebar_bg-user-card-hover: #f3f4f6; /* 用户卡片悬停 */
+  --components_Admin_Sidebar_text-user-name: #18181b; /* 用户姓名 */
+  --components_Admin_Sidebar_text-user-role: #6b7280; /* 用户角色 */
+  --components_Admin_Sidebar_bg-avatar: #f3f4f6;     /* 头像背景 */
+  --components_Admin_Sidebar_text-avatar: #6b7280;    /* 头像文字 */
+  --components_Admin_Sidebar_border-avatar: #d1d5db;  /* 头像边框 */
+  --components_Admin_Sidebar_text-logout: #6b7280;    /* 退出按钮文字 */
+  --components_Admin_Sidebar_text-logout-hover: #dc2626; /* 退出悬停文字 */
+  --components_Admin_Sidebar_bg-logout-hover: rgba(220, 38, 38, 0.1); /* 退出悬停背景 */
+  --components_Admin_Sidebar_text-primary: #18181b;   /* 主文字 */
+  --components_Admin_Sidebar_text-secondary: #6b7280; /* 次要文字 */
+  --components_Admin_Sidebar_text-tertiary: #9ca3af;  /* 三级文字 */
+  --components_Admin_Sidebar_focus-ring: rgba(59, 130, 246, 0.8); /* 焦点环 */
+  --components_Admin_Sidebar_menu-active-bg: rgba(37, 99, 235, 0.1); /* 菜单激活背景 */
+  --components_Admin_Sidebar_menu-active-text: #2563eb; /* 菜单激活文字 */
+  --components_Admin_Sidebar_menu-active-border: rgba(37, 99, 235, 0.2); /* 菜单激活边框 */
+  --components_Admin_Sidebar_menu-active-glow: rgba(37, 99, 235, 0.4); /* 菜单激活发光 */
+  --components_Admin_Sidebar_menu-inactive-text: #6b7280; /* 菜单非激活文字 */
+  --components_Admin_Sidebar_menu-hover-text: #18181b; /* 菜单悬停文字 */
+  --components_Admin_Sidebar_menu-hover-bg: #f3f4f6; /* 菜单悬停背景 */
+  --components_Admin_Sidebar_user-card-bg: #f9fafb; /* 用户卡片背景 */
+  --components_Admin_Sidebar_user-card-border: rgba(229, 231, 235, 0.5); /* 用户卡片边框 */
+  --components_Admin_Sidebar_user-card-hover-bg: #f3f4f6; /* 用户卡片悬停背景 */
+  --components_Admin_Sidebar_user-avatar-bg: #f3f4f6; /* 用户头像背景 */
+  --components_Admin_Sidebar_user-avatar-text: #6b7280; /* 用户头像文字 */
+  --components_Admin_Sidebar_user-avatar-border: #d1d5db; /* 用户头像边框 */
+  --components_Admin_Sidebar_logout-text: #6b7280; /* 退出按钮文字 */
+  --components_Admin_Sidebar_logout-hover-text: #dc2626; /* 退出按钮悬停文字 */
+  --components_Admin_Sidebar_logout-hover-bg: rgba(220, 38, 38, 0.1); /* 退出按钮悬停背景 */
   --components_Admin_SongDownloadDialog_52_0: rgba(59,130,246,0.15);
   --components_Admin_SongDownloadDialog_1998_0: #f3f4f6;
   --components_Admin_SongDownloadDialog_2002_0: #e5e7eb;
@@ -1850,6 +1905,15 @@
   --pages_dashboard_437_0: #f5f5f5;
   --pages_dashboard_449_0: #f3f4f6;
   --pages_dashboard_453_0: #e5e7eb;
+  --pages_dashboard_bg-main: #f9fafb;                 /* 主内容区域背景 */
+  --pages_dashboard_text-primary: #18181b;            /* 主文字 */
+  --pages_dashboard_bg-header: rgba(255, 255, 255, 0.8); /* 顶部导航背景 */
+  --pages_dashboard_border-header: #e5e7eb;           /* 顶部导航边框 */
+  --pages_dashboard_text-menu-button: #6b7280;        /* 菜单按钮文字 */
+  --pages_dashboard_bg-menu-button-hover: #f3f4f6;    /* 菜单按钮悬停背景 */
+  --pages_dashboard_bg-overlay: rgba(0, 0, 0, 0.3);   /* 侧边栏遮罩 */
+  --pages_dashboard_bg-back-to-top: #2563eb;          /* 返回顶部按钮 */
+  --pages_dashboard_bg-back-to-top-hover: #1d4ed8;    /* 返回顶部按钮悬停 */
   --pages_forgot-password_411_0: #10b981;
   --pages_index_258_0: #6b7280;
   --pages_index_282_0: #6366f1;

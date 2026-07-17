@@ -2,65 +2,50 @@
 <template>
   <aside
     :class="[
-      'fixed inset-y-0 left-0 z-50 w-64 bg-[var(--components_Admin_Sidebar_5_0)] border-r border-zinc-800 transform transition-transform duration-300 ease-in-out lg:translate-x-0',
-      isOpen ? 'translate-x-0' : '-translate-x-full'
+      'sidebar',
+      isOpen ? 'sidebar-open' : 'sidebar-closed'
     ]"
   >
-    <div class="flex flex-col h-full p-4">
+    <div class="sidebar-content">
       <!-- 品牌标识区域 -->
-      <div class="flex items-center px-2 mb-6 mt-2">
-        <NuxtLink to="/" class="flex items-center gap-2.5 group">
-          <!-- Logo 图标 -->
-          <div class="flex-shrink-0 group-hover:scale-110 transition-all duration-300">
-            <img :src="logo" alt="VoiceHub Logo" class="w-8 h-8 object-contain" >
+      <div class="sidebar-brand">
+        <NuxtLink to="/" class="brand-link">
+          <div class="brand-logo">
+            <img :src="logo" alt="VoiceHub Logo" class="logo-image" >
           </div>
-          <!-- 品牌文字 -->
-          <div class="flex flex-col justify-center">
-            <h1 class="font-bold text-lg text-zinc-100 leading-none tracking-tight">VoiceHub</h1>
-            <p
-              class="text-[10px] text-zinc-500 mt-1.5 uppercase tracking-widest font-bold leading-none"
-            >
-              管理控制台
-            </p>
+          <div class="brand-text">
+            <h1 class="brand-title">VoiceHub</h1>
+            <p class="brand-subtitle">管理控制台</p>
           </div>
         </NuxtLink>
       </div>
 
       <!-- 导航菜单区域 -->
-      <nav class="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
-        <div v-for="(group, idx) in menuGroups" :key="idx" class="space-y-1">
+      <nav class="sidebar-nav">
+        <div v-for="(group, idx) in menuGroups" :key="idx" class="menu-group">
           <template v-if="shouldShowGroup(group)">
-            <!-- 分组标题 -->
-            <h3 class="px-3 text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em] mb-2">
-              {{ group.section }}
-            </h3>
-            <!-- 菜单项列表 -->
+            <h3 class="group-title">{{ group.section }}</h3>
             <template v-for="item in group.items" :key="item.id">
               <button
                 v-if="permissions.canAccessPage(item.permissionId || item.id)"
                 :class="[
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-bold transition-all group border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/80 focus-visible:ring-inset',
-                  activeTab === item.id
-                    ? 'bg-blue-600/10 text-blue-400 border-blue-500/20'
-                    : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800/40 border-transparent'
+                  'menu-item',
+                  activeTab === item.id ? 'menu-item-active' : 'menu-item-inactive'
                 ]"
                 @click="onNavigate(item.id)"
               >
-                <!-- 菜单图标 -->
                 <component
                   :is="item.icon"
                   :size="18"
-                  :class="
-                    activeTab === item.id
-                      ? 'text-blue-400'
-                      : 'text-zinc-500 group-hover:text-zinc-300'
-                  "
+                  :class="[
+                    'menu-icon',
+                    activeTab === item.id ? 'menu-icon-active' : 'menu-icon-inactive'
+                  ]"
                 />
-                <span class="truncate">{{ item.label }}</span>
-                <!-- 选中状态指示器 -->
+                <span class="menu-label">{{ item.label }}</span>
                 <div
                   v-if="activeTab === item.id"
-                  class="ml-auto w-1 h-1 bg-blue-400 rounded-full shadow-[0_0_8px_var(--components_Admin_Sidebar_63_0)]"
+                  class="menu-indicator"
                 />
               </button>
             </template>
@@ -69,37 +54,26 @@
       </nav>
 
       <!-- 用户信息及退出登录 -->
-      <div class="mt-4 pt-4 border-t border-zinc-800">
-        <div
-          class="flex items-center gap-3 p-3 rounded-lg bg-zinc-900/50 border border-zinc-800/50 hover:bg-zinc-800/30 transition-colors"
-        >
-          <!-- 用户头像/首字母 -->
+      <div class="sidebar-footer">
+        <div class="user-card">
           <img
             v-if="currentUser?.avatar && !avatarError"
             :src="currentUser.avatar"
-            class="w-10 h-10 rounded-lg object-cover border border-zinc-700 shrink-0"
+            class="user-avatar"
             @error="avatarError = true"
           >
           <div
             v-else
-            class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold border border-zinc-700 shrink-0"
+            class="user-avatar-fallback"
           >
             {{ (currentUser?.name || '管').charAt(0) }}
           </div>
-          <!-- 用户详细信息 -->
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-black truncate text-zinc-100">
-              {{ currentUser?.name || '管理员' }}
-            </p>
-            <p
-              class="text-[10px] text-zinc-500 truncate uppercase tracking-wider font-medium mt-0.5"
-            >
-              {{ currentUser?.role?.replace('_', ' ') || 'ADMIN' }}
-            </p>
+          <div class="user-info">
+            <p class="user-name">{{ currentUser?.name || '管理员' }}</p>
+            <p class="user-role">{{ currentUser?.role?.replace('_', ' ') || 'ADMIN' }}</p>
           </div>
-          <!-- 退出按钮 -->
           <button
-            class="p-2 text-zinc-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all"
+            class="logout-button"
             title="退出登录"
             @click="$emit('logout')"
           >
@@ -241,6 +215,285 @@ const getRoleDisplayName = (role) => {
 </script>
 
 <style scoped>
+.sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  width: 16rem;
+  background-color: var(--components_Admin_Sidebar_bg, rgba(28, 28, 30, 0.95));
+  border-right: 1px solid var(--components_Admin_Sidebar_border, #27272a);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    transform: translateX(0);
+  }
+}
+
+.sidebar-open {
+  transform: translateX(0);
+}
+
+.sidebar-closed {
+  transform: translateX(-100%);
+}
+
+@media (min-width: 1024px) {
+  .sidebar-closed {
+    transform: translateX(0);
+  }
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  margin-bottom: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.brand-link:hover {
+  opacity: 0.8;
+}
+
+.brand-logo {
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+
+.brand-link:hover .brand-logo {
+  transform: scale(1.1);
+}
+
+.logo-image {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--components_Admin_Sidebar_text-primary, #f4f4f5);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.brand-subtitle {
+  font-size: 0.625rem;
+  color: var(--components_Admin_Sidebar_text-secondary, #71717a);
+  margin-top: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.group-title {
+  padding: 0 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--components_Admin_Sidebar_text-tertiary, #52525b);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-bottom: 0.5rem;
+}
+
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  background: none;
+  cursor: pointer;
+}
+
+.menu-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--components_Admin_Sidebar_focus-ring, rgba(59, 130, 246, 0.8));
+}
+
+.menu-item-active {
+  background-color: var(--components_Admin_Sidebar_menu-active-bg, rgba(37, 99, 235, 0.1));
+  color: var(--components_Admin_Sidebar_menu-active-text, #60a5fa);
+  border-color: var(--components_Admin_Sidebar_menu-active-border, rgba(59, 130, 246, 0.2));
+}
+
+.menu-item-inactive {
+  color: var(--components_Admin_Sidebar_menu-inactive-text, #71717a);
+  border-color: transparent;
+}
+
+.menu-item-inactive:hover {
+  color: var(--components_Admin_Sidebar_menu-hover-text, #e4e4e7);
+  background-color: var(--components_Admin_Sidebar_menu-hover-bg, rgba(52, 52, 59, 0.4));
+}
+
+.menu-icon {
+  flex-shrink: 0;
+}
+
+.menu-icon-active {
+  color: var(--components_Admin_Sidebar_menu-active-text, #60a5fa);
+}
+
+.menu-icon-inactive {
+  color: var(--components_Admin_Sidebar_menu-inactive-text, #71717a);
+}
+
+.menu-item-inactive:hover .menu-icon-inactive {
+  color: var(--components_Admin_Sidebar_menu-hover-text, #e4e4e7);
+}
+
+.menu-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-indicator {
+  margin-left: auto;
+  width: 0.25rem;
+  height: 0.25rem;
+  background-color: var(--components_Admin_Sidebar_menu-active-text, #60a5fa);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--components_Admin_Sidebar_menu-active-glow, rgba(96, 165, 250, 0.5));
+}
+
+.sidebar-footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--components_Admin_Sidebar_border, #27272a);
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background-color: var(--components_Admin_Sidebar_user-card-bg, rgba(23, 23, 23, 0.5));
+  border: 1px solid var(--components_Admin_Sidebar_user-card-border, rgba(39, 39, 42, 0.5));
+  transition: background-color 0.2s;
+}
+
+.user-card:hover {
+  background-color: var(--components_Admin_Sidebar_user-card-hover-bg, rgba(39, 39, 42, 0.3));
+}
+
+.user-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  border: 1px solid var(--components_Admin_Sidebar_user-avatar-border, #3f3f46);
+  flex-shrink: 0;
+}
+
+.user-avatar-fallback {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  background-color: var(--components_Admin_Sidebar_user-avatar-bg, #18181b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--components_Admin_Sidebar_user-avatar-text, #71717a);
+  font-weight: 700;
+  border: 1px solid var(--components_Admin_Sidebar_user-avatar-border, #3f3f46);
+  flex-shrink: 0;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--components_Admin_Sidebar_text-primary, #f4f4f5);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-role {
+  font-size: 0.625rem;
+  color: var(--components_Admin_Sidebar_text-secondary, #71717a);
+  margin: 0.125rem 0 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logout-button {
+  padding: 0.5rem;
+  color: var(--components_Admin_Sidebar_logout-text, #52525b);
+  background: none;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-button:hover {
+  color: var(--components_Admin_Sidebar_logout-hover-text, #f87171);
+  background-color: var(--components_Admin_Sidebar_logout-hover-bg, rgba(248, 113, 113, 0.1));
+}
+
 /* 自定义滚动条样式 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
