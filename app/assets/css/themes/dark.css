@@ -220,8 +220,6 @@
   --pages_account_index_text-icon: #52525b;         /* 图标文字 text-zinc-600 */
   --pages_account_index_border-primary: #27272a;    /* 边框 border-zinc-800 */
   --pages_account_index_border-secondary: #27272a;  /* 次要边框 border-zinc-800 */
-  --pages_account_index_border-dashed: #27272a;     /* 虚线边框 border-zinc-800 */
-  --pages_account_index_border-section: #27272a80;  /* 区块底部分割线 border-zinc-800/50 */
   --pages_account_index_border-row: #18181b;        /* 表格行分割线 border-zinc-900 */
   --pages_account_index_border-button-hover: #3f3f46; /* 按钮悬停边框 border-zinc-700 */
   --pages_account_index_border-tag-status: #3f3f4680; /* 状态标签边框 border-zinc-700/50 */

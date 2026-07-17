@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[var(--pages_account_index_bg-page)] text-[var(--pages_account_index_text-secondary)] pb-24">
     <!-- 顶部导航栏 -->
     <div
-      class="sticky top-0 z-30 bg-[var(--pages_account_index_bg-page)]/80 backdrop-blur-xl border-b border-[var(--pages_account_index_border-section)] px-4 py-4 mb-8"
+      class="sticky top-0 z-30 bg-[var(--pages_account_index_bg-page)]/80 backdrop-blur-xl px-4 py-4 mb-8"
     >
       <div class="max-w-[1200px] mx-auto flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -26,7 +26,7 @@
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- 左侧：用户信息概览 (PC端占据 4/12) -->
         <div class="lg:col-span-4 space-y-6">
-          <section :class="sectionClass" class="flex flex-col items-center text-center">
+          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col items-center text-center">
             <div class="relative group">
               <div
                 class="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-4xl font-black shadow-2xl shadow-blue-900/20 mb-6 group-hover:scale-105 transition-transform duration-500"
@@ -40,7 +40,7 @@
                 <span v-else>{{ userInitials }}</span>
               </div>
               <div
-                class="absolute -bottom-1 -right-1 p-2 bg-[var(--pages_account_index_bg-section)] border border-[var(--pages_account_index_border-primary)] rounded-full text-blue-500 shadow-xl"
+                class="absolute -bottom-1 -right-1 p-2 bg-[var(--pages_account_index_bg-section)] rounded-full text-blue-500 shadow-xl"
               >
                 <User :size="16" />
               </div>
@@ -55,7 +55,7 @@
 
             <div class="flex flex-wrap justify-center gap-2 mt-6">
               <span
-                class="px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-black uppercase tracking-wider rounded-full"
+                class="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-black uppercase tracking-wider rounded-full"
               >
                 {{ roleName }}
               </span>
@@ -75,11 +75,11 @@
           </section>
         </div>
 
-        <!-- 右侧：详细设置 (PC端占据 8/12) -->
+        <!-- 右侧：详细设置 -->
         <div class="lg:col-span-8 space-y-8">
           <!-- 第三方登录绑定 -->
-          <section v-if="hasOAuthProviders" :class="sectionClass">
-            <div class="flex items-center gap-3 border-b border-[var(--pages_account_index_border-section)] pb-5 mb-6">
+          <section v-if="hasOAuthProviders" class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
+            <div class="flex items-center gap-3 pb-5 mb-6">
               <div class="p-2.5 bg-purple-500/10 rounded-xl">
                 <LinkIcon :size="20" class="text-purple-500" />
               </div>
@@ -92,8 +92,8 @@
           </section>
 
           <!-- 个人 API Key -->
-          <section :class="sectionClass">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--pages_account_index_border-section)] pb-5 mb-6">
+          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-6">
               <div class="flex items-center gap-3">
                 <div class="p-2.5 bg-emerald-500/10 rounded-xl">
                   <KeyRound :size="20" class="text-emerald-500" />
@@ -121,7 +121,7 @@
 
             <div
               v-else-if="personalApiKeys.length === 0"
-              class="rounded-2xl border border-dashed border-[var(--pages_account_index_border-dashed)] bg-[var(--pages_account_index_bg-dashed)] px-5 py-8 text-center"
+              class="rounded-2xl bg-[var(--pages_account_index_bg-dashed)] px-5 py-8 text-center"
             >
               <KeyRound :size="28" class="mx-auto text-[var(--pages_account_index_text-icon)] mb-3" />
               <p class="text-sm font-bold text-[var(--pages_account_index_text-secondary)]">还没有个人 API Key</p>
@@ -192,8 +192,8 @@
           </section>
 
           <!-- 修改密码 -->
-          <section :class="sectionClass">
-            <div class="flex items-center gap-3 border-b border-[var(--pages_account_index_border-section)] pb-5 mb-6">
+          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
+            <div class="flex items-center gap-3 pb-5 mb-6">
               <div class="p-2.5 bg-blue-500/10 rounded-xl">
                 <Lock :size="20" class="text-blue-500" />
               </div>
@@ -208,7 +208,7 @@
           </section>
 
           <!-- 双重认证 -->
-          <section :class="sectionClass">
+          <section class="bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl">
             <AuthTwoFactorSetup :initial-enabled="auth.user.value?.has2FA" />
           </section>
         </div>
@@ -233,8 +233,8 @@
           v-if="createdApiKey"
           class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
         >
-          <div class="w-full max-w-xl bg-[var(--pages_account_index_bg-section)] border border-[var(--pages_account_index_border-primary)] rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-[var(--pages_account_index_border-primary)] flex items-center justify-between">
+          <div class="w-full max-w-xl bg-[var(--pages_account_index_bg-section)] rounded-3xl shadow-2xl overflow-hidden">
+            <div class="p-6 flex items-center justify-between">
               <div>
                 <h3 class="text-lg font-black text-[var(--pages_account_index_text-primary)]">API Key 创建成功</h3>
                 <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">完整 Key 只会显示这一次</p>
@@ -270,7 +270,7 @@
               </div>
             </div>
 
-            <div class="p-6 border-t border-[var(--pages_account_index_border-primary)]">
+            <div class="p-6">
               <button
                 class="w-full py-3 bg-[var(--pages_account_index_bg-page)] border border-[var(--pages_account_index_border-primary)] hover:border-[var(--pages_account_index_border-button-hover)] text-[var(--pages_account_index_text-secondary)] text-xs font-black rounded-xl transition-all"
                 @click="closeCreatedApiKey"
@@ -289,8 +289,8 @@
           v-if="showApiKeyLogsModal"
           class="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
         >
-          <div class="w-full max-w-4xl bg-[var(--pages_account_index_bg-section)] border border-[var(--pages_account_index_border-primary)] rounded-3xl shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-[var(--pages_account_index_border-primary)] flex items-start justify-between gap-4">
+          <div class="w-full max-w-4xl bg-[var(--pages_account_index_bg-section)] rounded-3xl shadow-2xl overflow-hidden">
+            <div class="p-6 flex items-start justify-between gap-4">
               <div>
                 <h3 class="text-lg font-black text-[var(--pages_account_index_text-primary)]">调用记录</h3>
                 <p class="text-xs text-[var(--pages_account_index_text-quaternary)] mt-1">
@@ -317,7 +317,7 @@
                 <div class="overflow-hidden rounded-2xl border border-[var(--pages_account_index_border-primary)]">
                   <div class="max-h-[60vh] overflow-auto">
                     <table class="min-w-full text-left">
-                      <thead class="sticky top-0 bg-[var(--pages_account_index_bg-table-header)] backdrop-blur border-b border-[var(--pages_account_index_border-primary)]">
+                      <thead class="sticky top-0 bg-[var(--pages_account_index_bg-table-header)] backdrop-blur">
                         <tr class="text-[10px] font-black uppercase tracking-widest text-[var(--pages_account_index_text-quaternary)]">
                           <th class="px-4 py-3">时间</th>
                           <th class="px-4 py-3">方法</th>
@@ -329,7 +329,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="log in apiKeyLogs" :key="log.id" class="border-b border-[var(--pages_account_index_border-row)] last:border-0">
+                        <tr v-for="log in apiKeyLogs" :key="log.id" class="last:border-0">
                           <td class="px-4 py-3 text-xs text-[var(--pages_account_index_text-tertiary)] whitespace-nowrap">{{ formatDate(log.createdAt) }}</td>
                           <td class="px-4 py-3">
                             <span
@@ -434,7 +434,6 @@ const apiKeyLogsPagination = ref({
   totalPages: 0
 })
 
-// 监听用户头像变化，重置错误状态
 watch(
   () => auth.user.value?.avatar,
   () => {
@@ -442,7 +441,6 @@ watch(
   }
 )
 
-// 处理来自 OAuth 回调的消息
 onMounted(() => {
   refreshSiteConfig()
   loadPersonalApiKeys()
@@ -457,8 +455,7 @@ onMounted(() => {
   }
 })
 
-// 样式类常量
-const sectionClass = 'bg-[var(--pages_account_index_bg-section)]/40 border border-[var(--pages_account_index_border-section)] rounded-3xl p-6 md:p-8 shadow-2xl'
+const sectionClass = 'bg-[var(--pages_account_index_bg-section)]/40 rounded-3xl p-6 md:p-8 shadow-2xl'
 
 const userInitials = computed(() => {
   const name = auth.user.value?.name || auth.user.value?.username || 'U'
@@ -561,7 +558,7 @@ const deleteConfirmMessage = computed(() => {
   if (!key) {
     return '确定要删除这个个人 API Key 吗？删除后相关集成将无法继续使用。'
   }
-  return `确定要删除个人 API Key “${key.name}”吗？删除后相关集成将无法继续使用。`
+  return `确定要删除个人 API Key "${key.name}"吗？删除后相关集成将无法继续使用。`
 })
 
 const copyApiKey = async (text) => {
