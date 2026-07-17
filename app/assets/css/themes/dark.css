@@ -43,6 +43,7 @@
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(255, 255, 255, 0.1);
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -2018,6 +2019,14 @@
 
   /* ── body 级全局样式（确保 [data-theme="dark"] 下的 var 正确解析） ── */
   color-scheme: dark;
+
+  /* shadow 增强 */
+  .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(255, 255, 255, 0.1) !important;
+  }
+  .shadow-xl {
+    box-shadow: 0 20px 25px -5px rgba(255, 255, 255, 0.08) !important;
+  }
 
   body {
     color: var(--text-primary);
