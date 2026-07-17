@@ -10,58 +10,58 @@
     >
       <div
         v-if="show"
-        class="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+        class="confirm-overlay"
         @click="handleOverlayClick"
       >
         <div
-          class="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl shadow-2xl overflow-hidden"
+          class="confirm-modal"
           @click.stop
         >
           <!-- 内容 -->
-          <div class="flex flex-col items-center p-8 text-center">
+          <div class="confirm-content">
             <!-- 图标 -->
             <div
-              class="w-20 h-20 rounded-[2rem] flex items-center justify-center mb-6 transition-colors border"
+              class="confirm-icon"
               :class="iconClasses"
             >
               <Icon :name="iconName" :size="40" />
             </div>
 
             <!-- 文字内容 -->
-            <div class="space-y-2 mb-8">
-              <h4 class="text-xl font-black text-zinc-100 tracking-tight">{{ title }}</h4>
-              <p class="text-sm text-zinc-500 leading-relaxed font-medium whitespace-pre-line break-all">
+            <div class="confirm-text">
+              <h4 class="confirm-title">{{ title }}</h4>
+              <p class="confirm-message">
                 {{ message }}
               </p>
               
               <!-- 可选的输入框 -->
-              <div v-if="showInput" class="pt-4 w-full">
+              <div v-if="showInput" class="confirm-input-wrapper">
                 <input
                   v-model="inputValue"
                   :type="inputType"
                   :placeholder="inputPlaceholder"
-                  class="w-full bg-zinc-800/50 border border-zinc-700/50 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
+                  class="confirm-input"
                   @keyup.enter="handleConfirm"
                 />
               </div>
             </div>
 
             <!-- 操作按钮 -->
-            <div class="flex gap-3 w-full">
+            <div class="confirm-actions">
               <button
-                class="flex-1 px-6 py-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-black rounded-2xl transition-all uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-confirm-cancel"
                 :disabled="loading"
                 @click="handleCancel"
               >
                 {{ cancelText }}
               </button>
               <button
-                class="flex-[2] px-6 py-4 text-white text-xs font-black rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn-confirm"
                 :class="confirmBtnClasses"
                 :disabled="loading || (showInput && !inputValue)"
                 @click="handleConfirm"
               >
-                <Icon v-if="loading" name="loader" :size="16" class="animate-spin" />
+                <Icon v-if="loading" name="loader" :size="16" class="icon-spin" />
                 {{ loading ? '处理中...' : confirmText }}
               </button>
             </div>
@@ -171,30 +171,256 @@ const iconName = computed(() => {
 const iconClasses = computed(() => {
   switch (props.type) {
     case 'danger':
-      return 'bg-red-500/10 text-red-500 border-red-500/20 shadow-red-900/5'
+      return 'icon-danger'
     case 'success':
-      return 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-emerald-900/5'
+      return 'icon-success'
     case 'info':
-      return 'bg-blue-500/10 text-blue-500 border-blue-500/20 shadow-blue-900/5'
+      return 'icon-info'
     case 'warning':
     default:
-      return 'bg-amber-500/10 text-amber-500 border-amber-500/20 shadow-amber-900/5'
+      return 'icon-warning'
   }
 })
 
 const confirmBtnClasses = computed(() => {
   switch (props.type) {
     case 'danger':
-      return 'bg-red-600 hover:bg-red-500 shadow-red-900/20'
+      return 'btn-danger'
     case 'success':
-      return 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'
+      return 'btn-success'
     case 'info':
-      return 'bg-blue-600 hover:bg-blue-500 shadow-blue-900/20'
+      return 'btn-info'
     case 'warning':
     default:
-      return 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20'
+      return 'btn-warning'
   }
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background-color: var(--components_UI_ConfirmDialog_overlay-bg, rgba(0, 0, 0, 0.8));
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.confirm-modal {
+  width: 100%;
+  max-width: 28rem;
+  background-color: var(--components_UI_ConfirmDialog_modal-bg, #18181b);
+  border: 1px solid var(--components_UI_ConfirmDialog_modal-border, #27272a);
+  border-radius: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+.confirm-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.confirm-icon {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.2s;
+  border: 1px solid;
+}
+
+.icon-warning {
+  background-color: var(--components_UI_ConfirmDialog_icon-warning-bg, rgba(245, 158, 11, 0.1));
+  color: var(--components_UI_ConfirmDialog_icon-warning-color, #f59e0b);
+  border-color: var(--components_UI_ConfirmDialog_icon-warning-border, rgba(245, 158, 11, 0.2));
+  box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2);
+}
+
+.icon-danger {
+  background-color: var(--components_UI_ConfirmDialog_icon-danger-bg, rgba(239, 68, 68, 0.1));
+  color: var(--components_UI_ConfirmDialog_icon-danger-color, #ef4444);
+  border-color: var(--components_UI_ConfirmDialog_icon-danger-border, rgba(239, 68, 68, 0.2));
+  box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+}
+
+.icon-success {
+  background-color: var(--components_UI_ConfirmDialog_icon-success-bg, rgba(16, 185, 129, 0.1));
+  color: var(--components_UI_ConfirmDialog_icon-success-color, #10b981);
+  border-color: var(--components_UI_ConfirmDialog_icon-success-border, rgba(16, 185, 129, 0.2));
+  box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+}
+
+.icon-info {
+  background-color: var(--components_UI_ConfirmDialog_icon-info-bg, rgba(59, 130, 246, 0.1));
+  color: var(--components_UI_ConfirmDialog_icon-info-color, #3b82f6);
+  border-color: var(--components_UI_ConfirmDialog_icon-info-border, rgba(59, 130, 246, 0.2));
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+}
+
+.confirm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.confirm-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--components_UI_ConfirmDialog_title-color, #f4f4f5);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.confirm-message {
+  font-size: 0.875rem;
+  color: var(--components_UI_ConfirmDialog_message-color, #71717a);
+  line-height: 1.6;
+  font-weight: 500;
+  white-space: pre-line;
+  word-break: break-all;
+}
+
+.confirm-input-wrapper {
+  padding-top: 1rem;
+  width: 100%;
+}
+
+.confirm-input {
+  width: 100%;
+  background-color: var(--components_UI_ConfirmDialog_input-bg, rgba(39, 39, 42, 0.5));
+  border: 1px solid var(--components_UI_ConfirmDialog_input-border, rgba(63, 63, 70, 0.5));
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--components_UI_ConfirmDialog_title-color, #f4f4f5);
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.confirm-input::placeholder {
+  color: var(--components_UI_ConfirmDialog_input-placeholder, #52525b);
+}
+
+.confirm-input:focus {
+  border-color: var(--components_UI_ConfirmDialog_input-focus, #3b82f6);
+  box-shadow: 0 0 0 1px var(--components_UI_ConfirmDialog_input-focus, #3b82f6);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.btn-confirm-cancel {
+  flex: 1;
+  padding: 1.5rem 1.5rem;
+  background-color: var(--components_UI_ConfirmDialog_cancel-bg, #27272a);
+  color: var(--components_UI_ConfirmDialog_cancel-text, #d4d4d8);
+  font-size: 0.75rem;
+  font-weight: 900;
+  border-radius: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-confirm-cancel:hover:not(:disabled) {
+  background-color: var(--components_UI_ConfirmDialog_cancel-hover, #3f3f46);
+}
+
+.btn-confirm-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-confirm {
+  flex: 2;
+  padding: 1.5rem 1.5rem;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 900;
+  border-radius: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  transition: all 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+}
+
+.btn-confirm:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.btn-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-warning {
+  background-color: var(--components_UI_ConfirmDialog_btn-warning-bg, #d97706);
+  box-shadow: 0 10px 15px -3px var(--components_UI_ConfirmDialog_btn-warning-shadow, rgba(217, 119, 6, 0.2));
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: var(--components_UI_ConfirmDialog_btn-warning-hover, #f59e0b);
+}
+
+.btn-danger {
+  background-color: var(--components_UI_ConfirmDialog_btn-danger-bg, #dc2626);
+  box-shadow: 0 10px 15px -3px var(--components_UI_ConfirmDialog_btn-danger-shadow, rgba(220, 38, 38, 0.2));
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: var(--components_UI_ConfirmDialog_btn-danger-hover, #ef4444);
+}
+
+.btn-success {
+  background-color: var(--components_UI_ConfirmDialog_btn-success-bg, #059669);
+  box-shadow: 0 10px 15px -3px var(--components_UI_ConfirmDialog_btn-success-shadow, rgba(5, 150, 105, 0.2));
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: var(--components_UI_ConfirmDialog_btn-success-hover, #10b981);
+}
+
+.btn-info {
+  background-color: var(--components_UI_ConfirmDialog_btn-info-bg, #2563eb);
+  box-shadow: 0 10px 15px -3px var(--components_UI_ConfirmDialog_btn-info-shadow, rgba(37, 99, 235, 0.2));
+}
+
+.btn-info:hover:not(:disabled) {
+  background-color: var(--components_UI_ConfirmDialog_btn-info-hover, #3b82f6);
+}
+
+.icon-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

@@ -230,6 +230,45 @@
   --pages_account_index_text-button-ghost: #a1a1aa;         /* 幽灵按钮文字 text-zinc-400 */
   --pages_account_index_border-button-ghost: #52525b;       /* 幽灵按钮边框 border-zinc-600 */
 
+  /* 确认对话框 ConfirmDialog */
+  --components_UI_ConfirmDialog_overlay-bg: rgba(0, 0, 0, 0.8);
+  --components_UI_ConfirmDialog_modal-bg: #18181b;
+  --components_UI_ConfirmDialog_modal-border: #27272a;
+  --components_UI_ConfirmDialog_modal-shadow: rgba(0, 0, 0, 0.25);
+  --components_UI_ConfirmDialog_title-color: #f4f4f5;
+  --components_UI_ConfirmDialog_message-color: #71717a;
+  --components_UI_ConfirmDialog_input-bg: rgba(39, 39, 42, 0.5);
+  --components_UI_ConfirmDialog_input-border: rgba(63, 63, 70, 0.5);
+  --components_UI_ConfirmDialog_input-placeholder: #52525b;
+  --components_UI_ConfirmDialog_input-focus: #3b82f6;
+  --components_UI_ConfirmDialog_cancel-bg: #27272a;
+  --components_UI_ConfirmDialog_cancel-hover: #3f3f46;
+  --components_UI_ConfirmDialog_cancel-text: #d4d4d8;
+  --components_UI_ConfirmDialog_icon-warning-bg: rgba(245, 158, 11, 0.1);
+  --components_UI_ConfirmDialog_icon-warning-color: #f59e0b;
+  --components_UI_ConfirmDialog_icon-warning-border: rgba(245, 158, 11, 0.2);
+  --components_UI_ConfirmDialog_icon-danger-bg: rgba(239, 68, 68, 0.1);
+  --components_UI_ConfirmDialog_icon-danger-color: #ef4444;
+  --components_UI_ConfirmDialog_icon-danger-border: rgba(239, 68, 68, 0.2);
+  --components_UI_ConfirmDialog_icon-success-bg: rgba(16, 185, 129, 0.1);
+  --components_UI_ConfirmDialog_icon-success-color: #10b981;
+  --components_UI_ConfirmDialog_icon-success-border: rgba(16, 185, 129, 0.2);
+  --components_UI_ConfirmDialog_icon-info-bg: rgba(59, 130, 246, 0.1);
+  --components_UI_ConfirmDialog_icon-info-color: #3b82f6;
+  --components_UI_ConfirmDialog_icon-info-border: rgba(59, 130, 246, 0.2);
+  --components_UI_ConfirmDialog_btn-warning-bg: #d97706;
+  --components_UI_ConfirmDialog_btn-warning-hover: #f59e0b;
+  --components_UI_ConfirmDialog_btn-warning-shadow: rgba(217, 119, 6, 0.2);
+  --components_UI_ConfirmDialog_btn-danger-bg: #dc2626;
+  --components_UI_ConfirmDialog_btn-danger-hover: #ef4444;
+  --components_UI_ConfirmDialog_btn-danger-shadow: rgba(220, 38, 38, 0.2);
+  --components_UI_ConfirmDialog_btn-success-bg: #059669;
+  --components_UI_ConfirmDialog_btn-success-hover: #10b981;
+  --components_UI_ConfirmDialog_btn-success-shadow: rgba(5, 150, 105, 0.2);
+  --components_UI_ConfirmDialog_btn-info-bg: #2563eb;
+  --components_UI_ConfirmDialog_btn-info-hover: #3b82f6;
+  --components_UI_ConfirmDialog_btn-info-shadow: rgba(37, 99, 235, 0.2);
+
   --components_Admin_BatchUpdateModal_1446_0: #4a5568;
   --components_Admin_BatchUpdateModal_1450_0: #718096;
   --components_Admin_BlacklistManager_572_0: #27272a;
