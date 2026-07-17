@@ -211,6 +211,8 @@
   --pages_account_index_bg-table-row: #ffffff;      /* 表格行背景 bg-white */
   --pages_account_index_bg-table-row-alt: #f9fafb;  /* 交替行背景 bg-gray-50 */
   --pages_account_index_bg-close-btn: #f3f4f6;      /* 关闭按钮背景 bg-gray-100 */
+  --pages_account_index_bg-user-card: #ffffff;      /* 用户卡片背景 bg-white */
+  --pages_account_index_bg-section-card: #ffffff;   /* 区块卡片背景 bg-white */
   --pages_account_index_text-primary: #111827;      /* 主文字 text-gray-900 */
   --pages_account_index_text-secondary: #4b5563;    /* 次要文字 text-gray-600 */
   --pages_account_index_text-tertiary: #6b7280;     /* 三级文字 text-gray-500 */
