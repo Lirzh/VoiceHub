@@ -1,15 +1,12 @@
-import { createError, defineEventHandler, getQuery } from 'h3'
+import { defineEventHandler, getQuery } from 'h3'
 import { db } from '~/drizzle/db'
 import { songs, users, votes } from '~/drizzle/schema'
+import { createApiError } from '~~/server/utils/apiError'
 
 export default defineEventHandler(async (event) => {
-  // 检查认证和权限
   const user = event.context.user
   if (!user || !['SONG_ADMIN', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-    throw createError({
-      statusCode: 403,
-      message: '需要管理员权限'
-    })
+    throw createApiError(403, 'ADMIN_PERMISSION_DENIED', '需要管理员权限')
   }
 
   const query = getQuery(event)

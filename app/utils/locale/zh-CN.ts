@@ -4034,4 +4034,6 @@ export const serverErrors = {
   NOTIFICATION_HISTORY_FETCH_FAILED: '获取通知历史失败',
   NOTIFICATION_HISTORY_UPDATE_FAILED: '修改通知失败',
   NOTIFICATION_HISTORY_DELETE_FAILED: '删除通知失败',
+  ADMIN_PERMISSION_DENIED: '需要管理员权限',
+  ADMIN_STATS_FAILED: '获取统计数据失败'
 } as const

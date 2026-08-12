@@ -4025,4 +4025,6 @@ export const serverErrors = {
   NOTIFICATION_HISTORY_FETCH_FAILED: 'Failed to fetch notification history',
   NOTIFICATION_HISTORY_UPDATE_FAILED: 'Failed to update notification',
   NOTIFICATION_HISTORY_DELETE_FAILED: 'Failed to delete notification',
+  ADMIN_PERMISSION_DENIED: 'Admin permission required',
+  ADMIN_STATS_FAILED: 'Failed to fetch statistics'
 } as const

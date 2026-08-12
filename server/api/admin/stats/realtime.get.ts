@@ -1,17 +1,14 @@
-import { createError, defineEventHandler } from 'h3'
+import { defineEventHandler } from 'h3'
 import { db } from '~/drizzle/db'
 import { songs, users, votes } from '~/drizzle/schema'
 import { count, eq, gte } from 'drizzle-orm'
 import { getBeijingHour, getBeijingStartOfDay } from '~/utils/timeUtils'
+import { createApiError } from '~~/server/utils/apiError'
 
 export default defineEventHandler(async (event) => {
-  // 检查认证和权限
   const user = event.context.user
   if (!user || !['SONG_ADMIN', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-    throw createError({
-      statusCode: 403,
-      message: '需要管理员权限'
-    })
+    throw createApiError(403, 'ADMIN_PERMISSION_DENIED', '需要管理员权限')
   }
 
   try {
@@ -171,9 +168,6 @@ export default defineEventHandler(async (event) => {
 
     return result
   } catch (error) {
-    throw createError({
-      statusCode: 500,
-      message: '获取实时统计数据失败'
-    })
+    throw createApiError(500, 'ADMIN_STATS_FAILED', '获取实时统计数据失败')
   }
 })

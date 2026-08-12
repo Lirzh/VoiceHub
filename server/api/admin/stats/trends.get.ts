@@ -1,15 +1,12 @@
-import { createError, defineEventHandler, getQuery } from 'h3'
+import { defineEventHandler, getQuery } from 'h3'
 import { and, count, db, eq, gte, songs } from '~/drizzle/db'
 import { sql } from 'drizzle-orm'
+import { createApiError } from '~~/server/utils/apiError'
 
 export default defineEventHandler(async (event) => {
-  // 检查认证和权限
   const user = event.context.user
   if (!user || !['SONG_ADMIN', 'ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-    throw createError({
-      statusCode: 403,
-      message: '需要管理员权限'
-    })
+    throw createApiError(403, 'ADMIN_PERMISSION_DENIED', '需要管理员权限')
   }
 
   const query = getQuery(event)
@@ -49,9 +46,6 @@ export default defineEventHandler(async (event) => {
     return formattedData
   } catch (error) {
     console.error('获取趋势数据失败:', error)
-    throw createError({
-      statusCode: 500,
-      message: '获取趋势数据失败'
-    })
+    throw createApiError(500, 'ADMIN_STATS_FAILED', '获取趋势数据失败')
   }
 })

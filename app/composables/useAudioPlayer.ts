@@ -36,6 +36,33 @@ const duration = ref(0) // 歌曲总时长（秒）
 let pendingCoverImage: HTMLImageElement | null = null
 
 export function useAudioPlayer() {
+  // SSR 环境返回只读 stub，避免模块级单例在 Node 进程中跨请求共享可变状态
+  if (import.meta.server) {
+    return {
+      playSong: () => false,
+      pauseSong: () => {},
+      stopSong: () => {},
+      playNext: async () => false,
+      playPrevious: async () => false,
+      updateCurrentSong: () => false,
+      setPosition: () => {},
+      setDuration: () => {},
+      updatePosition: () => {},
+      isCurrentPlaying: () => false,
+      isCurrentSong: () => false,
+      getCurrentSong: () => ({} as any),
+      getPlayingStatus: () => ({} as any),
+      getCurrentPosition: () => ({} as any),
+      getDuration: () => ({} as any),
+      getProgress: computed(() => 0),
+      hasNext: computed(() => false),
+      hasPrevious: computed(() => false),
+      prefetchNextSong: async () => false,
+      getCurrentPlaylist: () => ({} as any),
+      getCurrentPlaylistIndex: () => ({} as any)
+    }
+  }
+
   // 播放歌曲
   const playSong = (song: PlayableSong, playlist?: PlayableSong[], playlistIndex?: number) => {
     // 允许没有 musicUrl 但有 musicPlatform+musicId 的歌曲通过（由 loadSong 动态解析）
