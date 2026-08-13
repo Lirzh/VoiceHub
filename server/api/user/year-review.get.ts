@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const userId = user.id
 
   // 筛选当前年份
-  const currentYear = 2025
+  const currentYear = new Date().getFullYear()
   const startOfYear = new Date(currentYear, 0, 1)
   const endOfYear = new Date(currentYear + 1, 0, 1)
 
