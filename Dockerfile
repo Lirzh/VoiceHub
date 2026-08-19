@@ -21,7 +21,14 @@ COPY . .
 RUN pnpm run build
 
 # 运行阶段
-FROM node:26-alpine
+FROM node:26-alpine AS runtime-amd64
+FROM node:26-alpine AS runtime-arm64
+FROM node:20-alpine AS runtime-arm
+FROM node:26-trixie-slim AS runtime-s390x
+FROM node:26-trixie-slim AS runtime-ppc64le
+
+# 根据 TARGETARCH 选择对应的运行时镜像
+FROM runtime-${TARGETARCH} AS runtime
 
 WORKDIR /app
 
