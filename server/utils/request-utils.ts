@@ -114,3 +114,39 @@ export function getRequestHostname(event: H3Event): string {
     return ''
   }
 }
+
+export interface SameSiteWriteSignals {
+  /** Fetch Metadata 头 sec-fetch-site，浏览器生成且脚本无法伪造 */
+  secFetchSite?: string
+  /** 请求头 origin */
+  origin?: string
+  /** 运行时配置 NUXT_PUBLIC_HOST，显式配置时优先于请求头 */
+  configuredHost?: string
+  /** x-forwarded-host 或 host，客户端可控，仅作回退 */
+  requestHost?: string
+  /** 无协议来源时的回退协议，形如 'http:' */
+  protocol?: string
+}
+
+/**
+ * 写操作同源判定，口径与 api-cors 中间件一致：
+ * 只拒绝浏览器明确标记为 cross-site 的请求，反代改写 Host 不会误伤；
+ * 缺少 Fetch Metadata 时才退回 Origin 与配置域名/请求 Host 比对。
+ */
+export function isSameSiteWrite(signals: SameSiteWriteSignals): boolean {
+  const site = getFirstForwardedValue(signals.secFetchSite).toLowerCase()
+  if (site) return site !== 'cross-site'
+
+  const origin = (signals.origin || '').trim()
+  if (!origin) return true
+
+  const trusted = getFirstForwardedValue(signals.configuredHost || signals.requestHost)
+  if (!trusted) return false
+
+  const protocol = signals.protocol || 'http:'
+  try {
+    return isTrustedOrigin(normalizeOrigin(origin, protocol), normalizeOrigin(trusted, protocol))
+  } catch {
+    return false
+  }
+}

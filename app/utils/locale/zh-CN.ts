@@ -5197,6 +5197,7 @@ export const serverErrors = {
   MUSIC_SOURCE_PLATFORM_DISABLED: '平台“{0}”已关闭，可用平台：{1}',
   QQ_COMMENT_FETCH_FAILED: 'QQ 音乐评论获取失败，请稍后重试',
   PLUGIN_INVALID_CONFIG: '音源插件配置无效',
+  PLUGIN_CROSS_SITE_REQUEST: '跨站请求被拒绝，请在本站页面内操作',
   PLUGIN_CONFIG_CONFLICT: '配置已被修改，请刷新后重试',
   PLUGIN_LOAD_FAILED: '插件下载或加载失败，旧版本仍会保留',
   PLUGIN_RESOLVE_FAILED: '所有可用插件均未返回可播放地址',

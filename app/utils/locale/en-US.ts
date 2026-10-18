@@ -5391,6 +5391,7 @@ export const serverErrors = {
   MUSIC_SOURCE_PLATFORM_DISABLED: 'Platform "{0}" is disabled. Available platforms: {1}',
   QQ_COMMENT_FETCH_FAILED: 'Failed to load QQ Music comments. Please try again later.',
   PLUGIN_INVALID_CONFIG: 'Invalid source plugin configuration',
+  PLUGIN_CROSS_SITE_REQUEST: 'Cross-site request rejected. Operate from this site.',
   PLUGIN_CONFIG_CONFLICT: 'Configuration changed. Refresh and try again.',
   PLUGIN_LOAD_FAILED: 'Plugin download or loading failed. The previous version is retained.',
   PLUGIN_RESOLVE_FAILED: 'No available plugin returned a playable URL',
