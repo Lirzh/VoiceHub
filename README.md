@@ -1453,6 +1453,7 @@ VoiceHub/
 │   │   ├── log-manager.ts  # 日志管理工具
 │   │   ├── music-source-plugins/ # LX Music 与 MusicFree 音源插件运行时、沙箱与凭证管理
 │   │   │   ├── access.ts    # 后台权限、同源校验与调用限流
+│   │   │   ├── artifact-cache.ts # 插件产物落盘与只读文件系统下的内存缓存
 │   │   │   ├── backup.ts    # 插件表备份清单与恢复写入
 │   │   │   ├── errors.ts    # 插件错误码构造
 │   │   │   ├── guest.js     # 注入沙箱的宿主环境与 __inspect/__invoke

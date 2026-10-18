@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { readFile } from 'node:fs/promises'
 import { and, asc, desc, eq, isNull, ne, sql } from 'drizzle-orm'
 import { db } from '~/drizzle/db'
 import { musicSourcePlugins as plugins, musicSourcePluginRevisions as revisions, musicSourceConfigState as state } from '~/drizzle/schema'
@@ -8,12 +7,12 @@ import { MUSIC_PLUGIN_CATALOGS, MUSIC_PLUGIN_LIMITS, MUSIC_PLUGIN_PROTOCOLS } fr
 import { getServerDate } from '../serverTime'
 import { pluginManifest } from './manifest'
 import { pluginError } from './errors'
+import { artifactFile, readCachedArtifact, storeArtifact } from './artifact-cache'
 import { seal, unseal } from './tickets'
 import { networkUrl } from './network'
 import { extractPluginName, runPlugin } from './runtime'
 import type { PluginArtifact, PluginCapability, PluginProtocol } from './types'
 
-const artifactRoot = join(process.cwd(), '.data', 'music-source-plugins')
 const inflight = new Map<string, Promise<PluginArtifact>>()
 export const snapshotMode = () => pluginManifest.mode === 'snapshot'
 export async function prelude() {
@@ -149,14 +148,6 @@ export async function orderPlugins(ids: string[], expected: number) {
   })
 }
 
-async function storeArtifact(artifact: PluginArtifact) {
-  await mkdir(artifactRoot, { recursive: true })
-  const target = join(artifactRoot, `${artifact.id}-${artifact.revision}-${artifact.hash}.json`)
-  const temporary = `${target}.${randomUUID()}.tmp`
-  await writeFile(temporary, JSON.stringify(artifact), { mode: 0o600 })
-  await rename(temporary, target)
-}
-
 export async function refreshPlugin(id: string, prepared?: PreparedPlugin): Promise<PluginArtifact> {
   if (snapshotMode()) throw pluginError('PLUGIN_UNAVAILABLE', 409)
   const [row] = await db.select().from(plugins).where(and(eq(plugins.id, id), isNull(plugins.deletedAt)))
@@ -195,7 +186,11 @@ export async function artifactFor(row: typeof plugins.$inferSelect): Promise<Plu
   }
   try {
     if (!/^[a-f0-9]{64}$/.test(row.activeHash)) return null
-    const value = JSON.parse(await readFile(join(artifactRoot, `${row.id}-${row.activeRevision}-${row.activeHash}.json`), 'utf8')) as PluginArtifact
+    const pointer = { id: row.id, revision: row.activeRevision, hash: row.activeHash }
+    // 缓存键含 id/revision/hash，命中即与期望版本一致，无需再校验摘要
+    const cached = readCachedArtifact(pointer)
+    if (cached) return cached
+    const value = JSON.parse(await readFile(artifactFile(pointer), 'utf8')) as PluginArtifact
     const { codeHash } = await import('./prepare')
     if (value.id !== row.id || value.revision !== row.activeRevision || codeHash(value.source) !== row.activeHash) return null
     return value
