@@ -2721,7 +2721,6 @@ export default defineEventHandler(async (event) => {
       'NotificationSettings',
       'PlayTime',
       'Semester',
-      'GradeClass',
       'SystemSettings',
       'SongBlacklist',
       'SongReplayRequest',
