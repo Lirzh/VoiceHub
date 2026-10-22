@@ -82,3 +82,20 @@ test('机器人免 Cookie 路由与实际端点文件逐项一致', () => {
   assert.deepEqual([...BOT_ROUTES].sort(), expected.sort())
   assert.equal(BOT_ROUTES.has('POST /api/bot/voicehub/weekly-schedule'), false)
 })
+
+// /api/auth/2fa/* 是 OAuth 预认证（pre-auth-token）流程专用目录：
+// 此时候选用户还没有 auth-token，任何未登记进公开白名单的新端点都会被
+// 认证中间件 401 拦在处理器之前，2FA 流程直接断链。
+test('预认证 2FA 端点全部在公开白名单内', () => {
+  const dir = new URL('../../server/api/auth/2fa/', import.meta.url)
+  const routes = readdirSync(dir).filter(name => /\.(get|post)\.ts$/.test(name))
+    .map(name => {
+      const [, route, method] = name.match(/^(.+)\.(get|post)\.ts$/)!
+      return { method: method.toUpperCase(), path: `/api/auth/2fa/${route}` }
+    })
+
+  assert.ok(routes.length > 0)
+  for (const route of routes) {
+    assert.equal(isPublicApiPath(route.path, route.method), true, `${route.method} ${route.path} 未登记为公开路由`)
+  }
+})

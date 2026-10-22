@@ -30,6 +30,9 @@ export const PUBLIC_API_EXACT_ROUTES: readonly RoutePolicy[] = [
   { path: '/api/auth/oauth-register-options', methods: GET_METHODS },
   { path: '/api/auth/bind', methods: ['POST'] },
   { path: '/api/auth/oauth-register', methods: ['POST'] },
+  // OAuth 启用 TOTP 的用户此时只有 pre-auth-token，没有 auth-token，
+  // 必须由本接口读取预认证令牌展示验证方式，鉴权在接口内完成。
+  { path: '/api/auth/2fa/pending', methods: GET_METHODS },
   { path: '/api/auth/2fa/verify', methods: ['POST'] },
   { path: '/api/auth/2fa/send-email', methods: ['POST'] },
   { path: '/api/auth/forgot-password', methods: ['POST'] },
