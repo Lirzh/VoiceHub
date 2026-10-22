@@ -9,10 +9,20 @@
  * 且必须命中允许的备份文件名前缀之一，扩展名固定为 .json。
  */
 
-/** 允许下载的备份文件名前缀（与备份服务实际产出的命名保持一致） */
+/**
+ * 备份文件名前缀的唯一权威清单。
+ * 必须覆盖 server/api/admin/backup/export.post.ts 的全部 filePrefix 取值
+ * （database-backup / users-backup / users-system-backup / songs-backup /
+ * songs-system-backup / system-settings-backup）与 upload.post.ts 的 uploaded-，
+ * 漏项会让对应类型的备份能落盘却下载不了。
+ */
 export const ALLOWED_BACKUP_FILENAME_PREFIXES = [
   'database-backup-',
   'users-backup-',
+  'users-system-backup-',
+  'songs-backup-',
+  'songs-system-backup-',
+  'system-settings-backup-',
   'uploaded-'
 ] as const
 
@@ -20,6 +30,14 @@ export const ALLOWED_BACKUP_FILENAME_PREFIXES = [
 const BACKUP_FILE_EXTENSION = '.json'
 
 const PATH_SEPARATOR_PATTERN = /[/\\]/
+
+/** 目录内文件名是否命中备份前缀且为 .json（用于备份列表筛选） */
+export function hasBackupFilenamePrefix(filename: string): boolean {
+  return (
+    filename.toLowerCase().endsWith(BACKUP_FILE_EXTENSION) &&
+    ALLOWED_BACKUP_FILENAME_PREFIXES.some((prefix) => filename.startsWith(prefix))
+  )
+}
 
 /**
  * 判断文件名是否为允许下载的备份文件
@@ -37,9 +55,5 @@ export function isAllowedBackupFilename(filename: unknown): filename is string {
   if (name.includes('..')) return false
   if (name.includes('\0')) return false
 
-  // 扩展名固定为 .json
-  if (!name.toLowerCase().endsWith(BACKUP_FILE_EXTENSION)) return false
-
-  // 必须命中允许的前缀
-  return ALLOWED_BACKUP_FILENAME_PREFIXES.some((prefix) => name.startsWith(prefix))
+  return hasBackupFilenamePrefix(name)
 }

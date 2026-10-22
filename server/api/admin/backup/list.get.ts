@@ -2,6 +2,7 @@ import { createError, defineEventHandler } from 'h3'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { isServerlessRuntime } from '~~/server/utils/serverless-runtime'
+import { hasBackupFilenamePrefix } from '~~/server/utils/backup-filename'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -53,19 +54,9 @@ export default defineEventHandler(async (event) => {
       }
     }
 
-    // 读取备份目录中的文件
+    // 读取备份目录中的文件（前缀清单与下载校验共用一份权威定义）
     const files = await fs.readdir(backupDir)
-    const backupFiles = files.filter(
-      (file) =>
-        file.endsWith('.json') &&
-        (file.startsWith('database-backup-') ||
-          file.startsWith('users-backup-') ||
-          file.startsWith('users-system-backup-') ||
-          file.startsWith('songs-backup-') ||
-          file.startsWith('songs-system-backup-') ||
-          file.startsWith('system-settings-backup-') ||
-          file.startsWith('uploaded-'))
-    )
+    const backupFiles = files.filter((file) => hasBackupFilenamePrefix(file))
 
     const backups = []
 
