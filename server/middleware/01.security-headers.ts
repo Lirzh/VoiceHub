@@ -17,8 +17,9 @@ export default defineEventHandler((event) => {
   setHeader(event, 'X-Frame-Options', 'SAMEORIGIN')
   // 跨站跳转时不泄露完整 URL（含路径与查询参数）
   setHeader(event, 'Referrer-Policy', 'strict-origin-when-cross-origin')
-  // 收敛浏览器可用能力（本项目不需要摄像头/麦克风/地理定位等）
-  setHeader(event, 'Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+  // 收敛浏览器可用能力（本项目仅需同源麦克风：投稿页听歌识曲要 getUserMedia({ audio })，
+  // microphone=() 会连同源一起禁用该功能，故显式保留 self）
+  setHeader(event, 'Permissions-Policy', 'camera=(), microphone=(self), geolocation=(), payment=()')
   // 避免把当前页面路径暴露给第三方脚本
   setHeader(event, 'Cross-Origin-Opener-Policy', 'same-origin')
 
