@@ -5248,6 +5248,7 @@ export const serverErrors = {
   AUTH_ACCOUNT_NAME_NOT_FOUND: 'Account name not found. Please check for typos.',
   AUTH_RATE_LIMITED_MINUTES: 'Too many requests. Please wait {0} minutes and try again.',
   AUTH_RATE_LIMITED_SECONDS: 'Too many requests. Please wait {0} seconds and try again.',
+  AUTH_SITE_ORIGIN_NOT_CONFIGURED: 'Site domain is not configured. Password reset emails are disabled. Contact an administrator.',
   AUTH_EMAIL_CODE_INVALID: 'Invalid or expired email verification code. Please request a new one.',
   AUTH_EMAIL_CODE_COOLDOWN:
     'Verification code sent too frequently. Please wait 1 minute and try again.',
@@ -5447,6 +5448,7 @@ export const serverErrors = {
   PLUGIN_NETWORK_BLOCKED: 'Plugin request or response rejected by network policy',
   PLUGIN_TIMEOUT: 'Source plugin timed out',
   PLUGIN_INVALID_TICKET: 'Invalid or expired track or media credential',
+  PLUGIN_SIGNATURE_INVALID: 'Invalid plugin request signature, or shared secret not configured',
   BACKUP_NOT_CONFIGURED: 'Auto backup is not configured',
   NO_BACKUP_METHOD_ENABLED: 'No backup methods enabled',
   BACKUP_FAILED: 'Backup execution failed',

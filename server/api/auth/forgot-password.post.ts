@@ -1,4 +1,3 @@
-import type { H3Event } from 'h3'
 import { db } from '~/drizzle/db'
 import { users } from '~/drizzle/schema'
 import { eq } from 'drizzle-orm'
@@ -8,13 +7,14 @@ import { formatIPForEmail, getClientIP } from '~~/server/utils/ip-utils'
 import { checkDistributedRateLimit } from '~~/server/utils/rateLimiter'
 import { getServerTimestamp } from '~~/server/utils/serverTime'
 import { createApiError } from '~~/server/utils/apiError'
+import { SERVER_ERROR_CODES } from '~~/server/config/constants'
 
 // 重置链接的站点域名：只信任服务端配置，不回退到请求头。
 //
 // 安全说明：Host / X-Forwarded-Host 由客户端控制。若用它们拼接密码重置链接，
 // 攻击者可注入自己的域名（Host: evil.example），使有效重置令牌随链接被投毒到攻击者站点，
 // 造成账号接管。因此未配置 NUXT_PUBLIC_HOST 时必须拒绝发送重置邮件，而不是降级使用请求头。
-const resolveSiteOrigin = (event: H3Event): string => {
+const resolveSiteOrigin = (): string => {
   const config = useRuntimeConfig()
   const configuredHost = String(config.public.host || '').trim()
   if (!configuredHost) {
@@ -23,7 +23,7 @@ const resolveSiteOrigin = (event: H3Event): string => {
     )
     throw createApiError(
       503,
-      'AUTH_SITE_ORIGIN_NOT_CONFIGURED',
+      SERVER_ERROR_CODES.AUTH_SITE_ORIGIN_NOT_CONFIGURED,
       '站点域名未配置，暂时无法发送重置邮件，请联系管理员'
     )
   }
@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
       }
       const token = JWTEnhanced.sign(payload, { expiresIn: '15m' })
 
-      const resetLink = `${resolveSiteOrigin(event)}/reset-password?token=${token}`
+      const resetLink = `${resolveSiteOrigin()}/reset-password?token=${token}`
 
       const smtp = SmtpService.getInstance()
 

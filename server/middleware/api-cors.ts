@@ -1,12 +1,19 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import type { H3Event } from 'h3'
 import { isTrustedOrigin, normalizeOrigin } from '~~/server/utils/request-utils'
+import { createApiError } from '~~/server/utils/apiError'
+import { SERVER_ERROR_CODES } from '~~/server/config/constants'
+import { getServerTimestamp } from '~~/server/utils/serverTime'
+
+/** 未配置 PLUGIN_SHARED_SECRET 时只告警一次，避免每次插件请求刷日志 */
+let legacyPluginBypassWarned = false
 
 /**
  * 校验外部受信客户端的 HMAC 签名。
  * 签名串： `${timestamp}\n${method}\n${pathname}\n${nonce}`
- * 时间窗 5 分钟；未配置 PLUGIN_SHARED_SECRET 时一律拒绝（不降级放行）。
+ * 时间窗 5 分钟。
  */
-async function verifyPluginSignature(event: any, pathname: string): Promise<boolean> {
+async function verifyPluginSignature(event: H3Event, pathname: string): Promise<boolean> {
   const secret = String(process.env.PLUGIN_SHARED_SECRET || '')
   if (!secret || secret.length < 32) return false
 
@@ -17,7 +24,7 @@ async function verifyPluginSignature(event: any, pathname: string): Promise<bool
 
   const ts = Number(timestamp)
   if (!Number.isFinite(ts)) return false
-  if (Math.abs(Math.floor(Date.now() / 1000) - ts) > 300) return false
+  if (Math.abs(Math.floor(getServerTimestamp() / 1000) - ts) > 300) return false
 
   const expected = createHmac('sha256', secret)
     .update(`${timestamp}\n${getMethod(event)}\n${pathname}\n${nonce}`)
@@ -55,13 +62,26 @@ export default defineEventHandler(async (event) => {
   }
 
   // 受信任的外部客户端（如 ClassIslandPlugin）需要显式授权才能绕过 Origin 校验。
-  // 安全说明：自定义请求头可被任意客户端伪造，因此不能仅凭请求头放行；
-  // 必须同时提供由 PLUGIN_SHARED_SECRET 签名的 HMAC（5 分钟时间窗 + 路径绑定）。
+  // 安全说明：该标记头本身可被伪造，因此配置了 PLUGIN_SHARED_SECRET 时必须同时通过
+  // HMAC 校验（5 分钟时间窗 + 方法/路径绑定）。签名方案要求客户端同步适配，
+  // 未配置密钥的实例仍按旧行为放行并告警，避免升级即刻打断全部插件调用。
   if (getHeader(event, 'x-requested-from') === 'ClassIslandPlugin') {
-    if (await verifyPluginSignature(event, pathname)) {
-      return
+    const secretConfigured = String(process.env.PLUGIN_SHARED_SECRET || '').length >= 32
+    if (secretConfigured) {
+      if (await verifyPluginSignature(event, pathname)) {
+        return
+      }
+      throw createApiError(403, SERVER_ERROR_CODES.PLUGIN_SIGNATURE_INVALID, '插件签名无效')
     }
-    throw createError({ statusCode: 403, message: 'Forbidden: 插件签名无效' })
+
+    if (!legacyPluginBypassWarned) {
+      legacyPluginBypassWarned = true
+      console.warn(
+        '[CORS Middleware] 检测到 x-requested-from: ClassIslandPlugin 绕过请求，但 PLUGIN_SHARED_SECRET 未配置（长度需 ≥32）；' +
+          '该标记头可被伪造，配置密钥后插件客户端需改为附带 x-plugin-timestamp / x-plugin-nonce / x-plugin-signature 签名头。'
+      )
+    }
+    return
   }
 
   // 显式配置 NUXT_PUBLIC_HOST 时使用配置来源校验。
