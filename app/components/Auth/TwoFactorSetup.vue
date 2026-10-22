@@ -76,6 +76,20 @@
 
           <div>
             <label class="block text-xs font-bold text-text-tertiary uppercase tracking-wider mb-2">
+              {{ locale.passwordLabel }}
+            </label>
+            <input
+              v-model="enablePassword"
+              type="password"
+              :placeholder="locale.passwordPlaceholder"
+              autocomplete="current-password"
+              class="w-full bg-bg-secondary border border-border-secondary rounded-lg px-4 py-2 text-text-primary placeholder-text-disabled focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+              @keyup.enter="enable2FA"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-text-tertiary uppercase tracking-wider mb-2">
               {{ locale.code }}
             </label>
             <div class="flex gap-2">
@@ -89,7 +103,7 @@
               />
               <button
                 @click="enable2FA"
-                :disabled="loading || verificationCode.length !== 6"
+                :disabled="loading || verificationCode.length !== 6 || !enablePassword"
                 class="px-6 py-2 bg-primary-hover hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed text-text-primary font-bold rounded-lg transition-colors flex items-center gap-2"
               >
                 <Loader2 v-if="loading" class="animate-spin" :size="16" />
@@ -136,6 +150,7 @@ const loading = ref(false)
 const qrCodeUrl = ref('')
 const secret = ref('')
 const verificationCode = ref('')
+const enablePassword = ref('')
 const { showToast } = useToast()
 const { auth } = useLocale()
 const locale = computed(() => auth.value?.twoFactorSetup || {})
@@ -160,6 +175,7 @@ const startSetup = async () => {
       secret.value = data.secret
       showSetup.value = true
       verificationCode.value = ''
+      enablePassword.value = ''
     }
   } catch (err) {
     showToast(err.data?.message || err.message || locale.value.fetchFailed, 'error')
@@ -173,6 +189,7 @@ const cancelSetup = () => {
   qrCodeUrl.value = ''
   secret.value = ''
   verificationCode.value = ''
+  enablePassword.value = ''
 }
 
 const copySecret = async () => {
@@ -185,7 +202,7 @@ const copySecret = async () => {
 }
 
 const enable2FA = async () => {
-  if (verificationCode.value.length !== 6) return
+  if (!enablePassword.value || verificationCode.value.length !== 6) return
   
   try {
     loading.value = true
@@ -193,7 +210,8 @@ const enable2FA = async () => {
       method: 'POST',
       body: {
         token: verificationCode.value,
-        secret: secret.value
+        secret: secret.value,
+        password: enablePassword.value
       }
     })
 

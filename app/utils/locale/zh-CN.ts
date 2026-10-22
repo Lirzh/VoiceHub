@@ -1226,6 +1226,7 @@ export const pages = {
       disableContent:
         '关闭后，您的账户将不再受到双重认证保护。为确保安全，请输入您的登录密码以确认。',
       verifyAndDisable: '验证并关闭',
+      passwordLabel: '登录密码',
       passwordPlaceholder: '请输入当前登录密码',
       fetchFailed: '获取验证码失败',
       copied: '密钥已复制',

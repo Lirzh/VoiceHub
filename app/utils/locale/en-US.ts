@@ -1261,6 +1261,7 @@ export const pages = {
       disableContent:
         'After disabling, your account will no longer be protected by two-factor authentication. Enter your login password to confirm.',
       verifyAndDisable: 'Verify and Disable',
+      passwordLabel: 'Password',
       passwordPlaceholder: 'Enter current login password',
       fetchFailed: 'Failed to fetch verification code',
       copied: 'Key copied',
