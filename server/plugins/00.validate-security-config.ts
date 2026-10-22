@@ -19,7 +19,8 @@ const KNOWN_PLACEHOLDER_SECRETS = [
   'jwt-secret',
   'voicehub-secret',
   '你的密钥',
-  '你的jwt密钥'
+  '你的jwt密钥',
+  '在此填入 openssl rand -base64 48 的输出'
 ]
 
 const MIN_SECRET_LENGTH = 32

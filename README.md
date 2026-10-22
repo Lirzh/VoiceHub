@@ -179,7 +179,7 @@ cd VoiceHub
 ```yaml
 environment:
   - DATABASE_URL=postgresql://user:password@postgres:5432/voicehub # 可能需要 ?sslmode=disable
-  - JWT_SECRET=your-jwt-secret-here # 请修改为强随机字符串
+  - JWT_SECRET=${JWT_SECRET:?必填，执行 openssl rand -base64 48 生成} # 从 .env 或 shell 注入，不再有默认值
   - NODE_ENV=production
 ```
 
@@ -208,7 +208,7 @@ docker run -d \
   -p 3000:3000 \
   -e DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require" \
   # 可能需要替换成 ?sslmode=disable
-  -e JWT_SECRET="your-very-secure-jwt-secret-key" \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
   -e NODE_ENV=production \
   --name voicehub \
   ghcr.io/laoshuikaixue/voicehub:latest
@@ -221,7 +221,7 @@ docker run -d \
   -p 3000:3000 \
   -e DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require" \
   # 可能需要替换成 ?sslmode=disable
-  -e JWT_SECRET="your-very-secure-jwt-secret-key" \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
   -e NODE_ENV=production \
   --name voicehub \
   ghcr.nju.edu.cn/laoshuikaixue/voicehub:latest
@@ -243,7 +243,7 @@ docker run -d \
   -p 3000:3000 \
   -e DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require" \
   # 可能需要替换成 ?sslmode=disable
-  -e JWT_SECRET="your-very-secure-jwt-secret-key" \
+  -e JWT_SECRET="$(openssl rand -base64 48)" \
   -e NODE_ENV=production \
   --name voicehub \
   voicehub
@@ -355,7 +355,8 @@ VoiceHub 提供了一个 Nix flake，用于构建、开发和在 NixOS 上部署
 
 ```env
 DATABASE_URL=postgresql://voicehub:secret@localhost:5432/voicehub
-JWT_SECRET=your-very-secure-jwt-secret-key
+# 必填，执行 openssl rand -base64 48 生成后粘贴到下一行
+JWT_SECRET=
 NUXT_PUBLIC_HOST=https://voicehub.example.com
 ```
 
@@ -501,8 +502,9 @@ cp .env.example .env
 DATABASE_URL="postgresql://username:password@host:port/database?sslmode=require"
 # 可能需要替换成 ?sslmode=disable
 
-# JWT 认证密钥（必填）
-JWT_SECRET="your-very-secure-jwt-secret-key"
+# JWT 认证密钥（必填，执行 openssl rand -base64 48 生成）
+# 长度不足 32 位或仍是公开示例值时，服务会拒绝启动
+JWT_SECRET=""
 
 # 应用运行环境（可选）
 NODE_ENV=development
@@ -668,8 +670,8 @@ VoiceHub 实现了细粒度的权限控制系统：
 | 变量名                 | 必填 | 说明                                                    | 示例值                                                                                                                                          |
 | ---------------------- | ---- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | DATABASE_URL           | 是   | PostgreSQL数据库连接字符串                              | `postgresql://username:password@host:port/database?sslmode=require`                                                                             |
-| JWT_SECRET             | 是   | JWT令牌签名密钥，建议使用强随机字符串                   | `your-very-secure-jwt-secret-key`                                                                                                               |
-| TRUSTED_CLIENT_IP_HEADERS | 否 | 受信 CDN/反向代理真实 IP 头，多个值用逗号分隔；未配置时公网直连只使用 TCP 连接地址，内网反代才回退读取转发头 | `eo-connecting-ip` |
+| JWT_SECRET             | 是   | JWT令牌签名密钥，至少 32 位；缺失、过短或仍是公开示例值时服务拒绝启动 | `openssl rand -base64 48` 的输出                                                                                                    |
+| TRUSTED_CLIENT_IP_HEADERS | 否 | 受信 CDN/反向代理真实 IP 头，多个值用逗号分隔；未配置时只使用 TCP 连接地址，经反代部署必须配置 | `eo-connecting-ip` |
 | NODE_ENV               | 否   | 运行环境，development或production                       | `production`                                                                                                                                    |
 | REDIS_URL              | 否   | Redis短期状态服务连接字符串，用于验证码、限流和临时锁定 | `redis://default:password@host:port`                                                                                                            |
 | REDIS_KEY_PREFIX       | 否   | Redis键命名空间，多环境共用Redis时应分别设置            | `voicehub:v2:`                                                                                                                                  |

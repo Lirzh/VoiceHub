@@ -6,7 +6,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@postgres:5432/voicehub?sslmode=disable
       - REDIS_URL=redis://default:your-redis-password-here@redis:6379
-      - JWT_SECRET=your-jwt-secret-here
+      # 密钥必须注入，无默认值：公开示例值等同于无密钥，启动时会被安全校验拒绝
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET 必须设置，执行 openssl rand -base64 48 生成}
       - NODE_ENV=production
       - SKIP_BUILD=true
     depends_on:

@@ -8,8 +8,22 @@ is_docker_running() {
   [ -n "$name" ] || return 1
   [ "$(docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null)" = "true" ]
 }
+# JWT_SECRET 不能随包分发（安装包公开可下载，内置值等同于无密钥），
+# 首次启动时随机生成并持久化到 compose 同目录的 .env，供 ${JWT_SECRET:?} 注入。
+ensure_jwt_secret() {
+  local env_file="${TRIM_APPDEST}/docker/.env"
+  [ -f "$env_file" ] && grep -q '^JWT_SECRET=' "$env_file" && return 0
+  local secret
+  secret=$(openssl rand -hex 48 2>/dev/null)
+  [ -n "$secret" ] || secret=$(head -c 48 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  [ -n "$secret" ] || return 0
+  mkdir -p "${TRIM_APPDEST}/docker" || return 0
+  printf 'JWT_SECRET=%s\n' "$secret" >> "$env_file"
+  chmod 600 "$env_file"
+}
+
 case $1 in
-  start)  exit 0 ;;
+  start)  ensure_jwt_secret; exit 0 ;;
   stop)   exit 0 ;;
   status) is_docker_running && exit 0 || exit 3 ;;
   *)      exit 1 ;;
