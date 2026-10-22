@@ -17,6 +17,11 @@ import { publicAddress } from '~~/server/utils/music-source-plugins/network'
  *    都不可能是合法的备份存储目标；
  * 4. 私网地址默认放行（校园网内的 NAS / 私有化 S3 是常见且合理的部署形态），
  *    但可通过环境变量 BACKUP_BLOCK_PRIVATE_NETWORK=true 收紧为仅允许公网地址。
+ * 5. 无论是否允许私网，主机名都会解析并把元数据清单套到每个解析结果上，
+ *    否则用一条指向元数据 IP 的 A 记录即可绕过硬性清单。
+ *
+ * 已知残留：目标由管理员填写，且 fetch 默认跟随重定向，公网地址 302 到内网仍可触达；
+ * 收紧需在各出站请求处改用 redirect: 'manual'（S3 区域重定向需一并处理）。
  */
 
 /** 云厂商元数据端点：任何场景下都不允许作为备份目标 */
@@ -86,32 +91,46 @@ export async function validateOutboundUrl(
     return { valid: false, reason: '不允许指向元数据服务或内部管理域名' }
   }
 
-  // 直连 IP：直接判定
+  // 域名与 IP 都要解析判定：默认允许私网时也必须检查元数据地址，
+  // 否则把元数据 IP 写成 A 记录（或 nip.io 形式）即可绕过硬性清单。
+  let addresses: Array<{ address: string }>
   if (isIP(hostname)) {
-    if (!allowPrivateNetwork && !publicAddress(hostname)) {
-      return { valid: false, reason: '不允许指向内网地址' }
+    addresses = [{ address: hostname }]
+  } else {
+    try {
+      addresses = await lookup(hostname, { all: true })
+    } catch {
+      return { valid: false, reason: '域名解析失败' }
     }
-    return { valid: true }
-  }
-
-  // 域名：解析后逐个判定，避免绕过（DNS Rebinding 的粗筛）
-  try {
-    const addresses = await lookup(hostname, { all: true })
     if (!addresses.length) {
       return { valid: false, reason: '域名无法解析' }
     }
-    if (!allowPrivateNetwork) {
-      for (const item of addresses) {
-        if (!publicAddress(item.address)) {
-          return { valid: false, reason: '该域名解析到内网地址' }
-        }
-      }
+  }
+
+  for (const item of addresses) {
+    if (isMetadataAddress(item.address)) {
+      return { valid: false, reason: '不允许指向元数据服务或内部管理域名' }
     }
-  } catch {
-    return { valid: false, reason: '域名解析失败' }
+    if (!allowPrivateNetwork && !publicAddress(item.address)) {
+      return { valid: false, reason: '该域名解析到内网地址' }
+    }
   }
 
   return { valid: true }
+}
+
+/**
+ * 元数据地址判定：兼容 IPv4 映射的 IPv6 写法（::ffff:169.254.169.254），
+ * 避免清单被等价地址形式绕过。
+ */
+function isMetadataAddress(address: string): boolean {
+  const normalized = unmapIPv4(address)
+  return BLOCKED_METADATA_ADDRESSES.has(normalized) || BLOCKED_METADATA_ADDRESSES.has(address)
+}
+
+function unmapIPv4(address: string): string {
+  const mapped = address.toLowerCase().match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
+  return mapped ? mapped[1] : address
 }
 
 /** 环境变量是否要求禁止私网访问 */
