@@ -11,6 +11,14 @@ services:
       - JWT_SECRET=${JWT_SECRET:?JWT_SECRET 必须设置，执行 openssl rand -base64 48 生成}
       - NODE_ENV=production
       - SKIP_BUILD=true
+      # 可选注入（在 .env 中配置，未留空即按默认行为）：
+      # NUXT_PUBLIC_HOST 站点对外域名，未配置时「忘记密码」不发邮件（503）
+      # TRUSTED_CLIENT_IP_HEADERS 位于反向代理/CDN 之后必填，否则全部用户共用代理 IP，
+      #   IP 封禁与限流会全站连坐（例：Nginx 用 x-real-ip，EdgeOne 用 eo-connecting-ip）
+      # PLUGIN_SHARED_SECRET 配置后 ClassIsland 等外部插件请求必须附带 HMAC 签名
+      - NUXT_PUBLIC_HOST=${NUXT_PUBLIC_HOST:-}
+      - TRUSTED_CLIENT_IP_HEADERS=${TRUSTED_CLIENT_IP_HEADERS:-}
+      - PLUGIN_SHARED_SECRET=${PLUGIN_SHARED_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy

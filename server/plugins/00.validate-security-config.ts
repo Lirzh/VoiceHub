@@ -1,5 +1,3 @@
-import { randomBytes } from 'node:crypto'
-
 /**
  * 启动时安全配置校验。
  *
@@ -64,6 +62,28 @@ function validateJwtSecret(): void {
   process.exit(1)
 }
 
+/**
+ * 非致命配置提示：缺失不会造成安全事件，但会让对应功能静默降级，
+ * 启动时打印一次，避免管理员直到用户报障才发现。
+ */
+function warnOptionalSecurityConfig(): void {
+  if (process.env.NODE_ENV !== 'production') return
+
+  if (!String(process.env.NUXT_PUBLIC_HOST || '').trim()) {
+    console.warn(
+      '[安全配置] NUXT_PUBLIC_HOST 未配置：「忘记密码」接口将拒绝发送重置邮件（503），且内部 API 的来源校验只能依赖 Host 头。请设为站点对外域名。'
+    )
+  }
+
+  const pluginSecret = String(process.env.PLUGIN_SHARED_SECRET || '').trim()
+  if (pluginSecret && pluginSecret.length < 32) {
+    console.warn(
+      '[安全配置] PLUGIN_SHARED_SECRET 长度不足 32，插件 HMAC 签名不会启用，相关请求仍按旧行为放行。'
+    )
+  }
+}
+
 export default defineNitroPlugin(() => {
   validateJwtSecret()
+  warnOptionalSecurityConfig()
 })
