@@ -859,13 +859,14 @@ export default defineEventHandler(async (event) => {
     }
 
     // AstrBot 推送通道配置；密钥从不回显明文。
-    if (body.astrbotEnabled !== undefined) {
+    // null 是 GET 回读的未配置值，按未提交处理，避免 GET→POST 回环让整表单 400（清空文本字段请传空串）
+    if (body.astrbotEnabled !== undefined && body.astrbotEnabled !== null) {
       if (typeof body.astrbotEnabled !== 'boolean') {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, 'astrbotEnabled 必须是布尔值')
       }
       updateData.astrbotEnabled = body.astrbotEnabled
     }
-    if (body.astrbotPlatforms !== undefined) {
+    if (body.astrbotPlatforms !== undefined && body.astrbotPlatforms !== null) {
       const platforms = body.astrbotPlatforms
       const keys = ASTRBOT_PLATFORMS
       if (!platforms || typeof platforms !== 'object' || Array.isArray(platforms) ||
@@ -875,7 +876,7 @@ export default defineEventHandler(async (event) => {
       }
       updateData.astrbotPlatforms = Object.fromEntries(keys.map((key) => [key, platforms[key]]))
     }
-    if (body.astrbotBroadcastEnabled !== undefined) {
+    if (body.astrbotBroadcastEnabled !== undefined && body.astrbotBroadcastEnabled !== null) {
       if (typeof body.astrbotBroadcastEnabled !== 'boolean') {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, '群聊推送开关必须是布尔值')
       }
@@ -883,7 +884,7 @@ export default defineEventHandler(async (event) => {
     }
     // 群目标白名单：每条显式标注平台归属，逐项规范化后保存（非法项丢弃而非整批拒绝，
     // 管理员录入的一处笔误不应让整份配置无法保存）。
-    if (body.astrbotGroupTargets !== undefined) {
+    if (body.astrbotGroupTargets !== undefined && body.astrbotGroupTargets !== null) {
       const targets = normalizeAstrbotGroupTargets(body.astrbotGroupTargets)
       if (!targets) {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, '群聊推送目标必须是数组')
@@ -895,7 +896,7 @@ export default defineEventHandler(async (event) => {
       }
       updateData.astrbotGroupTargets = targets
     }
-    if (body.astrbotGroupEvents !== undefined) {
+    if (body.astrbotGroupEvents !== undefined && body.astrbotGroupEvents !== null) {
       const events = body.astrbotGroupEvents
       if (!events || typeof events !== 'object' || Array.isArray(events) ||
         !ASTRBOT_GROUP_EVENT_KEYS.every((key) => typeof (events as Record<string, unknown>)[key] === 'boolean')) {
@@ -903,7 +904,7 @@ export default defineEventHandler(async (event) => {
       }
       updateData.astrbotGroupEvents = normalizeAstrbotGroupEvents(events)
     }
-    if (body.astrbotGroupThrottle !== undefined) {
+    if (body.astrbotGroupThrottle !== undefined && body.astrbotGroupThrottle !== null) {
       const throttle = body.astrbotGroupThrottle
       if (!throttle || typeof throttle !== 'object' || Array.isArray(throttle) ||
         typeof (throttle as Record<string, unknown>).mergeWindowSeconds !== 'number' ||
@@ -912,20 +913,20 @@ export default defineEventHandler(async (event) => {
       }
       updateData.astrbotGroupThrottle = normalizeAstrbotGroupThrottle(throttle)
     }
-    if (body.astrbotPushMode !== undefined) {
+    if (body.astrbotPushMode !== undefined && body.astrbotPushMode !== null) {
       if (!['push', 'pull'].includes(body.astrbotPushMode)) {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, '推送方向只能是 push 或 pull')
       }
       updateData.astrbotPushMode = body.astrbotPushMode
     }
-    if (body.astrbotWeeklyConfig !== undefined) {
+    if (body.astrbotWeeklyConfig !== undefined && body.astrbotWeeklyConfig !== null) {
       const config = body.astrbotWeeklyConfig
       if (!isValidAstrbotWeeklyConfigInput(config)) {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, '本周歌单显示项格式无效')
       }
       updateData.astrbotWeeklyConfig = normalizeAstrbotWeeklyConfig(config)
     }
-    if (body.astrbotBaseUrl !== undefined) {
+    if (body.astrbotBaseUrl !== undefined && body.astrbotBaseUrl !== null) {
       if (typeof body.astrbotBaseUrl !== 'string' || body.astrbotBaseUrl.length > 2048) {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, '机器人地址无效')
       }
@@ -935,16 +936,17 @@ export default defineEventHandler(async (event) => {
       }
       updateData.astrbotBaseUrl = value || null
     }
-    if (body.astrbotToken !== undefined && body.astrbotToken !== SECRET_FIELD_MASK) {
+    if (body.astrbotToken !== undefined && body.astrbotToken !== null && body.astrbotToken !== SECRET_FIELD_MASK) {
       if (typeof body.astrbotToken !== 'string' || body.astrbotToken.length > 512) {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS, '机器人令牌无效')
       }
       updateData.astrbotToken = body.astrbotToken.trim() || null
     }
     if (body.astrbotEnabled ?? settings?.astrbotEnabled) {
-      const token = body.astrbotToken !== undefined && body.astrbotToken !== SECRET_FIELD_MASK
-        ? updateData.astrbotToken : settings?.astrbotToken
-      const baseUrl = body.astrbotBaseUrl !== undefined ? updateData.astrbotBaseUrl : settings?.astrbotBaseUrl
+      const tokenSubmitted = body.astrbotToken !== undefined && body.astrbotToken !== null && body.astrbotToken !== SECRET_FIELD_MASK
+      const baseUrlSubmitted = body.astrbotBaseUrl !== undefined && body.astrbotBaseUrl !== null
+      const token = tokenSubmitted ? updateData.astrbotToken : settings?.astrbotToken
+      const baseUrl = baseUrlSubmitted ? updateData.astrbotBaseUrl : settings?.astrbotBaseUrl
       const mode = body.astrbotPushMode ?? settings?.astrbotPushMode
       if (!token || (!isAstrbotPullMode(mode) && !baseUrl)) {
         throw createApiError(400, SERVER_ERROR_CODES.COMMON_INVALID_PARAMS,
