@@ -8,11 +8,12 @@ import {
   resolveQqSdkPlayUrl
 } from '~~/server/utils/qq_music_sdk'
 
-const HYW_TX_URL = 'http://103.79.184.97/api/music/url'
-const HYW_CARD_KEY = 'PYPW-QFRL-3DBF-95O6'
-const YUAFENG_TX_URL = 'https://api-v2.yuafeng.cn/API/qqmusic.php'
-const YUAFENG_TX_APIKEY = '3ff23523e47465224a3f48579acf41f241540ce04b6cc0b94164f37a5b6299d5'
-const HELLOWORLD_TX_URL = 'https://a.aa.cab/qq.music'
+// 第三方取链凭证：优先取环境变量，便于部署时注入并轮换，不随源码/构建产物分发
+const HYW_TX_URL = process.env.MUSIC_HYW_TX_URL || 'http://103.79.184.97/api/music/url'
+const HYW_CARD_KEY = process.env.MUSIC_HYW_CARD_KEY || 'PYPW-QFRL-3DBF-95O6'
+const YUAFENG_TX_URL = process.env.MUSIC_YUAFENG_TX_URL || 'https://api-v2.yuafeng.cn/API/qqmusic.php'
+const YUAFENG_TX_APIKEY = process.env.MUSIC_YUAFENG_TX_APIKEY || '3ff23523e47465224a3f48579acf41f241540ce04b6cc0b94164f37a5b6299d5'
+const HELLOWORLD_TX_URL = process.env.MUSIC_HELLOWORLD_TX_URL || 'https://a.aa.cab/qq.music'
 // QQ 已知无效占位音频，命中说明源返回的是错误录音
 const INVALID_QQ_AUDIO_URL_SUFFIX = '/2149972737147268278.mp3'
 

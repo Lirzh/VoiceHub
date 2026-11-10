@@ -508,6 +508,7 @@ export const pages = {
     verifyEmail: '验证邮箱',
     detectedEmailPrefix: '系统检测到该账号绑定了邮箱：',
     emailPlaceholder: '请补全完整的邮箱地址',
+    accountNotFoundHint: '若该账号存在且已绑定邮箱，请输入完整邮箱地址以验证身份。',
     verifying: '验证中...',
     sending: '发送中...',
     nextStep: '下一步',

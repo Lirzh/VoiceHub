@@ -387,6 +387,7 @@ import { usePermissions } from '~/composables/usePermissions'
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from '~/composables/useToast'
 import { useLocale } from '~/utils/locale'
+import { useLocaleText } from '~/composables/useLocaleText'
 import EmailTemplateManager from '~/components/Admin/EmailTemplateManager.vue'
 import CustomSelect from '~/components/UI/Common/CustomSelect.vue'
 import AppSpinner from '~/components/UI/Common/AppSpinner.vue'
@@ -401,6 +402,7 @@ const { showToast: showNotification } = useToast()
 const { admin } = useLocale()
 const locale = computed(() => admin.value?.smtpManager || {})
 const astrbotLocale = computed(() => admin.value?.astrbotManager || {})
+const { t: localeT } = useLocaleText(locale)
 const { localize: localizeServerError } = useServerErrors()
 const astrbotLoaded = ref(false)
 const astrbotLoadError = ref('')
@@ -510,7 +512,7 @@ const saveAstrbotConfig = async () => {
     astrbotSaving.value = false
   }
 }
-const getLocaleMessage = (key) => locale.value?.[key] || `SMTP 配置：${key}`
+const getLocaleMessage = (key) => localeT(key, `SMTP 配置：${key}`)
 const getOptionText = (value, fallback) => {
   if (typeof value === 'function') return value() || fallback
   if (typeof value === 'string') return value || fallback

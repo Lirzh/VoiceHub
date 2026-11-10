@@ -169,6 +169,7 @@ import { computed, ref, watch } from 'vue'
 import Icon from '~/components/UI/Icon.vue'
 import LoadingState from '~/components/UI/Common/LoadingState.vue'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 import { useServerErrors } from '~/composables/useLocaleText'
 
 // Props
@@ -238,7 +239,7 @@ const formatTimeAgo = (key, value) => {
 }
 
 const formatVoteTime = (dateString) => {
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   const now = getSyncedDate()
   const diff = now - date
 
@@ -251,7 +252,8 @@ const formatVoteTime = (dateString) => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Asia/Shanghai'
   })
 }
 

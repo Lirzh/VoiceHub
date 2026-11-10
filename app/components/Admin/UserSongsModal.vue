@@ -255,6 +255,7 @@ import CustomSelect from '~/components/UI/Common/CustomSelect.vue'
 import Icon from '~/components/UI/Icon.vue'
 import LoadingState from '~/components/UI/Common/LoadingState.vue'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 const props = defineProps({
   show: {
@@ -421,7 +422,7 @@ const formatTimeAgo = (key, value) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   const now = getSyncedDate()
   const diff = now - date
 
@@ -433,7 +434,8 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString(currentLocale.value, {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'Asia/Shanghai'
   })
 }
 

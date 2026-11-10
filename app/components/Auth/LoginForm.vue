@@ -802,6 +802,16 @@ onMounted(async () => {
   if (isBindMode.value) {
     await fetchClassOptions()
   }
+
+  // OAuth 回调若要求二次验证，重定向带回 requires2fa 标记与用户 ID，进入 2FA 弹窗。
+  if (route.query.requires2fa === '1' && route.query.userId) {
+    const oauthUserId = Number(route.query.userId)
+    if (Number.isInteger(oauthUserId) && oauthUserId > 0) {
+      userId2FA.value = oauthUserId
+      tempToken2FA.value = '' // pre-auth-token 已由服务端写入 cookie，2FA 接口按 cookie 兜底
+      show2FA.value = true
+    }
+  }
 })
 
 onUnmounted(() => {
@@ -1365,6 +1375,16 @@ const runWebAuthnLogin = async ({ useBrowserAutofill = false, showErrors = true 
       method: 'POST',
       body: credential
     })
+
+    if (verification.requires2FA) {
+      // Passkey 验证通过但账号开启 TOTP，需先完成二次验证再签发会话
+      userId2FA.value = verification.userId
+      methods2FA.value = verification.methods || ['totp']
+      tempToken2FA.value = verification.tempToken || ''
+      maskedEmail2FA.value = verification.maskedEmail || ''
+      show2FA.value = true
+      return
+    }
 
     if (verification.success) {
       // 登录成功

@@ -40,7 +40,8 @@
           <div class="form-group" v-if="step === 2">
             <label for="email">{{ locale.verifyEmail }}</label>
             <p class="text-sm text-[var(--text-secondary)] mb-2">
-              {{ locale.detectedEmailPrefix }}<strong class="text-[var(--primary)]">{{ maskedEmail }}</strong>
+              <template v-if="maskedEmail">{{ locale.detectedEmailPrefix }}<strong class="text-[var(--primary)]">{{ maskedEmail }}</strong></template>
+              <template v-else>{{ locale.accountNotFoundHint }}</template>
             </p>
             <div class="input-wrapper">
               <svg class="input-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

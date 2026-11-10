@@ -2083,7 +2083,7 @@ import { isBilibiliSong } from '~/utils/bilibiliSource'
 import { convertToHttps, getCoverThumbUrl, getNeteaseCookie } from '~/utils/url'
 import { useLocale } from '~/utils/locale'
 import { useServerErrors } from '~/composables/useLocaleText'
-import { formatDuration, addDaysToString, getDaysBetween } from '~/utils/timeUtils'
+import { formatDuration, addDaysToString, getDaysBetween, parseUtcTimestamp } from '~/utils/timeUtils'
 import { BUILTIN_PLATFORMS, getPlatformDisplayName } from '~/utils/platforms'
 import {
   autoSchedule,
@@ -3263,7 +3263,7 @@ const allUnscheduledSongs = computed(() => {
     if (activeTab.value === 'pool') {
       const cardDiff = byCardCodeFirst(a, b)
       if (cardDiff !== 0) return cardDiff
-      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      return parseUtcTimestamp(b.createdAt || 0) - parseUtcTimestamp(a.createdAt || 0)
     }
     // 重播申请默认按申请数量降序排列，如果数量相同则按时间
     if (activeTab.value === 'replay') {
@@ -3278,9 +3278,9 @@ const allUnscheduledSongs = computed(() => {
 
     switch (songSortOption.value) {
       case 'time-desc':
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        return parseUtcTimestamp(b.createdAt || 0) - parseUtcTimestamp(a.createdAt || 0)
       case 'time-asc':
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+        return parseUtcTimestamp(a.createdAt || 0) - parseUtcTimestamp(b.createdAt || 0)
       case 'votes-desc':
         return (b.voteCount || 0) - (a.voteCount || 0)
       case 'votes-asc':
@@ -3309,7 +3309,7 @@ const isDesktop = ref(true)
 // 方法
 const formatDate = (dateString) => {
   if (!dateString) return locale.value?.timeAgo?.never || '从未'
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   if (Number.isNaN(date.getTime())) return locale.value?.timeAgo?.never || '从未'
   const now = getSyncedDate()
   const diff = now - date

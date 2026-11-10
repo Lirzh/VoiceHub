@@ -55,6 +55,7 @@
 <script setup>
 import { useLocale } from '~/utils/locale'
 import { getCoverLargeUrl, getCoverThumbUrl } from '~/utils/url'
+import { formatDateTime, parseUtcTimestamp } from '~/utils/timeUtils'
 
 defineProps({
   data: Object,
@@ -63,8 +64,9 @@ defineProps({
 const { yearReview } = useLocale()
 
 const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  return yearReview.value.date(date.getMonth() + 1, date.getDate())
+  const date = parseUtcTimestamp(dateStr)
+  const parts = formatDateTime(date, 'M-D').split('-')
+  return yearReview.value.date(Number(parts[0]), Number(parts[1]))
 }
 </script>
 

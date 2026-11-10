@@ -521,6 +521,7 @@ export const pages = {
     verifyEmail: 'Verify Email',
     detectedEmailPrefix: 'The system found a bound email for this account: ',
     emailPlaceholder: 'Complete the full email address',
+    accountNotFoundHint: 'If this account exists and has a bound email, enter the full email address to verify your identity.',
     verifying: 'Verifying...',
     sending: 'Sending...',
     nextStep: 'Next',

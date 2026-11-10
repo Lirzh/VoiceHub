@@ -223,6 +223,7 @@ import { getRecentSongs } from '~/utils/neteaseApi'
 import { getCoverThumbUrl } from '~/utils/url'
 import Icon from '~/components/UI/Icon.vue'
 import { useLocale } from '~/utils/locale'
+import { formatDateTime, parseUtcTimestamp } from '~/utils/timeUtils'
 import { normalizeForMatch as normalizeString } from '~/utils/song-name-normalize'
 import { useSongs } from '~/composables/useSongs'
 import { useAuth } from '~/composables/useAuth'
@@ -287,7 +288,7 @@ const getSimilarSong = (songData) => {
 
 const formatTime = (timestamp) => {
   if (!timestamp) return ''
-  const date = new Date(timestamp)
+  const date = parseUtcTimestamp(timestamp)
   const now = getSyncedDate()
   const diff = now - date
 
@@ -295,7 +296,8 @@ const formatTime = (timestamp) => {
   if (diff < 3600000) return formatLocaleValue(locale.value.minutesAgo, Math.floor(diff / 60000))
   if (diff < 86400000) return formatLocaleValue(locale.value.hoursAgo, Math.floor(diff / 3600000))
 
-  return formatLocaleValue(locale.value.monthDay, date.getMonth() + 1, date.getDate())
+  const parts = formatDateTime(date, 'M-D').split('-')
+  return formatLocaleValue(locale.value.monthDay, Number(parts[0]), Number(parts[1]))
 }
 
 const fetchRecentSongs = async () => {

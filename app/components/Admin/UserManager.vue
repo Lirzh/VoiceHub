@@ -1719,7 +1719,7 @@ import { extractErrorCode, useServerErrors } from '~/composables/useLocaleText'
 import { getOAuthProviderName, getAggregateOAuthLoginTypeName, getProviderDisplayName } from '~/utils/oauth'
 import { GRADE_ORDER } from '~/utils/gradeClassWeights'
 import { isArchivedStatus } from '~/utils/user-archive'
-import { formatDateTime, getBeijingTime } from '~/utils/timeUtils'
+import { formatDateTime, getBeijingTime, parseUtcTimestamp } from '~/utils/timeUtils'
 
 const { admin, currentLocale } = useLocale()
 const locale = computed(() => admin.value?.userManager || {})
@@ -2174,7 +2174,7 @@ watch(currentPage, (newPage) => {
 const formatDate = (dateString) => {
   const timeLocale = locale.value?.time || {}
   if (!dateString) return timeLocale.never || ''
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   const now = getSyncedDate()
   const diff = now - date
 
@@ -2183,7 +2183,7 @@ const formatDate = (dateString) => {
   if (diff < 86400000) return formatMessage(timeLocale.hoursAgo, Math.floor(diff / 3600000))
   if (diff < 86400000 * 7) return formatMessage(timeLocale.daysAgo, Math.floor(diff / 86400000))
 
-  return date.toLocaleDateString(currentLocale.value)
+  return date.toLocaleDateString(currentLocale.value, { timeZone: 'Asia/Shanghai' })
 }
 
 const getRoleClass = (role) => {
@@ -3196,8 +3196,7 @@ const loadStatusLogsPage = async (page) => {
 
 const formatStatusLogDate = (dateString) => {
   if (!dateString) return locale.value.time.unknown
-  const date = new Date(dateString)
-  return date.toLocaleString('zh-CN')
+  return formatDateTime(parseUtcTimestamp(dateString))
 }
 
 // 生命周期

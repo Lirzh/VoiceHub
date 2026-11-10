@@ -136,6 +136,7 @@ import { ClipboardCheck, RefreshCw, X } from '@lucide/vue'
 import CustomSelect from '~/components/UI/Common/CustomSelect.vue'
 import ConfirmDialog from '~/components/UI/ConfirmDialog.vue'
 import { useLocale } from '~/utils/locale'
+import { formatDateTime, parseUtcTimestamp } from '~/utils/timeUtils'
 import { useServerErrors } from '~/composables/useLocaleText'
 
 const props = defineProps({
@@ -170,9 +171,9 @@ const classSelectOptions = computed(() =>
 
 const formatDate = (value) => {
   if (!value) return '-'
-  const d = new Date(value)
+  const d = parseUtcTimestamp(value)
   if (Number.isNaN(d.getTime())) return '-'
-  return d.toLocaleString()
+  return formatDateTime(d)
 }
 
 const handleGradeChange = () => {

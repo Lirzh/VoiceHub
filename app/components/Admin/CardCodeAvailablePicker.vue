@@ -87,6 +87,7 @@ import { Search, X } from '@lucide/vue'
 import AppSpinner from '~/components/UI/Common/AppSpinner.vue'
 import { useLocale } from '~/utils/locale'
 import { useLocaleText } from '~/composables/useLocaleText'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 /** 选择可用点歌券。 */
 const props = defineProps({
@@ -142,7 +143,7 @@ const formatDate = (value) => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    }).format(new Date(value))
+    }).format(parseUtcTimestamp(value))
   } catch {
     return ''
   }

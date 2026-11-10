@@ -186,15 +186,7 @@
                 </div>
 
                 <span class="text-[10px] text-text-disabled"
-                  >{{ locale.addedAt }} {{ new Date(cred.createdAt).toLocaleString(currentLocale.value, {
-                    year: 'numeric', 
-                    month: '2-digit', 
-                    day: '2-digit', 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit',
-                    hour12: false
-                  }) }}</span
+                  >{{ locale.addedAt }} {{ formatIdentityTime(cred.createdAt) }}</span
                 >
               </div>
 
@@ -269,6 +261,7 @@ import {
 import { useLocale } from '~/utils/locale'
 import { useServerErrors } from '~/composables/useLocaleText'
 import { useAuth } from '~/composables/useAuth'
+import { formatDateTime, parseUtcTimestamp } from '~/utils/timeUtils'
 
 const { oauthProviders, refreshSiteConfig } = useSiteConfig()
 const { showToast } = useToast()
@@ -290,6 +283,22 @@ const editingId = ref(null)
 const editingName = ref('')
 const isRenaming = ref(false)
 const editInput = ref(null)
+
+const formatIdentityTime = (time) => {
+  if (!time) return ''
+  const date = parseUtcTimestamp(time)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleString(currentLocale.value, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Shanghai'
+  })
+}
 
 const startEditing = async (cred) => {
   editingId.value = cred.id

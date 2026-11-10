@@ -642,6 +642,7 @@ import { useServerErrors } from '~/composables/useLocaleText'
 import { useToast } from '~/composables/useToast'
 import { renderMarkdown } from '~/utils/markdown'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 const { can } = usePermissions()
 
@@ -969,7 +970,7 @@ const setDetailStatus = (status) => {
 }
 
 const formatDateTime = (value) => {
-  const date = new Date(value)
+  const date = parseUtcTimestamp(value)
   if (Number.isNaN(date.getTime())) return locale.value.unknownTime
 
   return new Intl.DateTimeFormat(currentLocale.value, {
@@ -978,7 +979,8 @@ const formatDateTime = (value) => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    timeZone: 'Asia/Shanghai'
   }).format(date)
 }
 

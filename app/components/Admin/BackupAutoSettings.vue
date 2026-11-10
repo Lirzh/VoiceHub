@@ -404,6 +404,7 @@ import { usePermissions } from '~/composables/usePermissions'
 import { computed, reactive, ref, watch } from 'vue'
 import { X, Copy, ExternalLink, Clock, Info, Cloud, FolderOpen, GitBranch, AlertTriangle, Send, Mail, Trash2 } from '@lucide/vue'
 import { useLocale } from '~/utils/locale'
+import { formatDateTime, parseUtcTimestamp } from '~/utils/timeUtils'
 import { useServerErrors } from '~/composables/useLocaleText'
 import { useToast } from '~/composables/useToast'
 import CollapsibleSection from '~/components/UI/Common/CollapsibleSection.vue'
@@ -550,9 +551,7 @@ watch(() => props.visible, (val) => {
 
 const formatTime = (d) => {
   if (!d) return ''
-  const date = new Date(d)
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return formatDateTime(parseUtcTimestamp(d), 'YYYY-MM-DD HH:mm')
 }
 
 const formatSize = (bytes) => {

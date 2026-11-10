@@ -535,6 +535,7 @@ import { useChkszSource } from '~/composables/useChkszSource'
 import { useToast } from '~/composables/useToast'
 import ConfirmDialog from '~/components/UI/ConfirmDialog.vue'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 import { useServerErrors } from '~/composables/useLocaleText'
 import { getProviderDisplayName } from '~/utils/oauth'
 import { useScrollMemory } from '~/composables/useScrollMemory'
@@ -893,14 +894,15 @@ const closePersonalApiKeyLogs = () => {
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString(currentLocale.value === 'en-US' ? 'en-US' : 'zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Asia/Shanghai'
   })
 }
 

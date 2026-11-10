@@ -1591,6 +1591,7 @@ VoiceHub/
 │   │   ├── system-event-buffer.ts # 系统看板进程内运行事件环形缓冲
 │   │   ├── theme-config.ts # 主题配置校验与解析工具
 │   │   ├── ttl-cache.ts  # 模块级 TTL 缓存
+│   │   ├── two-factor-challenge.ts # 登录二次验证门控（TOTP 身份检测与预认证令牌签发）
 │   │   ├── userDisplayName.ts # 同名用户消歧统一口径（仅在读用户参与统计）
 │   │   ├── telemetry.ts    # 遥测与错误追踪工具
 │   │   ├── user.ts         # 用户相关工具函数

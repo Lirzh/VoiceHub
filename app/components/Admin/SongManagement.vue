@@ -1366,7 +1366,7 @@ import { BUILTIN_PLATFORMS, getPlatformDisplayName } from '~/utils/platforms'
 import { isBilibiliSong } from '~/utils/bilibiliSource'
 import { normalizeForMatch } from '~/utils/song-name-normalize'
 import { validateUrl, getCoverThumbUrl } from '~/utils/url'
-import { formatDuration, getBeijingDateString, getBeijingWeekday } from '~/utils/timeUtils'
+import { formatDuration, getBeijingDateString, getBeijingWeekday, parseUtcTimestamp } from '~/utils/timeUtils'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 
@@ -1710,9 +1710,9 @@ const filteredSongs = computed(() => {
 
     switch (sortOption.value) {
       case 'time-desc':
-        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        return parseUtcTimestamp(b.createdAt || 0) - parseUtcTimestamp(a.createdAt || 0)
       case 'time-asc':
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
+        return parseUtcTimestamp(a.createdAt || 0) - parseUtcTimestamp(b.createdAt || 0)
       case 'votes-desc':
         return (b.voteCount || 0) - (a.voteCount || 0)
       case 'votes-asc':

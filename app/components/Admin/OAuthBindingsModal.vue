@@ -168,6 +168,7 @@ import AuthProvidersGitHubIcon from '~/components/Auth/Providers/GitHub/Icon.vue
 import AuthProvidersGoogleIcon from '~/components/Auth/Providers/Google/Icon.vue'
 import { getAggregateOAuthLoginTypeIcon, getOAuthProviderName } from '~/utils/oauth'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 defineProps({
   show: {
@@ -217,7 +218,7 @@ const markAvatarFailed = (id) => {
 
 const formatDateTime = (value) => {
   if (!value) return locale.value.oauthUnknownTime || '未知时间'
-  const date = new Date(value)
+  const date = parseUtcTimestamp(value)
   if (Number.isNaN(date.getTime())) return locale.value.oauthUnknownTime || '未知时间'
   return new Intl.DateTimeFormat(currentLocale.value, {
     year: 'numeric',
@@ -225,7 +226,8 @@ const formatDateTime = (value) => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    timeZone: 'Asia/Shanghai'
   }).format(date)
 }
 </script>

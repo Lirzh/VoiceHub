@@ -501,6 +501,7 @@ import { onMounted, ref, computed } from 'vue'
 import ConfirmDialog from '~/components/UI/ConfirmDialog.vue'
 import { useToast } from '~/composables/useToast'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 const { can } = usePermissions()
 
@@ -539,7 +540,7 @@ const semesterForm = ref({
 // 按创建时间排序
 const sortedSemesters = computed(() => {
   return [...semesters.value].sort((a, b) => {
-    return new Date(b.createdAt) - new Date(a.createdAt)
+    return parseUtcTimestamp(b.createdAt) - parseUtcTimestamp(a.createdAt)
   })
 })
 
@@ -551,11 +552,12 @@ const deleteMessage = computed(() => {
 // 格式化日期
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   return date.toLocaleDateString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
-    day: '2-digit'
+    day: '2-digit',
+    timeZone: 'Asia/Shanghai'
   })
 }
 

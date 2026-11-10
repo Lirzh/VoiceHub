@@ -626,6 +626,7 @@ import ConfirmDialog from '~/components/UI/ConfirmDialog.vue'
 import Pagination from '~/components/UI/Common/Pagination.vue'
 import CustomSelect from '~/components/UI/Common/CustomSelect.vue'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 import AppSpinner from '~/components/UI/Common/AppSpinner.vue'
 
 const { can } = usePermissions()
@@ -725,8 +726,8 @@ const formatExpiresAtText = (dateText) => getLocaleText('expiresAtText', dateTex
 
 const getExpiresAtText = () => {
   if (form.expiresAt === 'keep' && selectedApiKey.value?.expiresAt) {
-    const date = new Date(selectedApiKey.value.expiresAt)
-    return formatExpiresAtText(date.toLocaleDateString(currentLocale.value))
+    const date = parseUtcTimestamp(selectedApiKey.value.expiresAt)
+    return formatExpiresAtText(date.toLocaleDateString(currentLocale.value, { timeZone: 'Asia/Shanghai' }))
   }
 
   const expiresAtTextMap = {
@@ -990,8 +991,8 @@ const editApiKey = async (apiKey) => {
       form.description = response.data.description || ''
 
       if (response.data.expiresAt) {
-        const date = new Date(response.data.expiresAt)
-        expiresAtText.value = formatExpiresAtText(date.toLocaleDateString(currentLocale.value))
+        const date = parseUtcTimestamp(response.data.expiresAt)
+        expiresAtText.value = formatExpiresAtText(date.toLocaleDateString(currentLocale.value, { timeZone: 'Asia/Shanghai' }))
         form.expiresAt = 'keep'
       } else {
         expiresAtText.value = getExpiresOptionText('never')
@@ -1086,7 +1087,7 @@ const resetForm = () => {
 
 const formatDate = (dateString) => {
   if (!dateString) return ''
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString(currentLocale.value, {
     year: 'numeric',
@@ -1094,7 +1095,8 @@ const formatDate = (dateString) => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    timeZone: 'Asia/Shanghai'
   })
 }
 

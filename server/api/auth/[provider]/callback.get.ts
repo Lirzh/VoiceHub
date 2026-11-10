@@ -11,6 +11,7 @@ import { generateBindingToken } from '~~/server/utils/oauth-token'
 import { db, eq, users, systemSettings } from '~/drizzle/db'
 import { JWTEnhanced } from '~~/server/utils/jwt-enhanced'
 import { createAuthSession } from '~~/server/utils/auth-session'
+import { buildTwoFactorChallenge } from '~~/server/utils/two-factor-challenge'
 import { getOAuthStrategy } from '~~/server/utils/oauth-strategies'
 import { isUserBlocked, getUserBlockRemainingTime } from '~~/server/services/securityService'
 import {
@@ -421,6 +422,26 @@ async function handleUserLoginOrBind(
         })
         .where(eq(users.id, user.id))
     })
+
+    // 已开启 TOTP 的账号必须先完成二次验证，否则 OAuth 登录可绕过 2FA。
+    const twoFactor = await buildTwoFactorChallenge(
+      existingIdentity.user.id,
+      existingIdentity.user.email,
+      existingIdentity.user.emailVerified
+    )
+    if (twoFactor) {
+      setCookie(event, 'pre-auth-token', twoFactor.tempToken, {
+        httpOnly: true,
+        secure: isSecure,
+        sameSite: 'lax',
+        maxAge: 60 * 5,
+        path: '/'
+      })
+      const twoFactorRedirect = safeReturnTo
+        ? `/login?requires2fa=1&userId=${twoFactor.userId}&redirect=${encodeURIComponent(safeReturnTo)}`
+        : `/login?requires2fa=1&userId=${twoFactor.userId}`
+      return sendRedirect(event, twoFactorRedirect)
+    }
 
     const { token } = await createAuthSession(event, existingIdentity.user, provider)
     setCookie(event, 'auth-token', token, {

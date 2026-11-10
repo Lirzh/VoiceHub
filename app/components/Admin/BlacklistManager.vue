@@ -361,6 +361,7 @@ import {
   BLACKLIST_GENRE_LABEL_EN
 } from '~/utils/blacklist'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 const { can } = usePermissions()
 
@@ -629,7 +630,7 @@ const changePage = (page) => {
 // 格式化日期
 const formatDate = (dateString) => {
   if (!dateString) return '-'
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   if (Number.isNaN(date.getTime())) return '-'
   return date.toLocaleString(currentLocale.value, {
     year: 'numeric',
@@ -638,7 +639,8 @@ const formatDate = (dateString) => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    hour12: false
+    hour12: false,
+    timeZone: 'Asia/Shanghai'
   })
 }
 

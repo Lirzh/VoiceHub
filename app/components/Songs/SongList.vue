@@ -523,6 +523,7 @@ import { isBilibiliSong } from '~/utils/bilibiliSource'
 import { getMusicUrl as resolveMusicUrl } from '~/utils/musicUrl'
 import { useLocale } from '~/utils/locale'
 import { useThemeImage } from '~/composables/useThemeImage'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
@@ -908,12 +909,12 @@ const clientDisplayedSongs = computed(() => {
           return b.voteCount - a.voteCount
         }
         // 投票数相同时，按创建时间升序排列（投稿早的在前面）
-        return new Date(a.createdAt) - new Date(b.createdAt)
+        return parseUtcTimestamp(a.createdAt) - parseUtcTimestamp(b.createdAt)
       })
     } else if (sortBy.value === 'date') {
       return songs.sort((a, b) => {
-        const dateA = new Date(a.createdAt)
-        const dateB = new Date(b.createdAt)
+        const dateA = parseUtcTimestamp(a.createdAt)
+        const dateB = parseUtcTimestamp(b.createdAt)
         return sortOrder.value === 'desc' ? dateB - dateA : dateA - dateB
       })
     }

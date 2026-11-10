@@ -113,6 +113,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Icon from '~/components/UI/Icon.vue'
 import { useImportantNotification } from '~/composables/useImportantNotification'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 import { renderMarkdown } from '~/utils/markdown'
 
 const { notification, closing, error, markAsReadAndClose } = useImportantNotification()
@@ -137,7 +138,7 @@ const senderDisplayName = computed(
 const formattedCreatedAt = computed(() => {
   if (!notification.value?.createdAt) return ''
 
-  const date = new Date(notification.value.createdAt)
+  const date = parseUtcTimestamp(notification.value.createdAt)
   if (Number.isNaN(date.getTime())) return ''
 
   return new Intl.DateTimeFormat(currentLocale.value, {
@@ -146,14 +147,15 @@ const formattedCreatedAt = computed(() => {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    timeZone: 'Asia/Shanghai'
   }).format(date)
 })
 
 const relativeCreatedAt = computed(() => {
   if (!notification.value?.createdAt) return ''
 
-  const date = new Date(notification.value.createdAt)
+  const date = parseUtcTimestamp(notification.value.createdAt)
   if (Number.isNaN(date.getTime())) return ''
 
   const elapsedSeconds = Math.max(0, Math.floor((nowTimestamp.value - date.getTime()) / 1000))

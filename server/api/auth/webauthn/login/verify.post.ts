@@ -4,6 +4,7 @@ import { getWebAuthnConfig } from '~~/server/utils/webauthn-config'
 import { db, eq, and, userIdentities } from '~/drizzle/db'
 import { defineEventHandler, setCookie } from 'h3'
 import { createAuthSession } from '~~/server/utils/auth-session'
+import { buildTwoFactorChallenge } from '~~/server/utils/two-factor-challenge'
 import { createApiError } from '~~/server/utils/apiError'
 
 export default defineEventHandler(async (event) => {
@@ -95,6 +96,12 @@ export default defineEventHandler(async (event) => {
         .update(userIdentities)
         .set({ providerUsername: JSON.stringify(credentialData) })
         .where(eq(userIdentities.id, identity.id))
+
+      // 已开启 TOTP 的账号必须先完成二次验证，否则 Passkey 登录可绕过 2FA。
+      const twoFactor = await buildTwoFactorChallenge(user.id, user.email, user.emailVerified)
+      if (twoFactor) {
+        return { success: false, requires2FA: true, ...twoFactor }
+      }
 
       // 签发登录 Token
       const { token } = await createAuthSession(event, identity.user, 'webauthn')

@@ -188,7 +188,7 @@ import { useLocale } from '~/utils/locale'
 import { useLocaleText } from '~/composables/useLocaleText'
 import { getPlatformDisplayName } from '~/utils/platforms'
 import { getCoverThumbUrl } from '~/utils/url'
-import { formatDuration } from '~/utils/timeUtils'
+import { formatDuration, parseUtcTimestamp } from '~/utils/timeUtils'
 
 const { can } = usePermissions()
 
@@ -226,14 +226,15 @@ const platformLabel = (platform) => getPlatformDisplayName(platform, siteConfig.
 
 const formatDate = (value) => {
   if (!value) return ''
-  const date = new Date(value)
+  const date = parseUtcTimestamp(value)
   if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString(currentLocale.value, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    timeZone: 'Asia/Shanghai'
   })
 }
 </script>

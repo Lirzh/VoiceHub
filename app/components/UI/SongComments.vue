@@ -243,6 +243,7 @@ import AppSpinner from '~/components/UI/Common/AppSpinner.vue'
 import { fetchNetease } from '~/utils/neteaseApi'
 import { convertToHttps, getNeteaseCookie } from '~/utils/url'
 import { useLocale } from '~/utils/locale'
+import { formatDateTime, parseUtcTimestamp } from '~/utils/timeUtils'
 import { useServerErrors } from '~/composables/useLocaleText'
 
 const props = defineProps({
@@ -464,7 +465,7 @@ const formatCount = (count) => {
 const formatCommentTime = (time) => {
   if (!time) return ''
 
-  const date = new Date(time)
+  const date = parseUtcTimestamp(time)
   const now = getSyncedDate()
   const diffMs = now.getTime() - date.getTime()
   const diffMinutes = Math.floor(diffMs / 60000)
@@ -474,7 +475,7 @@ const formatCommentTime = (time) => {
   if (diffMinutes < 1440)
     return formatLocaleValue(locale.value.hoursAgo, Math.floor(diffMinutes / 60))
 
-  const isSameYear = date.getFullYear() === now.getFullYear()
+  const isSameYear = formatDateTime(date, 'YYYY') === formatDateTime(now, 'YYYY')
 
   const formatted = date.toLocaleString(locale.value.dateLocale, {
     ...(isSameYear ? {} : { year: 'numeric' }),
@@ -482,7 +483,8 @@ const formatCommentTime = (time) => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
+    timeZone: 'Asia/Shanghai'
   })
 
   return formatted.replace(/\//g, '-')

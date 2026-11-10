@@ -11,6 +11,7 @@ import { useSafeLocale } from '../../app/composables/useSafeLocale.ts'
 import * as permissions from '../../app/utils/admin-permissions.ts'
 import { pickScopeSettings, isAdminSettingsScope } from '../../server/utils/admin-settings-scope.ts'
 import { resolvePermissionRouteGuard } from '../../server/utils/admin-permission-routes.ts'
+import { formatDateTime, parseUtcTimestamp } from '../../app/utils/timeUtils.ts'
 
 const require = createRequire(import.meta.url)
 const { parse, compileScript } = require('vue/compiler-sfc')
@@ -70,6 +71,7 @@ async function component(name: string, codes: string[]) {
     usePlatformConfig: () => ({ refreshPlatformConfig: async () => {} }),
     BUILTIN_PLATFORMS: ['netease', 'tencent', 'bilibili', 'migu'], getPlatformDisplayName: (key: string) => key,
     packageJson: { version: 'test' }, getSyncedDate: () => new Date('2026-11-02T00:00:00Z'),
+    formatDateTime, parseUtcTimestamp,
     setInterval: () => 1, clearInterval: noop, setTimeout: () => 1, clearTimeout: noop,
     defineProps: () => ({ refreshKey: 0 }), defineEmits: () => noop,
     $fetch: fetchData,

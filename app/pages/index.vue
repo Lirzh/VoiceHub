@@ -852,6 +852,7 @@ import { useNotifications } from '~/composables/useNotifications'
 import { useSiteConfig, setSiteConfigData } from '~/composables/useSiteConfig'
 import { useToast } from '~/composables/useToast'
 import { renderMarkdown } from '~/utils/markdown'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 import CustomSelect from '~/components/UI/Common/CustomSelect.vue'
 import { useLocale } from '~/utils/locale'
 import { applyThemeConfig, useTheme } from '~/composables/useTheme'
@@ -1353,7 +1354,7 @@ const renderedNotificationMessages = computed(() => {
 
 // 格式化通知时间
 const formatNotificationTime = (timeString) => {
-  const date = new Date(timeString)
+  const date = parseUtcTimestamp(timeString)
   const now = getSyncedDate()
   const diff = now.getTime() - date.getTime()
 

@@ -89,11 +89,15 @@ export default defineEventHandler(async (event) => {
 
     // 如果未提供邮箱，则进入第一步：检查账号并返回掩码邮箱
     if (!email) {
-      if (!user) {
-        throw createApiError(404, 'AUTH_ACCOUNT_NAME_NOT_FOUND', '找不到该账号名，请检查是否拼写错误')
-      }
-      if (!user.email) {
-        throw createApiError(400, 'AUTH_NO_SECURITY_EMAIL', '该账号未绑定安全邮箱，无法通过此方式找回密码。请联系管理员。')
+      // 账号不存在时不区分响应，避免通过状态码/掩码差异枚举账号名。
+      // 掩码为空时前端让用户直接输入完整邮箱，提交后统一返回成功提示。
+      if (!user || !user.email) {
+        return {
+          success: true,
+          step: 2,
+          maskedEmail: '',
+          message: '请输入完整的邮箱地址以验证身份'
+        }
       }
 
       // 生成掩码邮箱 (例如: a***b@gmail.com)

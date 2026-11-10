@@ -220,6 +220,7 @@ import {
 import packageJson from '~~/package.json'
 import { useToast } from '~/composables/useToast'
 import { useLocale } from '~/utils/locale'
+import { parseUtcTimestamp } from '~/utils/timeUtils'
 import { usePermissions } from '~/composables/usePermissions'
 
 const emit = defineEmits(['navigate'])
@@ -421,7 +422,7 @@ const refreshActivities = () => {
 }
 
 const formatTime = (dateString) => {
-  const date = new Date(dateString)
+  const date = parseUtcTimestamp(dateString)
   const now = getSyncedDate()
   const diff = now - date
 
